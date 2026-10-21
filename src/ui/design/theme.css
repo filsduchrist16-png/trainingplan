@@ -1,0 +1,112 @@
+/*
+ * Sentier — design tokens.
+ * Palette « Jacques-Cartier, fin octobre » : sapin, brume, feuille mouillée, mélèze, pierre, lichen, petits fruits.
+ * Sombre par défaut (on sort tôt). Chaque paire texte/fond est vérifiée AA par src/ui/design/contrast.test.ts.
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root,
+[data-theme='dark'] {
+  --bg: #0f201b; /* sapin nuit */
+  --surface: #16302a; /* sapin */
+  --surface-2: #1f4537; /* sapin clair */
+  --line: #2c5244;
+  --text: #e6ebe4; /* brume */
+  --text-muted: #a9b5ab; /* brume voilée */
+  --accent: #e07a3f; /* feuille mouillée (éclaircie pour AA sur sapin) */
+  --accent-ink: #1a0e06;
+  --ok: #9dbb96; /* lichen */
+  --warn: #e3b456; /* mélèze */
+  --danger: #e2796f; /* petits fruits (éclaircis) */
+  --z1: #a9b5ab;
+  --z2: #9dbb96;
+  --z3: #e3b456;
+  --z4: #e07a3f;
+  --z5: #e2796f;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #eef0ea; /* brume matinale */
+  --surface: #ffffff;
+  --surface-2: #e2e6de;
+  --line: #c9d0c6;
+  --text: #13261f; /* sapin profond */
+  --text-muted: #4f5c55; /* pierre */
+  --accent: #a84a17; /* feuille mouillée (assombrie pour AA sur brume) */
+  --accent-ink: #ffffff;
+  --ok: #3f6b3a;
+  --warn: #7d5a0c;
+  --danger: #9e3b3b;
+  --z1: #6f7b73;
+  --z2: #4f7f49;
+  --z3: #a07614;
+  --z4: #b8561f;
+  --z5: #9e3b3b;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-z1: var(--z1);
+  --color-z2: var(--z2);
+  --color-z3: var(--z3);
+  --color-z4: var(--z4);
+  --color-z5: var(--z5);
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Chiffres alignés et tabulaires, même en Fraunces (qui utilise des chiffres elzéviriens par défaut). */
+@utility num {
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'lnum' 1, 'tnum' 1;
+}
