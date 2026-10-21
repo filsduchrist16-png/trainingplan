@@ -193,6 +193,8 @@ export interface Week extends Owned {
   targetMinutes?: number;
   /** Plan prudent (dépistage santé) : rien au-dessus de Z2 cette semaine. */
   easyOnly?: boolean;
+  /** 1re séance de la semaine = séance d'évaluation. */
+  evaluation?: boolean;
   /** Plus longue sortie déjà faite avant cette semaine (km) : en décharge et à l'affûtage, la longue peut remonter jusque-là. */
   longestRunKm?: number;
   manualOverride?: boolean;
@@ -215,6 +217,7 @@ export type SessionType =
   | 'longue_specifique'
   | 'back_to_back'
   | 'marche_course' // départ de zéro
+  | 'evaluation' // « Je sais pas » : combien de minutes tu cours d'affilée
   | 'test'
   | 'course' // jour de course
   | 'croise' // vélo, natation…

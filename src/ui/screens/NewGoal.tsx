@@ -411,7 +411,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
             </>
           )}
 
-          {step === 9 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} />}
+          {step === 9 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} onAlternative={(g) => { set({ goal: g, raceKm: GOALS[g].defaultDistanceKm, raceGain: GOALS[g].defaultElevationM }); }} />}
         </m.section>
       </AnimatePresence>
 
@@ -452,7 +452,7 @@ function formatTime(min: number): string {
   return h ? `${h}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`;
 }
 
-function Preview({ request, preview, athlete, onPostpone }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete; onPostpone: () => void }) {
+function Preview({ request, preview, athlete, onPostpone, onAlternative }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete; onPostpone: () => void; onAlternative: (goal: GoalKind) => void }) {
   const first = preview.weeks[0];
   const firstWeek = first
     ? buildWeekSessions(first, {
@@ -486,7 +486,16 @@ function Preview({ request, preview, athlete, onPostpone }: { request: PlanReque
           <strong>{w.title}.</strong> <span className="text-muted">{w.why}</span>
         </div>
       ))}
-      {preview.options && (
+      {preview.options?.includes('objectif_intermediaire') && preview.alternative && (
+        <Card className="space-y-3">
+          <Eyebrow>Deux propositions</Eyebrow>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => onAlternative(preview.alternative!)}>Viser un {GOALS[preview.alternative].label} à cette date</Button>
+            <Button variant="outline" size="sm" onClick={onPostpone}>Décaler l'objectif</Button>
+          </div>
+        </Card>
+      )}
+      {preview.options?.includes('course_en_marche_course') && (
         <Card className="space-y-3">
           <Eyebrow>Deux bonnes options</Eyebrow>
           <p className="text-sm text-muted">Le plan ci-dessus te fait courir l'épreuve en marche/course : c'est une vraie stratégie, et la plus sûre. Tu peux aussi choisir une date plus lointaine.</p>

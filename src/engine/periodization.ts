@@ -1,6 +1,6 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  BASE_WEEKS_AFTER_RUNWALK, HEALTH_PRUDENT_EASY_WEEKS, TWO_DAYS_KEY_MIN_CONTINUOUS, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
+  BASE_WEEKS_AFTER_RUNWALK, HEALTH_PRUDENT_EASY_WEEKS, RUNWALK_RACE_MAX_KM, TWO_DAYS_KEY_MIN_CONTINUOUS, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
   PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
@@ -75,6 +75,8 @@ export interface WeekPlan {
   longestRunKm?: number;
   /** Plan prudent (dépistage santé) : rien au-dessus de Z2 cette semaine (ni clé, ni strides, ni test). */
   easyOnly?: boolean;
+  /** 1re séance de la semaine = séance d'évaluation (« Je sais pas »). */
+  evaluation?: boolean;
 }
 
 export interface PlanDraft {
@@ -88,7 +90,9 @@ export interface PlanDraft {
   /** Marche-course ou course continue au départ, et niveau de départ. */
   start?: StartMode;
   /** Choix à proposer quand la course tombe avant la fin du démarrage + 4 semaines de base. */
-  options?: ('course_en_marche_course' | 'decaler')[];
+  options?: ('course_en_marche_course' | 'objectif_intermediaire' | 'decaler')[];
+  /** Objectif intermédiaire proposé quand l'objectif est irréaliste à cette date. */
+  alternative?: GoalKind;
   /** État d'entrée du parcours de démarrage : point de départ du journal (recalcul après chaque séance). */
   runWalkStart?: RunWalkState;
 }
@@ -189,6 +193,10 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   // Reprise post-partum : marche/course au palier 1 quelle que soit l'expérience d'avant.
   if (prof?.forceStage !== undefined) start = { ...start, runWalk: true, stage: prof.forceStage };
   if (prof?.walkFirst || walkOnly) start = { ...start, runWalk: true, stage: STAGE_WALK };
+  // Marche/course imposée par la santé ou le profil : l'explication de départ le dit (pas « course continue »).
+  if (start.runWalk && start.explanation.ruleId === 'start.continuous') {
+    start = { ...start, explanation: explain('start.runwalk.profile', 'info', start.stage === STAGE_WALK ? 'On commence par marcher' : 'On commence en marche-course', `Tu cours ${start.capacityMin} min d'affilée, mais ton profil santé demande une reprise progressive : on part ${start.stage === STAGE_WALK ? 'de la marche rapide' : `du ${stageLabel(start.stage).toLowerCase()}`}, et la course s'allonge séance par séance.`, { capacite: start.capacityMin, palier: start.stage }) };
+  }
   // Même règle d'entrée pour tous les objectifs, « garder la forme » compris (décision 4).
   const needsDemarrage = family === 'debuter' || start.runWalk;
   // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
@@ -240,14 +248,28 @@ export function generatePlan(input: PlanRequest): PlanDraft {
 
   // ── Phases ────────────────────────────────────────────────────────────────
   let options: PlanDraft['options'];
+  let alternative: GoalKind | undefined;
   let taperWeeks = req.race ? Math.min(profile.taperWeeks, totalWeeks) : 0;
-  if (req.race && journeyWeeksNeeded > 0 && journeyWeeksNeeded + BASE_WEEKS_AFTER_RUNWALK > totalWeeks - taperWeeks) {
+  // Objectif irréaliste : démarrage + base + préparation de l'objectif ne tiennent pas avant la course, et l'épreuve
+  // est trop longue pour la faire en marche/course. On propose un objectif intermédiaire ou une date plus lointaine.
+  const minFor = (g: GoalKind) => journeyWeeksNeeded + BASE_WEEKS_AFTER_RUNWALK + GOALS[g].minWeeks;
+  // En attente de la séance d'évaluation, le départ est provisoire : on ne juge pas l'objectif tout de suite.
+  const unrealistic = Boolean(req.race && journeyState && !walkOnly && !start.evaluation && req.race.distanceKm > RUNWALK_RACE_MAX_KM && totalWeeks < minFor(req.goal));
+  if (unrealistic) {
+    const shorter = (Object.keys(GOALS) as GoalKind[])
+      .filter((g) => (GOALS[g].family === 'route' || GOALS[g].family === 'trail') && GOALS[g].defaultDistanceKm < req.race!.distanceKm)
+      .sort((a, b) => GOALS[a].defaultDistanceKm - GOALS[b].defaultDistanceKm);
+    alternative = shorter.filter((g) => minFor(g) <= totalWeeks).at(-1) ?? shorter[0]!;
+    options = ['objectif_intermediaire', 'decaler'];
+    warnings.push(explain('plan.unrealistic', 'attention', 'Objectif trop ambitieux pour cette date', `Pour un ${profile.label} en partant d'ici, il faut au moins ${minFor(req.goal)} semaines : environ ${journeyWeeksNeeded} pour courir 30 min d'affilée, ${BASE_WEEKS_AFTER_RUNWALK} de base, puis ${profile.minWeeks} de préparation. Ta course est dans ${totalWeeks}. Deux propositions : un objectif intermédiaire à cette date (${GOALS[alternative].label}), ou une date plus lointaine (dans ${minFor(req.goal)} semaines ou plus).`, { semaines: totalWeeks, minimum: minFor(req.goal), alternative }));
+  }
+  if (!unrealistic && !start.evaluation && req.race && journeyWeeksNeeded > 0 && journeyWeeksNeeded + BASE_WEEKS_AFTER_RUNWALK > totalWeeks - taperWeeks) {
     options = ['course_en_marche_course', 'decaler'];
     const minWeeks = journeyWeeksNeeded + BASE_WEEKS_AFTER_RUNWALK + taperWeeks;
     warnings.push(explain('plan.runwalk.short', 'attention', 'La course arrive avant la fin de ton démarrage', `Il faut environ ${journeyWeeksNeeded} semaines pour courir 30 min d'affilée, puis ${BASE_WEEKS_AFTER_RUNWALK} semaines de base, soit ${minWeeks} semaines ; ta course est dans ${totalWeeks}. Deux bonnes options : la courir en marche/course (une vraie stratégie, pas un échec), ou décaler l'objectif.`, { semaines: totalWeeks, minimum: minWeeks }));
-    // Si le démarrage ne finit pas avant l'affûtage, pas d'affûtage : la course se fait en marche/course.
-    if (journeyWeeksNeeded >= totalWeeks - taperWeeks) taperWeeks = 0;
   }
+  // Si le démarrage ne finit pas avant l'affûtage, pas d'affûtage : la course se fait en marche/course.
+  if (req.race && journeyWeeksNeeded > 0 && journeyWeeksNeeded >= totalWeeks - taperWeeks) taperWeeks = 0;
   const buildWeeks = totalWeeks - taperWeeks;
   const dem = Math.min(journeyWeeksNeeded, buildWeeks);
   // Après le démarrage : au moins 4 semaines de base sans séance clé, puis les phases de l'objectif.
@@ -296,6 +318,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
         longRunKm: built.at(-1)!.distanceKm,
         notes,
         runWalk: { sessions: chunk },
+        ...(i === 0 && start.evaluation ? { evaluation: true } : {}),
       });
       history.push(km);
       level = km;
@@ -421,7 +444,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   if (family !== 'forme' && peakKm < targetPeak * 0.95) {
     warnings.push(explain('peak.unreachable', 'conseil', 'Pic plafonné', `Pic visé ${targetPeak} km/sem, atteignable ${peakKm} km d'ici la course en respectant +10 %/sem et les décharges. Pas grave : on arrive en santé, c'est ce qui compte.`, { target: targetPeak, reached: peakKm }));
   }
-  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}), ...(journeyState ? { runWalkStart: journeyState } : {}) };
+  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}), ...(alternative ? { alternative } : {}), ...(journeyState ? { runWalkStart: journeyState } : {}) };
 }
 
 /**

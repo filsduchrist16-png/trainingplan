@@ -326,3 +326,8 @@ export const POSTPARTUM_NO_RUN_DAYS = 91;
 // ─── Disponibilité réduite ────────────────────────────────────────────────────
 /** 2 sorties par semaine : aucune séance clé tant que la sortie longue (course continue) fait moins de 30 min. */
 export const TWO_DAYS_KEY_MIN_CONTINUOUS = 30;
+/** Séance d'évaluation (« Je sais pas ») : 5 min de marche, puis course facile jusqu'à 10 min au plus. À VALIDER. */
+export const EVALUATION_WALK_MIN = 5;
+export const EVALUATION_MAX_RUN_MIN = 10;
+/** Au-delà de cette distance (km), courir l'épreuve en marche/course n'est plus une option raisonnable : objectif irréaliste. À VALIDER. */
+export const RUNWALK_RACE_MAX_KM = 10;

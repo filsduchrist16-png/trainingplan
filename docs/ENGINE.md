@@ -95,6 +95,16 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 - **1 sortie par semaine** : objectif course (route, trail) refusé (`plan.oneday`, sévérité `stop`) avec deux propositions, « Garder la forme » ou « Courir de zéro » ; pour ceux-ci, le plan est fait avec un message honnête sur la lenteur (`plan.oneday.slow`, avec la durée estimée du parcours).
 - **2 sorties par semaine** : la progression marche/course se fait séance par séance (elle règle le rythme) ; aucune séance clé tant que la sortie longue fait moins de `TWO_DAYS_KEY_MIN_CONTINUOUS` (30 min) de course continue (`week.twodays`).
 
+## Objectif irréaliste et séance d'évaluation
+
+- **Objectif irréaliste** (`plan.unrealistic`, attention) : avec un parcours de démarrage, si démarrage + 4 semaines de base + préparation minimale de l'objectif (`GOALS[goal].minWeeks`) ne tiennent pas avant la course, et que l'épreuve dépasse `RUNWALK_RACE_MAX_KM` (10 km : au-delà, la faire en marche/course n'est pas raisonnable). L'explication donne la durée minimale et 2 propositions (`options: ['objectif_intermediaire', 'decaler']`) : l'objectif le plus long qui tient à cette date (`PlanDraft.alternative`, 5 km sinon) ou une date plus lointaine. Jusqu'à 10 km, c'est `plan.runwalk.short` qui s'applique (course en marche/course).
+- **Séance d'évaluation** (`start.evaluation`, régression F12) : « Je sais pas » chez un `debutant` ou un `regulier` → la 1re séance du plan est une évaluation (5 min de marche, puis course facile jusqu'à 10 min, arrêt dès que parler devient difficile ; `evaluationRun`, constantes `EVALUATION_*`). Les minutes tenues, saisies au log rapide, deviennent la capacité déclarée et le plan est régénéré dès le lendemain (`applyEvaluation`, couche data). En attendant, le départ est provisoire (palier 1) : l'objectif n'est pas jugé (ni `plan.unrealistic` ni `plan.runwalk.short`).
+- Quand la santé ou le profil impose la marche/course à quelqu'un qui court déjà assez longtemps, l'explication de départ le dit (`start.runwalk.profile`) au lieu de « course continue ».
+
+## Régression globale (`personas.test.ts`)
+
+Un plan complet (plan + séances de chaque semaine) par persona de l'audit (jamais couru, ne marche pas 30 min ; 5 km en 10 et 20 semaines ; débutant 4 min, 10 km ; 2 j/sem ; 62 ans, IMC 32, bêtabloquant ; post-partum 4 mois ; régulier « Je sais pas », semi), et 5 invariants vérifiés : (1) rien de continu, long, clé, strides ou test avant le palier 13 ; (2) temps de course +25 % au plus d'une séance à l'autre en marche/course, +10 % ensuite sur la plus longue séance ; (3) la longue est la plus longue sortie ; (4) volume hebdo ≤ +10 % du max des 4 dernières semaines hors démarrage ; (5) toute restriction a son explication.
+
 ## Semaine type (`buildWeekSessions`)
 
 - **Choix des jours** : le jour de la longue d'abord, puis les jours les plus espacés possible.

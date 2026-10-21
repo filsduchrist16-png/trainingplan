@@ -1,4 +1,4 @@
-import { ASSUMED_RUNS_PER_WEEK, RUN_WALK_BELOW_CONTINUOUS_MIN, RUN_WALK_FIRST_INTERVAL_SHARE, RUN_WALK_LADDER } from './constants';
+import { ASSUMED_RUNS_PER_WEEK, EVALUATION_MAX_RUN_MIN, EVALUATION_WALK_MIN, RUN_WALK_BELOW_CONTINUOUS_MIN, RUN_WALK_FIRST_INTERVAL_SHARE, RUN_WALK_LADDER } from './constants';
 import { JOURNEY_DONE, LADDER_FIRST, LADDER_LAST } from './runwalk';
 import { explain } from './explain';
 import { easyPace } from './paces';
@@ -33,6 +33,8 @@ export interface StartMode {
   /** Semaines estimées (2 séances validées par palier, 3 séances/sem) pour courir 30 min d'affilée. */
   weeksToExit: number;
   threshold: number;
+  /** « Je sais pas » chez un débutant ou un régulier : 1re séance = évaluation, qui fixe le palier (F12). */
+  evaluation: boolean;
   explanation: Explanation;
 }
 
@@ -80,8 +82,13 @@ export function startMode(input: StartInput): StartMode {
     volume: `Ton volume actuel suggère environ ${capacityMin} min par sortie`,
     inconnue: 'On ne sait pas ce que tu peux courir d’affilée',
   }[source];
+  const evaluation = source === 'inconnue' && (input.experience === 'debutant' || input.experience === 'regulier');
+  if (evaluation) {
+    const explanation = explain('start.evaluation', 'conseil', 'Ta 1re séance : une évaluation', `On ne sait pas encore combien de minutes tu cours d'affilée. Ta 1re séance : ${EVALUATION_WALK_MIN} min de marche, puis course facile jusqu'à ${EVALUATION_MAX_RUN_MIN} min, en arrêtant dès que parler devient difficile. Le temps tenu fixe ton point de départ et le plan s'ajuste ; d'ici là, on part prudemment.`, { max: EVALUATION_MAX_RUN_MIN });
+    return { runWalk, capacityMin, capacitySource: source, stage, weeksToExit, threshold, evaluation, explanation };
+  }
   const explanation = runWalk
     ? explain('start.runwalk', 'info', 'On commence en marche-course', `${basis} ; en dessous de ${threshold} min, os, tendons et périoste ne sont pas encore prêts à courir en continu, même si le souffle suit. On alterne course et marche, et on allonge les intervalles chaque semaine (environ ${weeksToExit} semaines pour courir 30 min d'affilée, au rythme de tes séances réussies).`, { capacite: capacityMin, seuil: threshold, semaines: weeksToExit })
     : explain('start.continuous', 'info', 'On démarre en course continue', `${basis} : au-dessus du seuil de ${threshold} min pour ton niveau, pas besoin de marche-course. Les sorties restent courtes et on les allonge d'environ 10 % à la fois.`, { capacite: capacityMin, seuil: threshold });
-  return { runWalk, capacityMin, capacitySource: source, stage, weeksToExit, threshold, explanation };
+  return { runWalk, capacityMin, capacitySource: source, stage, weeksToExit, threshold, evaluation, explanation };
 }

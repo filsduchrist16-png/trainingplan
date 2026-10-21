@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import type { Athlete, BodyZone, PlannedSession } from '@/engine';
+import { C, toIsoDate, type Athlete, type BodyZone, type PlannedSession } from '@/engine';
 import { db } from '@/data/db';
 import { logManual } from '@/data/log';
+import { applyEvaluation } from '@/data/planner';
 import { Button } from './Button';
 import { Chip, Field, Segmented, Stepper } from './forms';
 import { Sheet } from './Sheet';
@@ -17,6 +18,8 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
   const [rpe, setRpe] = useState(session?.rpeTarget ?? 4);
   const runWalk = session?.type === 'marche_course';
   const [completed, setCompleted] = useState(true);
+  const evaluation = session?.type === 'evaluation';
+  const [ranMin, setRanMin] = useState(C.EVALUATION_MAX_RUN_MIN);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [pain, setPain] = useState<{ zone: BodyZone; intensity: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,6 +39,8 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
         feeling,
         pains: pain ? [pain] : [],
       });
+      // Évaluation : les minutes courues fixent le point de départ, et le plan se régénère dès demain.
+      if (evaluation) await applyEvaluation(db, athlete.id, ranMin, toIsoDate(new Date()));
       if (navigator.vibrate) navigator.vibrate(15);
       onClose();
     } finally {
@@ -48,6 +53,9 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
       <div className="space-y-4">
         <Stepper label="Durée" value={duration} onChange={setDuration} step={5} min={5} max={600} unit="min" />
         <Stepper label="Distance" value={distance} onChange={setDistance} step={0.5} max={200} unit="km" />
+        {evaluation && (
+          <Stepper label="Minutes courues d'affilée" value={ranMin} onChange={setRanMin} min={0} max={C.EVALUATION_MAX_RUN_MIN} unit="min" />
+        )}
         {runWalk && (
           <Field label="Marche/course" hint="Décoche si tu as dû raccourcir ou sauter des intervalles : l'échelle s'ajuste." group>
             <Chip selected={completed} onToggle={() => setCompleted(!completed)}>J'ai fait tous les intervalles</Chip>

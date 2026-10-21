@@ -196,3 +196,36 @@ test('post-partum à 8 semaines : pas d’objectif de course, test de reprise pr
   await expect(page.getByRole('heading', { name: 'Pas encore d’objectif de course' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Créer mon plan' })).toBeDisabled();
 });
+
+test('« Je sais pas » chez un régulier : séance d’évaluation, puis plan ajusté au temps tenu', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-04-21T08:00:00') }); // mardi
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^10 km/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: /Régulier/ }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Ta 1re séance : une évaluation.')).toBeVisible();
+  await page.getByRole('button', { name: 'Créer mon plan' }).click();
+  await expect(page.getByRole('heading', { name: /Évaluation : jusqu'à 10 min/ })).toBeVisible();
+  await page.getByRole('button', { name: "C'est fait" }).click();
+  await expect(page.getByRole('textbox', { name: "Minutes courues d'affilée" })).toHaveValue('10');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeHidden();
+  // 10 min tenues : au-dessus du seuil d'un régulier, plus besoin de marche/course.
+  await expect(page.getByTestId('runwalk-stage')).toBeHidden();
+});
+
+test('jamais couru, marathon : objectif irréaliste, objectif intermédiaire proposé', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^Marathon/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: /Je n'ai jamais couru/ }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Objectif trop ambitieux pour cette date.')).toBeVisible();
+  await page.getByRole('button', { name: /Viser un 5 km à cette date/ }).click();
+  await expect(page.getByText('Objectif trop ambitieux pour cette date.')).toBeHidden();
+});

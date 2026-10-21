@@ -573,3 +573,45 @@ describe('T9 — le dépistage santé s’applique au plan', () => {
     expect(plan.weeks.every((w) => w.keySessions === 0 && w.easyOnly)).toBe(true);
   });
 });
+
+describe('T13 — objectif irréaliste et séance d’évaluation', () => {
+  const three = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] };
+  const zero = { experience: 'jamais' as const, currentWeeklyKm: 0, vdot: undefined, availability: three };
+  const raceIn = (weeks: number, km: number) => ({ date: addDays(START, (weeks - 1) * 7 + 5), distanceKm: km, elevationGainM: 0 });
+
+  it('jamais couru, marathon dans 16 semaines : plan.unrealistic, durée minimale et 2 propositions', () => {
+    const { plan } = fullPlan('route_marathon', { ...zero, race: raceIn(16, 42.2) });
+    const w = plan.warnings.find((x) => x.ruleId === 'plan.unrealistic')!;
+    expect(w.severity).toBe('attention');
+    expect(w.values).toMatchObject({ semaines: 16, minimum: 12 + 4 + 12 });
+    expect(plan.options).toEqual(['objectif_intermediaire', 'decaler']);
+    expect(plan.alternative).toBe('route_5k');
+    expect(plan.warnings.map((x) => x.ruleId)).not.toContain('plan.runwalk.short');
+  });
+  it('objectif intermédiaire : le plus long qui tient à cette date', () => {
+    expect(fullPlan('route_semi', { ...zero, race: raceIn(23, 21.1) }).plan.alternative).toBe('route_10k');
+    expect(fullPlan('route_semi', { ...zero, race: raceIn(30, 21.1) }).plan.warnings.map((x) => x.ruleId)).not.toContain('plan.unrealistic');
+  });
+  it('10 km ou moins : pas irréaliste, on propose la course en marche/course', () => {
+    const { plan } = fullPlan('route_10k', { ...zero, race: raceIn(12, 10) });
+    expect(plan.warnings.map((x) => x.ruleId)).toContain('plan.runwalk.short');
+    expect(plan.warnings.map((x) => x.ruleId)).not.toContain('plan.unrealistic');
+  });
+
+  it('« Je sais pas » chez un régulier ou un débutant : 1re séance = évaluation (F12)', () => {
+    for (const experience of ['regulier', 'debutant'] as const) {
+      const { plan, weeks } = fullPlan('route_10k', { experience, currentWeeklyKm: 0, vdot: undefined, availability: three });
+      expect(plan.start!.evaluation).toBe(true);
+      expect(plan.warnings[0]!.ruleId).toBe('start.evaluation');
+      const first = weeks[0]!.sessions.find((s) => isRunType(s.type) && s.type !== 'repos')!;
+      expect(first.type).toBe('evaluation');
+      expect(first.title).toMatch(/jusqu'à 10 min/);
+      expect(weeks[1]!.sessions.some((s) => s.type === 'evaluation')).toBe(false);
+    }
+  });
+  it('« Je sais pas » chez qui n’a jamais couru : palier 1, pas d’évaluation', () => {
+    const { plan, weeks } = fullPlan('route_10k', zero);
+    expect(plan.start!.evaluation).toBe(false);
+    expect(weeks[0]!.sessions.some((s) => s.type === 'evaluation')).toBe(false);
+  });
+});

@@ -117,6 +117,7 @@ export async function createPlan(
       ...(w.targetMinutes !== undefined ? { targetMinutes: w.targetMinutes } : {}),
       ...(w.longestRunKm !== undefined ? { longestRunKm: w.longestRunKm } : {}),
       ...(w.easyOnly ? { easyOnly: true } : {}),
+      ...(w.evaluation ? { evaluation: true } : {}),
     });
     weeks.push(week);
     const bRace = req.bRaces?.find((b) => b.date === w.bRaceDate);
@@ -183,4 +184,19 @@ export async function createRecoveryPlan(db: SentierDB, athlete: Athlete, race: 
   });
   await persist(db, athlete.id, today, block, weeks, sessions);
   return blockId;
+}
+
+/**
+ * Séance d'évaluation faite (« Je sais pas ») : les minutes courues d'affilée deviennent la capacité déclarée, et le
+ * plan est régénéré à partir de demain avec le bon point de départ (même objectif, même course).
+ */
+export async function applyEvaluation(db: SentierDB, athleteId: string, minutes: number, today: ISODate): Promise<{ ok: boolean; warnings: Block['warnings'] }> {
+  const athlete = await db.athletes.get(athleteId);
+  const block = await db.blocks.where('status').equals('actif').filter((b) => b.athleteId === athleteId).first();
+  if (!athlete || !block?.request) return { ok: false, warnings: [] };
+  const previous = block.request as PlanRequest;
+  // Dépistage, profil et état de l'échelle sont recalculés pour le nouveau plan.
+  const request: PlanRequest = { ...previous, startDate: today, continuousMin: minutes, screening: undefined, profile: undefined, runWalk: undefined };
+  const r = await createPlan(db, athlete, { request, raceName: block.name, ...(block.raceId ? { raceId: block.raceId } : {}) }, today, addDays(today, 1));
+  return { ok: r.ok, warnings: r.warnings };
 }

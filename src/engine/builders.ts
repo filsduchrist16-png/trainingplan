@@ -1,4 +1,4 @@
-import { GUT_TRAINING_MIN_MINUTES, STRIDES_MIN_BASE_MIN, RUN_WALK_COOLDOWN_MIN, RUN_WALK_LADDER, RUN_WALK_WARMUP_MIN, TRAIL_PACE_FACTOR, WALK_FIRST_START_MIN, WALK_PACE_MIN_PER_KM } from './constants';
+import { EVALUATION_MAX_RUN_MIN, EVALUATION_WALK_MIN, GUT_TRAINING_MIN_MINUTES, STRIDES_MIN_BASE_MIN, RUN_WALK_COOLDOWN_MIN, RUN_WALK_LADDER, RUN_WALK_WARMUP_MIN, TRAIL_PACE_FACTOR, WALK_FIRST_START_MIN, WALK_PACE_MIN_PER_KM } from './constants';
 import { STAGE_WALK, TRANSITION_LAST, continuousMinutes, stageDurationMinutes, stageKind, stageRunMinutes, stageWalkMinutes } from './runwalk';
 import { pacesFromVdot, easyPace, type PaceKey } from './paces';
 import { SESSION_LIBRARY } from './library';
@@ -280,4 +280,16 @@ export function strength(type: 'muscu_generale' | 'muscu_trail' | 'plyo', minute
 
 export function rest(): BuiltSession {
   return { type: 'repos', title: 'Repos', durationMin: 0, distanceKm: 0, steps: [], why: SESSION_LIBRARY.repos.oneLiner };
+}
+
+/**
+ * Séance d'évaluation (« Je sais pas » chez un débutant ou un régulier) : 5 min de marche rapide, puis course
+ * facile jusqu'à 10 min au plus, arrêt dès que parler devient difficile. Les minutes tenues fixent le palier.
+ */
+export function evaluationRun(ctx: BuildContext): BuiltSession {
+  return make('evaluation', `Évaluation : jusqu'à ${EVALUATION_MAX_RUN_MIN} min de course facile`, [
+    { kind: 'echauffement', minutes: EVALUATION_WALK_MIN, target: { rpe: 3 }, note: 'Marche rapide.' },
+    { kind: 'continu', minutes: EVALUATION_MAX_RUN_MIN, target: { zone: 'z2' }, note: 'Course très facile. Arrête dès que parler devient difficile, et note combien de minutes tu as couru.' },
+    { kind: 'retour_calme', minutes: EVALUATION_WALK_MIN, target: { rpe: 2 }, note: 'Marche tranquille.' },
+  ], ctx);
 }

@@ -8,7 +8,7 @@ import { explain } from './explain';
 import type { GoalFamily } from './goals';
 import {
   backToBackSecond, calibrationTest, descents, easyRun, hillSprints, longHills, longRun, raceDay, racePace,
-  paceForTarget, rest, runWalk, strength, strides, threshold, vo2, type BuildContext, type BuiltSession,
+  evaluationRun, paceForTarget, rest, runWalk, strength, strides, threshold, vo2, type BuildContext, type BuiltSession,
 } from './builders';
 import { SESSION_LIBRARY, isKeyType, isRunType } from './library';
 import type { WeekPlan } from './periodization';
@@ -183,6 +183,10 @@ function buildJourneyWeek(week: WeekPlan, ctx: WeekContext): { sessions: Session
   const byDay = new Map<Weekday, SessionDraft>();
   days.forEach((d, i) => {
     const p = plan[Math.min(i, plan.length - 1)]!;
+    if (i === 0 && week.evaluation) {
+      byDay.set(d, toDraft(dayOfWeek(week.startDate, d), evaluationRun(b), false));
+      return;
+    }
     const built = runWalk(p.stage, b, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: d === longDay && !raceWd ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0 });
     byDay.set(d, toDraft(dayOfWeek(week.startDate, d), built, false));
   });
