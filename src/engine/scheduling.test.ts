@@ -432,3 +432,63 @@ describe('T4 — démarrage jamais tronqué, objectif course adapté', () => {
     expect(d(three)).toBe(12);
   });
 });
+
+describe('T5 — volume débloqué après le démarrage, la longue reste la plus longue', () => {
+  const three = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] };
+  const cases: [string, GoalKind, Partial<PlanRequest>][] = [
+    ['jamais couru, 5 km en 16 semaines', 'route_5k', { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: three, race: { date: addDays(START, 16 * 7 - 2), distanceKm: 5, elevationGainM: 0 } }],
+    ['jamais couru, 5 km en 30 semaines', 'route_5k', { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: three, race: { date: addDays(START, 30 * 7 - 2), distanceKm: 5, elevationGainM: 0 } }],
+    ['débutant (longue 2,5 km), 10 km en 24 semaines', 'route_10k', { experience: 'debutant', currentWeeklyKm: 7.5, longestRecentRunKm: 2.5, vdot: undefined, availability: three, race: { date: addDays(START, 24 * 7 - 2), distanceKm: 10, elevationGainM: 0 } }],
+    ['débutant qui court 20 min, 5 km', 'route_5k', { experience: 'debutant', currentWeeklyKm: 8, longestRecentRunKm: 3, vdot: undefined, availability: three }],
+  ];
+
+  it.each(cases)('%s : le volume augmente au moins toutes les 3 semaines hors décharge (F6)', (_, goal, over) => {
+    const { plan } = fullPlan(goal, over);
+    const growth = plan.weeks.filter((w) => w.phase !== 'demarrage' && w.phase !== 'taper' && w.kind === 'build');
+    expect(growth.length).toBeGreaterThan(0);
+    for (let i = 0; i + 3 < growth.length; i++) {
+      if (growth[i]!.targetKm >= plan.targetPeakKm) continue;
+      expect(Math.max(...growth.slice(i + 1, i + 4).map((w) => w.targetKm)), `semaine ${growth[i]!.index}`).toBeGreaterThan(growth[i]!.targetKm);
+    }
+    // La longue n'est plus figée : elle dépasse la plus longue sortie de départ.
+    const longs = plan.weeks.filter((w) => w.phase !== 'demarrage').map((w) => w.longRunKm);
+    expect(Math.max(...longs)).toBeGreaterThan(longs[0]!);
+  });
+
+  it.each(cases)('%s : chaque semaine, la longue dure au moins autant que toute autre sortie (F7)', (_, goal, over) => {
+    const { weeks } = fullPlan(goal, over);
+    for (const { week, sessions } of weeks) {
+      const long = sessions.find((s) => s.type === 'longue_facile' || s.type === 'longue_specifique');
+      if (!long || week.kind === 'course') continue;
+      for (const s of sessions.filter((x) => isRunType(x.type) && x !== long)) expect(s.durationMin ?? 0, `${s.date} ${s.title} vs ${long.title}`).toBeLessThanOrEqual(long.durationMin ?? 0);
+    }
+  });
+
+  it('confirmé, toutes distances : la longue reste la plus longue, décharge et affûtage compris', () => {
+    for (const goal of ['route_5k', 'route_10k', 'route_semi', 'route_marathon', 'trail_court', 'trail_moyen'] as GoalKind[]) {
+      const { weeks } = fullPlan(goal, { currentWeeklyKm: 40, longestRecentRunKm: 14 });
+      for (const { week, sessions } of weeks) {
+        const long = sessions.find((s) => s.type === 'longue_facile' || s.type === 'longue_specifique');
+        if (!long || week.kind === 'course') continue;
+        for (const s of sessions.filter((x) => isRunType(x.type) && x !== long)) expect(s.durationMin ?? 0, `${goal} ${s.date} ${s.title}`).toBeLessThanOrEqual(long.durationMin ?? 0);
+      }
+    }
+  });
+
+  it('la longue croît de 10 % au plus d’une semaine à l’autre, sans pas minimum', () => {
+    const { plan } = fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.3, vdot: undefined, availability: three });
+    expect(plan.weeks[0]!.phase).toBe('base');
+    let longest = 3.3;
+    for (const w of plan.weeks) {
+      expect(w.longRunKm, `semaine ${w.index}`).toBeLessThanOrEqual(Math.round(longest * 1.1 * 10) / 10 + 1e-9);
+      longest = Math.max(longest, w.longRunKm);
+    }
+    expect(plan.weeks[0]!.longRunKm).toBe(3.6); // 3,3 × 1,1 = 3,63 → 3,6 (0,1 km inférieur), plus de pas minimum
+  });
+
+  it('volume limité par les sorties : expliqué', () => {
+    const { plan } = fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.3, vdot: undefined, availability: three });
+    const note = plan.weeks.flatMap((w) => w.notes).find((n) => n.ruleId === 'week.sessioncap')!;
+    expect(note.why).toContain('10 %');
+  });
+});

@@ -129,9 +129,15 @@ describe('cas limites', () => {
     expect(p.weeks[0]!.targetKm).toBe(55); // max(50,45,40,30) × 1,1
     assertTenPercentRule(p.weeks.map((w) => w.targetKm), [50, 45, 40, 30]);
   });
+  it('sans aucune sortie connue : pas de plus longue sortie de référence à l’affûtage', () => {
+    const p = generatePlan(req({ experience: 'avance', currentWeeklyKm: 0 }));
+    expect(p.weeks.filter((w) => w.phase === 'taper').every((w) => w.longestRunKm === undefined)).toBe(true);
+  });
   it('ne force pas de baisse chez quelqu’un déjà au-dessus du pic', () => {
     const p = generatePlan(req({ currentWeeklyKm: 90 }));
-    expect(p.weeks[0]!.targetKm).toBe(90);
+    // Pas de baisse vers le pic : seule la contenance des sorties (temps dispo en semaine) plafonne, et c'est dit.
+    expect(p.weeks[0]!.targetKm).toBeGreaterThan(p.targetPeakKm);
+    expect(p.weeks[0]!.targetKm).toBeGreaterThan(85);
   });
   it('plafonne au temps disponible et le dit', () => {
     const tight = { ...avail, runDaysPerWeek: 3, maxWeekdayMinutes: 45, maxWeekendMinutes: 90 };

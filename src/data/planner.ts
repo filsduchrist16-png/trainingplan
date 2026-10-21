@@ -109,6 +109,7 @@ export async function createPlan(
       ...(w.bRaceDate ? { bRaceDate: w.bRaceDate } : {}),
       ...(w.runWalk ? { runWalk: w.runWalk } : {}),
       ...(w.targetMinutes !== undefined ? { targetMinutes: w.targetMinutes } : {}),
+      ...(w.longestRunKm !== undefined ? { longestRunKm: w.longestRunKm } : {}),
     });
     weeks.push(week);
     const bRace = req.bRaces?.find((b) => b.date === w.bRaceDate);

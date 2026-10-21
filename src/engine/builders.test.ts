@@ -34,6 +34,19 @@ describe('séances', () => {
     expect(easyRun(1, road).durationMin).toBe(20);
     expect(easyRun(8, road, 'z1').type).toBe('z1_recup');
   });
+  it('jamais plus longues que la longue (F7) : Z2 raccourcie, strides gardées si possible, sinon facile', () => {
+    expect(easyRun(8, road, 'z2', 17).durationMin).toBe(17);
+    const s = strides(6, road, 25);
+    expect(s.type).toBe('strides');
+    expect(s.durationMin).toBeLessThanOrEqual(25);
+    const tooShort = strides(6, road, 15);
+    expect(tooShort.type).toBe('z2_endurance');
+    expect(tooShort.durationMin).toBe(15);
+  });
+  it('longue arrondie à la minute', () => {
+    const l = longRun(4.4, road, false);
+    expect(l.durationMin).toBe(Math.floor(4.4 * paceForTarget({ zone: 'z2' }, road)));
+  });
   it('strides, sprints, descentes progressent avec les semaines', () => {
     expect(strides(6, { ...road, phaseWeek: 5 }).title).toMatch(/8 strides/);
     expect(hillSprints(6, { ...road, phaseWeek: 5 }).title).toMatch(/^10 sprints/);

@@ -150,6 +150,8 @@ export interface Week extends Owned {
   runWalk?: { sessions: { stage: number; validatedAtStage: number }[] };
   /** Volume du démarrage en minutes. */
   targetMinutes?: number;
+  /** Plus longue sortie déjà faite avant cette semaine (km) : en décharge et à l'affûtage, la longue peut remonter jusque-là. */
+  longestRunKm?: number;
   manualOverride?: boolean;
 }
 

@@ -1,6 +1,6 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  BASE_WEEKS_AFTER_RUNWALK, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_GROWTH_MIN_KM, LONG_RUN_GROWTH_MIN_KM_SHORT, LONG_RUN_SHARE_BY_PHASE, LONG_RUN_SHORT_THRESHOLD_KM,
+  BASE_WEEKS_AFTER_RUNWALK, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
   PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
@@ -62,6 +62,8 @@ export interface WeekPlan {
   runWalk?: { sessions: { stage: number; validatedAtStage: number }[] };
   /** Volume du démarrage, exprimé en minutes (les km sont estimés, pour l'affichage). */
   targetMinutes?: number;
+  /** Plus longue sortie déjà faite avant cette semaine (km) : en décharge et à l'affûtage, la longue peut remonter jusque-là. */
+  longestRunKm?: number;
 }
 
 export interface PlanDraft {
@@ -80,6 +82,8 @@ export interface PlanDraft {
 
 const roundKm = (km: number) => (km >= 10 ? Math.round(km) : Math.round(km * 2) / 2);
 const floorKm = (km: number) => (km >= 10 ? Math.floor(km) : Math.floor(km * 2) / 2);
+/** Arrondi au 0,1 km inférieur (le petit epsilon absorbe les erreurs de virgule flottante : 3 × 1,1 = 3,3000…01). */
+const floorTenth = (km: number) => Math.floor(km * 10 + 1e-9) / 10;
 const round10 = (m: number) => Math.round(m / 10) * 10;
 
 /** Répartit n semaines (hors taper) entre base / spec1 / spec2 / précomp. Les blocs courts compressent la base d'abord. */
@@ -257,14 +261,17 @@ export function generatePlan(req: PlanRequest): PlanDraft {
 
     const longRunKm = longRunFor(km, phase, longest, profile.longRunMaxMin, req, trail, gainPerKm);
     // Aucune sortie ne dépasse la sortie longue de la semaine : le volume est plafonné par ce que les sorties
-    // PEUVENT contenir. Sans ça, 15 km/sem sur 3 jours donnent 5 km par sortie à quelqu'un dont la plus longue est 3 km.
-    const sessionRoom = longest > 0 && phase !== 'demarrage' ? floorKm(req.availability.runDaysPerWeek * longRunKm) : Infinity;
+    // PEUVENT contenir (la longue + les autres sorties, chacune ≤ la longue et ≤ le temps dispo en semaine).
+    // La longue, elle, continue de croître de 10 % même quand le volume est plafonné.
+    const otherKm = Math.min(longRunKm, req.availability.maxWeekdayMinutes / easyMinutes(1, req.vdot, { trail }));
+    const sessionRoom = longest > 0 ? floorTenth(longRunKm + (req.availability.runDaysPerWeek - 1) * otherKm) : Infinity;
     if (km > sessionRoom && sessionRoom > 0) {
-      notes.push(explain('week.sessioncap', 'conseil', 'Volume limité par tes sorties', `Ta plus longue sortie récente est ${Math.round(longest * 10) / 10} km : on l'allonge de ~10 % à la fois. Avec ${req.availability.runDaysPerWeek} sorties, ça fait ${sessionRoom} km cette semaine plutôt que ${km}. Plus de sorties par semaine, plutôt que plus longues, est la façon sûre de monter.`, { sortie: longRunKm, volume: sessionRoom, voulu: km }));
+      notes.push(explain('week.sessioncap', 'conseil', 'Volume limité par tes sorties', `Ta plus longue sortie récente est ${Math.round(longest * 10) / 10} km : on l'allonge de 10 % à la fois. Avec ${req.availability.runDaysPerWeek} sorties, aucune plus longue que la longue (${longRunKm} km), ça fait ${sessionRoom} km cette semaine plutôt que ${km}. Plus de sorties par semaine, plutôt que plus longues, est la façon sûre de monter.`, { sortie: longRunKm, volume: sessionRoom, voulu: km }));
       km = sessionRoom;
-      if (kind !== 'decharge') level = km;
+      level = Math.min(level, km);
     }
     history.push(km);
+    const before = floorTenth(longest);
     if (kind !== 'decharge') longest = Math.max(longest, longRunKm);
     weeks.push({
       index: i,
@@ -276,6 +283,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
       // « Courir de zéro » : aucune séance clé, la régularité est l'objectif. Après un démarrage : 4 semaines de base sans clé.
       keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) ? 0 : keySessionsFor(phase, kind, i, req.experience, req.difficulty),
       longRunKm,
+      ...(before > 0 ? { longestRunKm: before } : {}),
       notes,
     });
   }
@@ -299,6 +307,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
         targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR.taper),
         keySessions: keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, req.experience, req.difficulty),
         longRunKm: isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, km * LONG_RUN_SHARE_BY_PHASE.taper * 1.6)),
+        ...(longest > 0 ? { longestRunKm: floorTenth(longest) } : {}),
         notes: [explain('week.taper', 'info', isRaceWeek ? 'Semaine de course' : 'Affûtage', `Volume à ${Math.round(ratio * 100)} % du pic, intensité maintenue (strides, efforts courts). La fatigue s'en va, la forme reste.`, { ratio })],
         ...(isRaceWeek ? { raceDate: req.race!.date } : {}),
       });
@@ -333,20 +342,27 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}) };
 }
 
+/**
+ * Sortie longue de la semaine, calculée AVANT le volume : la plus grande de « part de la phase × volume »,
+ * « volume ÷ jours de course » (elle est la plus longue sortie) et « ce que les autres sorties ne peuvent pas
+ * contenir » (temps dispo en semaine), plafonnée par le temps disponible et par +10 %
+ * de la plus longue sortie récente. Arrondie au 0,1 km inférieur.
+ */
 function longRunFor(km: number, phase: Phase, longest: number, maxMin: number, req: PlanRequest, trail: boolean, gainPerKm: number): number {
   const longGoal = maxMin >= LONG_GOAL_MIN_LONG_RUN_MIN && (phase === 'spec1' || phase === 'spec2' || phase === 'precomp');
   const share = Math.min(LONG_RUN_SHARE_MAX, longGoal ? LONG_RUN_SHARE_LONG_GOALS[phase] : LONG_RUN_SHARE_BY_PHASE[phase]);
-  let long = km * share;
+  // Les autres sorties tiennent au plus le temps dispo en semaine : ce qu'elles ne peuvent pas contenir va dans la longue.
+  const days = req.availability.runDaysPerWeek;
+  const weekdayKm = req.availability.maxWeekdayMinutes / easyMinutes(1, req.vdot, { trail });
+  let long = Math.max(km * share, km / days, km - (days - 1) * weekdayKm);
   // Limite de temps : objectif ET disponibilité de fin de semaine.
   const maxMinutes = Math.min(maxMin, req.availability.maxWeekendMinutes);
   const minutesPerKm = easyMinutes(1, req.vdot, { trail, gainM: gainPerKm * 100 * ELEVATION_PHASE_FACTOR[phase] / 100 });
-  long = Math.min(long, maxMinutes / minutesPerKm);
-  // Croissance graduelle de la plus longue sortie.
-  if (longest > 0) {
-    const minStep = longest < LONG_RUN_SHORT_THRESHOLD_KM ? LONG_RUN_GROWTH_MIN_KM_SHORT : LONG_RUN_GROWTH_MIN_KM;
-    long = Math.min(long, longest + Math.max(minStep, longest * LONG_RUN_GROWTH));
-  }
-  return roundKm(long);
+  // Arrondi au 0,1 km SUPÉRIEUR de la cible : sinon jours × longue resterait sous le volume voulu, et il se figerait.
+  long = Math.min(Math.ceil(long * 10 - 1e-9) / 10, maxMinutes / minutesPerKm);
+  // Croissance graduelle : +10 % de la plus longue sortie récente, sans pas minimum.
+  if (longest > 0) long = Math.min(long, longest * (1 + LONG_RUN_GROWTH));
+  return floorTenth(long);
 }
 
 /** Semaines de récupération après une course A, à partir du lundi suivant la course. */

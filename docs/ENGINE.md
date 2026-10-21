@@ -67,10 +67,12 @@ Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continu
 
 Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km chacune, ce qui est trop pour quelqu'un dont la plus longue sortie est de 3 km. Le moteur ajoute donc des règles **par séance** :
 
-- la sortie longue ne grimpe que d'environ **10 %** par rapport à la plus longue sortie récente (pas minimum de 0,3 km sous 10 km, 1,5 km au-delà) ;
-- **aucune sortie facile ne dépasse la sortie longue** de la semaine ;
-- le volume de la semaine est plafonné par ce que les sorties peuvent contenir (`sorties × sortie longue`), avec une explication, au lieu de gonfler chaque sortie : pour monter, il faut **plus de sorties**, pas des sorties plus longues ;
-- une **séance dure** (échauffement et retour au calme inclus) ne dépasse pas ~1,3 × la sortie longue, sinon elle est remplacée par du facile avec strides ;
+- la **sortie longue est calculée avant le volume** (`longRunFor`) : la plus grande de « part de la phase × volume voulu », « volume ÷ jours de course » et « ce que les autres sorties ne peuvent pas contenir » (temps dispo en semaine), plafonnée par le temps dispo le week-end et la durée max de l'objectif ;
+- elle ne grimpe que de **10 %** par semaine par rapport à la plus longue sortie récente, **sans pas minimum** (décision : « +10 % » sur la plus longue séance de la semaine, pour tout le monde) ; arrondie au **0,1 km inférieur** et à la **minute inférieure** ;
+- le volume de la semaine est ensuite plafonné par ce que les sorties peuvent contenir (`longue + (jours − 1) × min(longue, temps dispo en semaine)`, règle `week.sessioncap`, avec explication) ; la longue continue de croître même quand le volume est plafonné, donc le volume se débloque (F6) ;
+- **la longue est la plus longue sortie de la semaine** (F7) : sorties faciles, strides, sprints et descentes sont plafonnés à sa durée (`easyRun`/`strides` prennent un `maxMin` ; sous 10 min de Z2, des strides deviennent une sortie facile, `STRIDES_MIN_BASE_MIN`) ;
+- une **séance dure** (échauffement et retour au calme inclus) plus longue que la longue est remplacée par du facile (avec strides si la longue fait 30 min), règle `week.quality.light`. En **décharge et à l'affûtage**, l'intensité est gardée : la longue est allongée jusqu'à la séance dure, sans dépasser la plus longue sortie déjà faite (`longestRunKm` de la semaine) ;
+- seules les semaines de course échappent à la règle (la course est la sortie la plus longue) ;
 - le **test 3 km chrono** est réservé aux coureurs réguliers et avancés ;
 - sans plus longue sortie déclarée, elle est estimée à `volume hebdo ÷ 3`, jamais « illimitée ».
 

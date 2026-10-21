@@ -214,6 +214,8 @@ export const WALK_FIRST_STEP_MIN = 5;
 export const WALK_FIRST_TARGET_MIN = 30;
 /** Après le démarrage : au moins 4 semaines de base, sans séance clé, avant les phases de l'objectif. */
 export const BASE_WEEKS_AFTER_RUNWALK = 4;
+/** Z2 minimum avant des strides : en dessous, la séance devient une sortie facile. À VALIDER (pratique courante). */
+export const STRIDES_MIN_BASE_MIN = 10;
 /** Strides et sprints en côte seulement quand on court au moins 30 min d'affilée (sortie longue ≥ 30 min). */
 export const STRIDES_MIN_CONTINUOUS_MIN = 30;
 /** Démarrage : au plus 3 séances par semaine, jamais deux jours de suite. */
@@ -244,15 +246,11 @@ export const LONG_RUN_SHARE_LONG_GOALS = { spec1: 0.35, spec2: 0.4, precomp: 0.4
 /** Seuil (minutes de longue max de l'objectif) au-delà duquel un objectif est « long ». */
 export const LONG_GOAL_MIN_LONG_RUN_MIN = 180;
 
-/** Croissance max de la sortie longue d'une semaine à l'autre : +10 % ou +1,5 km (le plus grand). */
-export const LONG_RUN_GROWTH = 0.1;
-export const LONG_RUN_GROWTH_MIN_KM = 1.5;
 /**
- * Coureur dont la plus longue sortie est courte (< 10 km) : on ne peut pas ajouter 1,5 km d'un coup
- * (+47 % sur 3,2 km). Le pas minimum est plus petit, donc la croissance reste ≈ +10 %.
+ * Croissance de la sortie longue : +10 % de la plus longue sortie récente, sans pas minimum
+ * (décision validée : « +10 % max » pour tout le monde, la longue arrondie au 0,1 km inférieur et à la minute).
  */
-export const LONG_RUN_GROWTH_MIN_KM_SHORT = 0.3;
-export const LONG_RUN_SHORT_THRESHOLD_KM = 10;
+export const LONG_RUN_GROWTH = 0.1;
 /** Sans plus longue sortie déclarée, on suppose que le volume hebdo se répartit sur ce nombre de sorties. */
 export const ASSUMED_RUNS_PER_WEEK = 3;
 
@@ -270,10 +268,6 @@ export const STRENGTH_SESSION_MIN = 45;
 /** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */
 export const GUT_TRAINING_MIN_MINUTES = 75;
 
-/** Une séance dure (échauffement et retour au calme inclus) ne dépasse pas ~1,3 × la sortie longue de la semaine… */
-export const QUALITY_VS_LONG_RUN = 1.3;
-/** …avec un plancher : un coureur confirmé en décharge peut quand même faire un petit seuil. */
-export const MIN_QUALITY_CAP_KM = 4.5;
 
 // ─── Progression du parcours marche/course (validation par séance) ────────────
 
