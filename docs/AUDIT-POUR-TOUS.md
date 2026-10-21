@@ -282,3 +282,13 @@ Invariants vérifiés pour chaque persona :
 - [Returning to running postnatal, Goom, Donnelly et Brockwell (2019)](https://athleticsni.org/download/files/Returning_to_running_postnatal_guideline_for_medical_health_and_fitness_professionals_managing_this_population.05.pdf) : pas de course avant 3 mois, tests de charge et d'impact, signaux d'alerte pelviens.
 
 Les règles grossesse, âge, IMC et maladies chroniques sont des ordres de grandeur prudents, non tirés d'une source unique : à faire valider par un médecin du sport ou un physio avant la mise en production.
+
+## Décisions d'implémentation
+
+Points ambigus tranchés avec Nicolas avant de coder (21 oct. 2026) :
+
+1. **Invariant 2, « +10 % ensuite »** : appliqué à la **plus longue séance de la semaine** (pas séance par séance dans l'ordre chronologique), **pour tout le monde**. Conséquences : plus de pas minimum de 1,5 km pour la sortie longue (croissance de 10 % pure), longues arrondies à la minute et au 0,1 km inférieur. Pendant la marche/course, la règle « +25 % » se lit séance par séance, comme l'échelle est construite.
+2. **Séance importée sans RPE** : on répète le palier (pas d'avancement) et le debrief demande le RPE ; la séance est réévaluée dès qu'il est noté.
+3. **Transition continue (20 → 30 min)** : comptée en séances validées (un palier par 2 séances, 3 en profil lent), soit ≈ 4 semaines à 3 séances/sem, ce qui donne bien les 12 semaines annoncées pour 30 min depuis le palier 1.
+4. **« Garder la forme »** : même règle d'entrée que les autres objectifs ; sous le seuil de capacité continue, le plan commence en marche/course (ou marche d'abord).
+5. **Volume hebdo pendant le démarrage** : piloté par l'échelle et exprimé en minutes, comme le dit la spécification ; la règle des 10 % en km (invariant 4) s'applique à partir de la base normale.
