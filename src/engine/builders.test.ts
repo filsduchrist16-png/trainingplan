@@ -78,9 +78,8 @@ describe('séances', () => {
   });
   it('back-to-back, marche-course, test, course, muscu, repos', () => {
     expect(backToBackSecond(103, trail).durationMin).toBe(105);
-    expect(runWalk(3, { ...road, vdot: undefined }).title).toMatch(/1 min course \/ 1 min marche/);
-    expect(runWalk(3, { ...road, vdot: undefined, planWeek: 4 }).title).toMatch(/5 min course \/ 2 min marche/);
-    expect(runWalk(4, { ...road, vdot: undefined, planWeek: 9 }).title).toMatch(/continue/);
+    expect(runWalk(1, { ...road, vdot: undefined }).title).toBe('Marche-course 14 × (30 s course / 1 min marche)');
+    expect(runWalk(4, road).title).toBe('Marche-course 8 × (1 min 30 course / 1 min marche)');
     expect(calibrationTest(road).type).toBe('test');
     expect(raceDay(43, trail).distanceKm).toBe(43);
     expect(strength('plyo', 45).durationMin).toBe(20);

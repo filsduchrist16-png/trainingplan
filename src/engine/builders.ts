@@ -1,4 +1,5 @@
-import { GUT_TRAINING_MIN_MINUTES, RUN_WALK_LADDER_MIN, TRAIL_PACE_FACTOR } from './constants';
+import { GUT_TRAINING_MIN_MINUTES, RUN_WALK_COOLDOWN_MIN, RUN_WALK_LADDER, RUN_WALK_WARMUP_MIN, TRAIL_PACE_FACTOR, WALK_FIRST_START_MIN, WALK_PACE_MIN_PER_KM } from './constants';
+import { STAGE_WALK, TRANSITION_LAST, continuousMinutes, stageDurationMinutes, stageKind, stageRunMinutes, stageWalkMinutes } from './runwalk';
 import { pacesFromVdot, easyPace, type PaceKey } from './paces';
 import { SESSION_LIBRARY } from './library';
 import type { GoalKind, Intensity, SessionType, Step } from './types';
@@ -204,18 +205,58 @@ export function backToBackSecond(minutes: number, ctx: BuildContext): BuiltSessi
   return make('back_to_back', `Back-to-back : ${m} min Z2 sur jambes fatiguées`, [{ kind: 'continu', minutes: m, target: { zone: 'z2' }, note: 'Même facile que d’habitude, sur la fatigue d’hier.' }], ctx);
 }
 
-export function runWalk(km: number, ctx: BuildContext): BuiltSession {
-  const w = ctx.planWeek ?? 0;
-  // On part du niveau de la personne (pas toujours de 1 min) et on monte d'un cran par semaine.
-  const run = pick([...RUN_WALK_LADDER_MIN], (ctx.runWalkStage ?? 0) + w);
-  const walk = run >= 20 ? 0 : run <= 3 ? 1 : 2;
-  const total = Math.max(15, Math.round(km * paceForTarget({ zone: 'z2' }, ctx) * 1.15));
-  const reps = Math.max(1, Math.round(total / (run + walk)));
-  const title = walk === 0 ? `Course continue ${run * reps} min` : `Marche-course ${reps} × (${run} min course / ${walk} min marche)`;
-  const step: Step = walk === 0
-    ? { kind: 'continu', minutes: run * reps, target: { zone: 'z2' } }
-    : { kind: 'effort', minutes: run, repeat: reps, target: { zone: 'z2' }, recoverySeconds: walk * 60, recoveryWalk: true, note: 'La course doit rester facile : si tu ne peux pas parler, ralentis.' };
-  return make('marche_course', title, [step], ctx);
+/** « 30 s », « 1 min », « 1 min 30 ». */
+function formatSec(sec: number): string {
+  if (sec < 60) return `${sec} s`;
+  const m = Math.floor(sec / 60);
+  const r = sec % 60;
+  return r ? `${m} min ${r}` : `${m} min`;
+}
+
+/**
+ * Séance du parcours de démarrage au palier donné, en MINUTES (pas en km) :
+ * 5 min de marche rapide + bloc (marche, marche/course ou course continue) + 5 min de marche lente.
+ * Les km affichés sont estimés : course à l'allure facile, marche à WALK_PACE_MIN_PER_KM.
+ */
+export function runWalk(stage: number, ctx: BuildContext, opts: { walkMin?: number; extraWalkMin?: number } = {}): BuiltSession {
+  const s = Math.max(STAGE_WALK, Math.min(stage, TRANSITION_LAST));
+  const kind = stageKind(s);
+  const extra = opts.extraWalkMin ?? 0;
+  const runPace = paceForTarget({ zone: 'z2' }, ctx);
+  const why = SESSION_LIBRARY.marche_course.oneLiner;
+  if (kind === 'marche') {
+    const minutes = (opts.walkMin ?? WALK_FIRST_START_MIN) + extra;
+    return {
+      type: 'marche_course', title: `Marche rapide ${minutes} min`, durationMin: minutes, distanceKm: Math.round((minutes / WALK_PACE_MIN_PER_KM) * 10) / 10,
+      steps: [{ kind: 'continu', minutes, target: { rpe: 4 }, note: "D'un bon pas : tu peux parler, mais tu sens que tu marches vite." }], why,
+    };
+  }
+  const warm: Step = { kind: 'echauffement', minutes: RUN_WALK_WARMUP_MIN, target: { rpe: 3 }, note: 'Marche rapide.' };
+  const cool: Step = { kind: 'retour_calme', minutes: RUN_WALK_COOLDOWN_MIN + extra, target: { rpe: 2 }, note: extra ? `Marche lente, puis ${extra} min de marche en plus (jour de la longue).` : 'Marche lente.' };
+  const runMin = stageRunMinutes(s);
+  const walkMin = stageWalkMinutes(s) + RUN_WALK_WARMUP_MIN + RUN_WALK_COOLDOWN_MIN + extra;
+  const distanceKm = Math.round((runMin / runPace + walkMin / WALK_PACE_MIN_PER_KM) * 10) / 10;
+  const durationMin = stageDurationMinutes(s) + extra;
+  if (kind === 'continu') {
+    const minutes = continuousMinutes(s);
+    return {
+      type: 'marche_course', title: `Course continue ${minutes} min`, durationMin, distanceKm,
+      steps: [warm, { kind: 'continu', minutes, target: { zone: 'z2' }, note: 'Facile : tu dois pouvoir parler. Ralentis plutôt que de marcher.' }, cool], why,
+    };
+  }
+  const r = RUN_WALK_LADDER[s - 1]!;
+  return {
+    type: 'marche_course',
+    title: `Marche-course ${r.reps} × (${formatSec(r.runSec)} course / ${formatSec(r.walkSec)} marche)`,
+    durationMin,
+    distanceKm,
+    steps: [
+      warm,
+      { kind: 'effort', seconds: r.runSec, repeat: r.reps, target: { zone: 'z2' }, recoverySeconds: r.walkSec, recoveryWalk: true, note: 'La course doit rester facile : si tu ne peux pas parler, ralentis.' },
+      cool,
+    ],
+    why,
+  };
 }
 
 export function calibrationTest(ctx: BuildContext): BuiltSession {

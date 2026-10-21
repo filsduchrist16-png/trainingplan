@@ -182,12 +182,40 @@ export const PHASE_RATIOS = { spec1: 0.28, spec2: 0.24, precomp: 0.12 } as const
  * Débutant : 20 min. Régulier : 10 min (reprise après une longue pause). Avancé : jamais. À VALIDER.
  */
 export const RUN_WALK_BELOW_CONTINUOUS_MIN = { jamais: 30, debutant: 20, regulier: 10, avance: 0 } as const;
-/** Échelle de marche-course : minutes de course par intervalle, semaine après semaine (1 min → 30 min continues). */
-export const RUN_WALK_LADDER_MIN = [1, 2, 3, 4, 5, 8, 10, 15, 20, 30] as const;
-/** Le 1er intervalle vaut la moitié de ce qu'on court d'une traite : on garde de la marge. */
+/**
+ * Échelle de marche/course, paliers 1 à 13 (esprit Couch to 5K). Chaque séance = 5 min de marche rapide
+ * + le bloc + 5 min de marche lente, soit 30 à 45 min. Le temps de course total ne monte jamais de plus
+ * de 25 % d'un palier au suivant. Le palier 13 = 20 min continues. À VALIDER par un professionnel.
+ */
+export const RUN_WALK_LADDER = [
+  { runSec: 30, walkSec: 60, reps: 14 },
+  { runSec: 60, walkSec: 90, reps: 8 },
+  { runSec: 60, walkSec: 60, reps: 10 },
+  { runSec: 90, walkSec: 60, reps: 8 },
+  { runSec: 120, walkSec: 60, reps: 7 },
+  { runSec: 180, walkSec: 60, reps: 5 },
+  { runSec: 240, walkSec: 60, reps: 4 },
+  { runSec: 300, walkSec: 60, reps: 4 },
+  { runSec: 420, walkSec: 60, reps: 3 },
+  { runSec: 600, walkSec: 60, reps: 2 },
+  { runSec: 720, walkSec: 60, reps: 2 },
+  { runSec: 900, walkSec: 60, reps: 2 },
+  { runSec: 1200, walkSec: 0, reps: 1 },
+] as const;
+export const RUN_WALK_WARMUP_MIN = 5;
+export const RUN_WALK_COOLDOWN_MIN = 5;
+/** Transition continue : 20 → 30 min de course facile (20 = palier 13), un palier par 2 séances validées. */
+export const CONTINUOUS_TRANSITION_MIN = [20, 22, 24, 26, 28, 30] as const;
+/** Allure de marche pour estimer les km affichés (min/km). À VALIDER. */
+export const WALK_PACE_MIN_PER_KM = 11;
+/** Marche d'abord (niveau 0) : de 20 à 30 min, +5 min par séance validée ; sortie : 30 min validées 2 fois de suite. */
+export const WALK_FIRST_START_MIN = 20;
+export const WALK_FIRST_STEP_MIN = 5;
+export const WALK_FIRST_TARGET_MIN = 30;
+/** Le jour de la longue, pendant le démarrage : même palier, plus 10 min de marche. */
+export const RUN_WALK_LONG_DAY_EXTRA_WALK_MIN = 10;
+/** Le 1er intervalle vaut au plus la moitié de ce qu'on court d'une traite : on garde de la marge. */
 export const RUN_WALK_FIRST_INTERVAL_SHARE = 0.5;
-/** On quitte la marche-course quand l'intervalle atteint cette durée (minutes de course continue). */
-export const RUN_WALK_EXIT_MIN = 20;
 /** Volume de départ minimal d'un plan démarrage (≈ 3 × 20 min de marche-course). */
 export const DEMARRAGE_START_KM = 6;
 

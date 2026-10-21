@@ -124,7 +124,9 @@ describe('spécificités', () => {
     const types = new Set(weeks.flatMap((w) => w.sessions.map((s) => s.type)));
     expect([...types].every((t) => ['marche_course', 'repos', 'muscu_generale'].includes(t))).toBe(true);
     expect(weeks[0]!.sessions.filter((s) => s.type === 'marche_course')).toHaveLength(3);
-    expect(weeks.at(-1)!.sessions.find((s) => s.type === 'marche_course')!.title).toMatch(/continue/);
+    const first = weeks[0]!.sessions.find((s) => s.type === 'marche_course')!;
+    const last = weeks.at(-1)!.sessions.find((s) => s.type === 'marche_course')!;
+    expect(last.title).not.toBe(first.title);
   });
   it('récup post-course : Z1 puis Z2, sans qualité ni muscu', async () => {
     const { generateRecovery } = await import('./periodization');

@@ -38,8 +38,13 @@ Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continu
 
 1. **Capacité continue** (minutes), dans l'ordre : ce que la personne déclare ; sinon plus longue sortie × allure facile (7 min/km par défaut) ; sinon volume hebdo ÷ 3 sorties × allure ; sinon *inconnue*.
 2. **Seuil selon l'expérience** : marche-course si la capacité est **sous** ce seuil. Jamais couru : 30 min · débutant : 20 min · régulier : 10 min (reprise après une grosse pause) · avancé : jamais. Capacité inconnue : prudence (marche-course, sauf avancé). Seuils marqués *À VALIDER*.
-3. **Niveau de départ** : le 1er intervalle de course vaut la **moitié** de la capacité (marge), sur l'échelle 1 · 2 · 3 · 4 · 5 · 8 · 10 · 15 · 20 · 30 min. Qui tient 10 min d'affilée démarre à 5 min de course, pas à 1.
-4. **Sortie** : on monte d'un cran par semaine jusqu'à 20 min de course continue (au moins 2 semaines). La phase « démarrage » dure exactement ce temps.
+3. **Niveau de départ** : le palier le plus haut dont l'intervalle de course est ≤ 50 % de la capacité continue (palier 1 au minimum).
+4. **Le parcours** (`runwalk.ts`, un seul nombre de 0 à 19) :
+   - **0 · marche d'abord** : 20 → 30 min de marche rapide, +5 min par séance validée ;
+   - **1 à 13 · échelle de marche/course** en minutes (esprit Couch to 5K) : 30 s / 60 s × 14 → … → 15 min / 1 min × 2 → **20 min continues** (palier 13). Chaque séance = 5 min de marche rapide + bloc + 5 min de marche lente, soit 30 à 45 min ; le temps de course ne monte jamais de plus de 25 % d'un palier au suivant ;
+   - **14 à 18 · transition continue** : 22, 24, 26, 28, 30 min ;
+   - **19 · terminé** : la base normale reprend la main.
+   Les km affichés sont estimés (course à l'allure facile, marche à 11 min/km) ; le parcours se pilote en minutes.
 5. « Courir de zéro » est toujours évalué comme un premier départ.
 
 ## Protection des débutants (longueur de chaque sortie)

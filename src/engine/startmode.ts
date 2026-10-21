@@ -1,4 +1,5 @@
-import { RUN_WALK_BELOW_CONTINUOUS_MIN, RUN_WALK_EXIT_MIN, RUN_WALK_FIRST_INTERVAL_SHARE, RUN_WALK_LADDER_MIN, ASSUMED_RUNS_PER_WEEK } from './constants';
+import { ASSUMED_RUNS_PER_WEEK, RUN_WALK_BELOW_CONTINUOUS_MIN, RUN_WALK_FIRST_INTERVAL_SHARE, RUN_WALK_LADDER } from './constants';
+import { JOURNEY_DONE, LADDER_FIRST, LADDER_LAST } from './runwalk';
 import { explain } from './explain';
 import { easyPace } from './paces';
 import type { Experience, Explanation } from './types';
@@ -9,8 +10,8 @@ import type { Experience, Explanation } from './types';
  * Règle : on compare la capacité de course CONTINUE (minutes qu'on peut courir sans marcher) à un seuil selon l'expérience.
  * - capacité déclarée en minutes, sinon plus longue sortie × allure facile, sinon volume hebdo ÷ 3 sorties × allure, sinon inconnue.
  * - inconnue = prudence : marche-course (sauf avancé).
- * Le premier intervalle de course vaut la moitié de la capacité (marge), et on monte d'un cran par semaine
- * jusqu'à 20 min de course continue : là, la marche-course n'a plus de raison d'être.
+ * Le premier intervalle de course vaut au plus la moitié de la capacité (marge). La progression se fait ensuite
+ * séance par séance (voir runwalk.ts), jusqu'à 30 min de course continue.
  */
 
 export interface StartInput {
@@ -27,23 +28,27 @@ export interface StartMode {
   /** Minutes de course continue estimées. */
   capacityMin: number;
   capacitySource: 'declaree' | 'plus_longue_sortie' | 'volume' | 'inconnue';
-  /** Index dans RUN_WALK_LADDER_MIN du premier intervalle. */
+  /** Palier d'entrée (1 à 13, voir runwalk.ts) ; JOURNEY_DONE si pas de marche-course. */
   stage: number;
-  /** Semaines de marche-course avant de pouvoir courir 20 min d'affilée. */
+  /** Semaines estimées (2 séances validées par palier, 3 séances/sem) pour courir 30 min d'affilée. */
   weeksToExit: number;
   threshold: number;
   explanation: Explanation;
 }
 
-const EXIT_INDEX = RUN_WALK_LADDER_MIN.findIndex((m) => m >= RUN_WALK_EXIT_MIN);
-
+/** Palier d'entrée : le plus haut dont l'intervalle de course est ≤ 50 % de la capacité continue (palier 1 au minimum). */
 export function firstStage(capacityMin: number): number {
-  const target = capacityMin * RUN_WALK_FIRST_INTERVAL_SHARE;
-  let stage = 0;
-  RUN_WALK_LADDER_MIN.forEach((m, i) => {
-    if (m <= target) stage = i;
+  const limitSec = capacityMin * 60 * RUN_WALK_FIRST_INTERVAL_SHARE;
+  let stage = LADDER_FIRST;
+  RUN_WALK_LADDER.forEach((r, i) => {
+    if (r.runSec <= limitSec) stage = i + LADDER_FIRST;
   });
-  return Math.min(stage, EXIT_INDEX - 1);
+  return Math.min(stage, LADDER_LAST);
+}
+
+/** Estimation grossière utilisée pour l'explication : 2 séances validées par palier, 3 séances par semaine. */
+function weeksFrom(stage: number): number {
+  return Math.ceil(((JOURNEY_DONE - stage) * 2) / 3);
 }
 
 export function startMode(input: StartInput): StartMode {
@@ -66,8 +71,8 @@ export function startMode(input: StartInput): StartMode {
   capacityMin = Math.round(capacityMin);
   const threshold = RUN_WALK_BELOW_CONTINUOUS_MIN[input.experience];
   const runWalk = capacityMin < threshold;
-  const stage = runWalk ? firstStage(capacityMin) : EXIT_INDEX;
-  const weeksToExit = runWalk ? Math.max(2, EXIT_INDEX - stage) : 0;
+  const stage = runWalk ? firstStage(capacityMin) : JOURNEY_DONE;
+  const weeksToExit = runWalk ? weeksFrom(stage) : 0;
 
   const basis = {
     declaree: `Tu cours ${capacityMin} min d'affilée`,
@@ -76,7 +81,7 @@ export function startMode(input: StartInput): StartMode {
     inconnue: 'On ne sait pas ce que tu peux courir d’affilée',
   }[source];
   const explanation = runWalk
-    ? explain('start.runwalk', 'info', 'On commence en marche-course', `${basis} ; en dessous de ${threshold} min, os, tendons et périoste ne sont pas encore prêts à courir en continu, même si le souffle suit. On alterne course et marche, et on allonge les intervalles chaque semaine (environ ${weeksToExit} semaines avant de courir ${RUN_WALK_EXIT_MIN} min d'affilée).`, { capacite: capacityMin, seuil: threshold, semaines: weeksToExit })
+    ? explain('start.runwalk', 'info', 'On commence en marche-course', `${basis} ; en dessous de ${threshold} min, os, tendons et périoste ne sont pas encore prêts à courir en continu, même si le souffle suit. On alterne course et marche, et on allonge les intervalles chaque semaine (environ ${weeksToExit} semaines pour courir 30 min d'affilée, au rythme de tes séances réussies).`, { capacite: capacityMin, seuil: threshold, semaines: weeksToExit })
     : explain('start.continuous', 'info', 'On démarre en course continue', `${basis} : au-dessus du seuil de ${threshold} min pour ton niveau, pas besoin de marche-course. Les sorties restent courtes et on les allonge d'environ 10 % à la fois.`, { capacite: capacityMin, seuil: threshold });
   return { runWalk, capacityMin, capacitySource: source, stage, weeksToExit, threshold, explanation };
 }

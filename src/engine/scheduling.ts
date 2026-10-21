@@ -233,7 +233,7 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
     // Les séances neuromusculaires (sprints, descentes) ne vont ni la veille ni le lendemain d'une séance dure.
     const dayBeforeKey = keyDaySet.has(((d % 7) + 1) as Weekday) || d === longDay - 1 || keyDaySet.has((((d + 5) % 7) + 1) as Weekday);
     let s: BuiltSession;
-    if (week.phase === 'demarrage' || ctx.family === 'debuter') s = runWalk(km, b);
+    if (week.phase === 'demarrage' || ctx.family === 'debuter') s = runWalk(Math.min(18, (ctx.runWalkStage ?? 1) + ctx.planWeek), b);
     else if (week.kind === 'recup') s = easyRun(km, b, ctx.phaseWeek === 0 ? 'z1' : 'z2');
     else if (dayAfterLong) s = easyRun(km, b, 'z1');
     else if (!sprintsPlaced && week.phase === 'base' && week.kind === 'build' && ctx.planWeek >= 1 && !dayBeforeKey) {
