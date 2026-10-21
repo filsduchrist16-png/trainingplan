@@ -207,3 +207,14 @@ export const LONG_RUN_GROWTH_MIN_KM = 1.5;
 export const ELEVATION_PHASE_FACTOR = {
   demarrage: 0.2, base: 0.5, spec1: 0.8, spec2: 1, precomp: 1, taper: 0.6, recup: 0.3, maintien: 0.5,
 } as const;
+
+// ─── Planification hebdo ──────────────────────────────────────────────────────
+
+/** Sortie facile minimale : en dessous, mieux vaut un jour de repos. */
+export const MIN_EASY_RUN_KM = 3;
+/** Idem en marche-course (≈ 15-20 min). */
+export const MIN_RUN_WALK_KM = 1.5;
+/** Durée d'une séance de muscu (min). */
+export const STRENGTH_SESSION_MIN = 45;
+/** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */
+export const GUT_TRAINING_MIN_MINUTES = 75;

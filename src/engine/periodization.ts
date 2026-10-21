@@ -210,7 +210,8 @@ export function generatePlan(req: PlanRequest): PlanDraft {
       kind,
       targetKm: km,
       targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR[phase]),
-      keySessions: keySessionsFor(phase, kind, i, req.experience, req.difficulty),
+      // « Courir de zéro » : aucune séance clé, la régularité est l'objectif.
+      keySessions: family === 'debuter' ? 0 : keySessionsFor(phase, kind, i, req.experience, req.difficulty),
       longRunKm,
       notes,
     });

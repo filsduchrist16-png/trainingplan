@@ -153,6 +153,14 @@ describe('cas limites', () => {
     const p = generatePlan(req({ bRaces: [{ date: addDays(START, i * 7 + 5), distanceKm: 20 }] }));
     expect(p.weeks[i + 1]!.notes.map((n) => n.ruleId)).not.toContain('week.brace.recovery');
   });
+  it('course B suivie d’une semaine de développement : reprise allégée', () => {
+    const base = generatePlan(req());
+    const i = base.weeks.findIndex((w, k) => k > 2 && w.kind === 'build' && base.weeks[k + 1]?.kind === 'build');
+    const p = generatePlan(req({ bRaces: [{ date: addDays(START, i * 7 + 5), distanceKm: 20 }] }));
+    expect(p.weeks[i + 1]!.notes.map((n) => n.ruleId)).toContain('week.brace.recovery');
+    expect(p.weeks[i + 1]!.keySessions).toBeLessThanOrEqual(1);
+    expect(p.weeks[i]!.notes.find((n) => n.ruleId === 'week.brace')!.title).toBe('Course B');
+  });
   it('course B ignorée pendant le taper', () => {
     const p = generatePlan(req({ bRaces: [{ date: addDays(START, 25 * 7 + 2), distanceKm: 10 }] }));
     expect(p.weeks[25]!.bRaceDate).toBeUndefined();

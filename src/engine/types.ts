@@ -173,6 +173,9 @@ export interface Step {
   seconds?: number;
   distanceKm?: number;
   repeat?: number;
+  /** Récupération entre répétitions (s) ; par défaut égale à l'effort. */
+  recoverySeconds?: number;
+  recoveryWalk?: boolean;
   target: Intensity;
   note?: string;
 }
