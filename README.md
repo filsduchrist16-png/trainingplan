@@ -34,7 +34,8 @@ Règle d'or : **aucune règle de coaching dans l'UI**. L'UI affiche ce que le mo
 
 ## Déploiement (Cloudflare Pages)
 
-- Commande de build : `pnpm build`, dossier de sortie : `dist`.
+- Déploiement automatique par GitHub Actions après une CI verte : `main` → production, autres branches → preview. Mise en place (jeton + 2 secrets GitHub) : [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md).
+- Commande de build : `pnpm build`, dossier de sortie : `dist` (voir `wrangler.toml`).
 - `public/_redirects` gère le routage SPA ; `public/_headers` pose une CSP stricte (`connect-src 'self'`) qui empêche techniquement l'app d'envoyer des données ailleurs.
 
 ## Avertissement
