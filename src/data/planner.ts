@@ -1,5 +1,5 @@
 import {
-  addDays, buildWeekSessions, generatePlan, mondayOf, weeklySummaries, GOALS,
+  addDays, buildWeekSessions, generatePlan, generateRecovery, mondayOf, weeklySummaries, GOALS,
   type Athlete, type Block, type GoalKind, type ISODate, type PlannedSession, type PlanRequest, type Race, type Week, type WeekPlan,
 } from '@/engine';
 import type { SentierDB } from './db';
@@ -40,7 +40,14 @@ export function phaseWeekIndex(weeks: Pick<WeekPlan, 'phase'>[], i: number): num
  * Crée un plan complet : course (si besoin), bloc, semaines, séances.
  * L'ancien bloc actif est archivé ; ses séances futures non faites sont retirées (l'historique reste).
  */
-export async function createPlan(db: SentierDB, athlete: Athlete, input: NewGoalInput, today: ISODate): Promise<{ blockId: string; ok: boolean; warnings: Block['warnings'] }> {
+export async function createPlan(
+  db: SentierDB,
+  athlete: Athlete,
+  input: NewGoalInput,
+  today: ISODate,
+  /** Planifier à partir de cette date (par défaut : aujourd'hui). La démo planifie aussi le passé. */
+  planFrom: ISODate = today,
+): Promise<{ blockId: string; ok: boolean; warnings: Block['warnings'] }> {
   const req = input.request;
   const draft = generatePlan(req);
   if (!draft.ok) return { blockId: '', ok: false, warnings: draft.warnings };
@@ -115,14 +122,20 @@ export async function createPlan(db: SentierDB, athlete: Athlete, input: NewGoal
       phaseWeek: phaseWeekIndex(draft.weeks, i),
       ...(req.race ? { race: { date: req.race.date, distanceKm: req.race.distanceKm } } : {}),
       ...(bRace ? { bRace: { date: bRace.date, distanceKm: bRace.distanceKm } } : {}),
-      fromDate: today,
+      fromDate: planFrom,
     });
     if (notes.length) week.notes = [...(week.notes ?? []), ...notes];
     for (const d of drafts) sessions.push(stamp({ ...d, athleteId: athlete.id, weekId: week.id, status: 'prevue' as const, adjustments: [] }));
   });
 
+  await persist(db, athlete.id, today, block, weeks, sessions, races);
+  return { blockId, ok: true, warnings: draft.warnings };
+}
+
+/** Archive le bloc actif (séances futures non faites retirées) et enregistre le nouveau. */
+async function persist(db: SentierDB, athleteId: string, today: ISODate, block: Block, weeks: Week[], sessions: PlannedSession[], races: Race[] = []) {
   await db.transaction('rw', [db.blocks, db.weeks, db.sessions, db.races], async () => {
-    const actives = await db.blocks.where('status').equals('actif').filter((b) => b.athleteId === athlete.id).toArray();
+    const actives = await db.blocks.where('status').equals('actif').filter((b) => b.athleteId === athleteId).toArray();
     for (const old of actives) {
       await db.blocks.update(old.id, { status: 'archive', updatedAt: nowIso() });
       const oldWeeks = await db.weeks.where('blockId').equals(old.id).primaryKeys();
@@ -133,5 +146,27 @@ export async function createPlan(db: SentierDB, athlete: Athlete, input: NewGoal
     await db.weeks.bulkAdd(weeks);
     await db.sessions.bulkAdd(sessions);
   });
-  return { blockId, ok: true, warnings: draft.warnings };
+}
+
+/** Récupération après une course A : 1 à 3 semaines faciles, puis l'app propose un nouvel objectif. */
+export async function createRecoveryPlan(db: SentierDB, athlete: Athlete, race: Pick<Race, 'date' | 'distanceKm' | 'name'>, peakKm: number, today: ISODate): Promise<string> {
+  const plan = generateRecovery(race, peakKm);
+  const blockId = newId();
+  const block: Block = stamp({
+    athleteId: athlete.id, goal: 'forme', name: `Récupération : ${race.name}`, startDate: plan[0]!.startDate, endDate: addDays(plan.at(-1)!.startDate, 6),
+    status: 'actif', difficulty: 'prudent', startVolumeKm: plan[0]!.targetKm, peakVolumeKm: plan.at(-1)!.targetKm,
+  }, blockId);
+  const weeks: Week[] = [];
+  const sessions: PlannedSession[] = [];
+  plan.forEach((w, i) => {
+    const week: Week = stamp({ athleteId: athlete.id, blockId, index: i, startDate: w.startDate, phase: w.phase, kind: w.kind, targetKm: w.targetKm, targetElevationM: 0, keySessions: 0, longRunKm: w.longRunKm, notes: w.notes });
+    weeks.push(week);
+    const { sessions: drafts } = buildWeekSessions(w, {
+      goal: 'forme', family: 'forme', availability: athlete.availability, experience: athlete.experience, vdot: athlete.vdot,
+      hrMaxEstimated: false, hasPoles: athlete.hasPoles, planWeek: i, phaseWeek: i, fromDate: today,
+    });
+    for (const d of drafts) sessions.push(stamp({ ...d, athleteId: athlete.id, weekId: week.id, status: 'prevue' as const, adjustments: [] }));
+  });
+  await persist(db, athlete.id, today, block, weeks, sessions);
+  return blockId;
 }

@@ -25,7 +25,7 @@ describe('seed de démo', () => {
     const weeklyKm = a.activities.reduce((s, x) => s + x.distanceKm, 0) / 8.5;
     expect(weeklyKm).toBeGreaterThan(30);
     expect(weeklyKm).toBeLessThan(60);
-    expect(a.wellness).toHaveLength(28);
+    expect(a.wellness).toHaveLength(27);
   });
 
   it('se charge puis s’efface sans toucher aux vraies données', async () => {

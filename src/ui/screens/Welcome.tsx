@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { db } from '@/data/db';
 import { createBlankAthlete } from '@/data/athlete';
 import { loadDemo } from '@/data/seed/demo';
@@ -8,6 +9,7 @@ import { t } from '@/ui/lib/strings';
 
 export function Welcome() {
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
   const run = (fn: () => Promise<unknown>) => async () => {
     setBusy(true);
     try {
@@ -27,7 +29,10 @@ export function Welcome() {
         </p>
       </div>
       <div className="flex flex-col gap-3">
-        <Button size="lg" disabled={busy} onClick={run(() => createBlankAthlete(db))}>
+        <Button size="lg" disabled={busy} onClick={run(async () => {
+          await createBlankAthlete(db);
+          navigate('/objectif');
+        })}>
           Commencer
         </Button>
         <Button size="lg" variant="secondary" disabled={busy} onClick={run(() => loadDemo(db))}>

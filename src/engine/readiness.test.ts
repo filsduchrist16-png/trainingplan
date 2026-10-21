@@ -45,6 +45,7 @@ describe('santé d’abord', () => {
     const one = adjustToday({ session: z2, health: oneFlag, crossTraining: [] });
     expect(one.action).toBe('alleger');
     expect(one.session.durationMin).toBe(35);
+    expect(one.session.title).toBe('Z2 35 min (allégée)');
     expect(adjustToday({ session: long, health: oneFlag, crossTraining: [] }).session.durationMin).toBe(45);
   });
 });

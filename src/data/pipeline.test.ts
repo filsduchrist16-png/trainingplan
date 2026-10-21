@@ -138,3 +138,18 @@ describe('point de départ depuis l’historique', () => {
     expect(sp.longestRecentRunKm).toBe(21.4);
   });
 });
+
+describe('après la course', () => {
+  it('crée un bloc de récupération et archive le bloc de course', async () => {
+    const { createRecoveryPlan } = await import('./planner');
+    const a = await createPlan(db, athlete, { request: request() }, '2026-10-21');
+    const id = await createRecoveryPlan(db, athlete, { date: '2027-06-05', distanceKm: 30, name: 'Trail de printemps' }, 50, '2027-06-06');
+    expect((await db.blocks.get(a.blockId))!.status).toBe('archive');
+    const rec = (await db.blocks.get(id))!;
+    expect(rec.name).toBe('Récupération : Trail de printemps');
+    const weeks = await db.weeks.where('blockId').equals(id).toArray();
+    expect(weeks.every((w) => w.kind === 'recup')).toBe(true);
+    const sessions = await db.sessions.where('weekId').anyOf(weeks.map((w) => w.id)).toArray();
+    expect(sessions.some((s) => s.isKey)).toBe(false);
+  });
+});
