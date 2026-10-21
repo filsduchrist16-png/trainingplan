@@ -17,7 +17,7 @@ Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités vien
 6. Corps complet : carte corporelle, routine de prévention à cocher (mollets 2×/sem).
 7. Jalons et séries de semaines cohérentes, confettis sobres sur les vrais jalons.
 8. Polish (Phase 5) : audit a11y, Lighthouse > 90 (bundle ~180 Ko gz à alléger), anglais.
-9. Comptes et synchro Supabase (opt-in).
+9. ~~Comptes et synchro Supabase (opt-in)~~ : intégré (compte optionnel, synchro, coach, communauté), voir `docs/SUPABASE.md`.
 
 ## Révision 2 — décisions après les réponses
 
@@ -60,7 +60,7 @@ L'ACWR utilise **la charge calculée par Sentier** (durée × intensité par zon
 
 ### Hébergement et futur public
 - **v1 : Cloudflare Pages** (site statique, HTTPS, gratuit, CDN). Les données restent 100 % sur l'appareil.
-- **Plus tard : Supabase** (comptes + synchronisation multi-appareils, **opt-in**, Postgres avec RLS), avec consentement explicite pour les données de santé. Le code passe dès maintenant par une couche « repos » pour qu'on puisse brancher la synchro sans réécrire l'UI.
+- **Supabase (fait, oct. 2026)** : comptes optionnels, synchro multi-appareils local-first, coach (lecture seule) et amis/communauté (résumés partagés au choix), Postgres avec RLS, consentement explicite pour les données de santé. Voir `docs/SUPABASE.md`.
 - **Prêt pour le public** : textes centralisés (fr-CA par défaut, prêt pour l'anglais), avertissement « ceci n'est pas un avis médical », aucune donnée personnelle codée en dur.
 
 ## 0. Constat de départ

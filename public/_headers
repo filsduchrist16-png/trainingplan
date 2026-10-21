@@ -1,7 +1,7 @@
 # En-têtes HTTP (appliqués par les assets statiques Cloudflare Workers).
-# connect-src 'self' : l'app ne PEUT techniquement envoyer aucune donnée ailleurs que vers son propre domaine.
+# connect-src : l'app ne parle qu'à son propre domaine et, si les comptes sont activés, à Supabase (synchro).
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()

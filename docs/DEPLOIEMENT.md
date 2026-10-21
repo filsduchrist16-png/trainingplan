@@ -9,9 +9,9 @@ La config est dans `wrangler.jsonc` : site 100 % statique servi depuis `dist/`, 
 
 ## « Et la base de données ? »
 
-Rien à configurer en v1. Sentier est local-first : la base, c'est **IndexedDB dans le navigateur** (Dexie, `src/data/db.ts`). Elle se crée toute seule au premier lancement, sur chaque appareil. Pas de serveur, pas de compte, pas de secret. La sauvegarde passe par l'export/import JSON dans Réglages.
+La base principale est **IndexedDB dans le navigateur** (Dexie, `src/data/db.ts`). Elle se crée toute seule sur chaque appareil.
 
-La synchro multi-appareils (Supabase, opt-in) est prévue plus tard — voir `docs/PLAN.md`.
+Les comptes, la synchro, le coach et la communauté passent par **Supabase** (optionnel). Mise en place : [`docs/SUPABASE.md`](SUPABASE.md). Il faut ajouter deux variables de build dans Cloudflare : `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY`. Sans elles, l'app reste 100 % locale.
 
 ## Réglages du build dans Cloudflare
 
