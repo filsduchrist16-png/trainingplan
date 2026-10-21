@@ -7,6 +7,8 @@ export const t = {
   nav: { today: "Aujourd'hui", plan: 'Plan', progress: 'Progrès', body: 'Corps', more: 'Plus' },
   privacy:
     "Tout reste sur ton appareil : aucune donnée de santé n'est envoyée nulle part. Fais un backup de temps en temps, c'est ton filet de sécurité.",
+  privacyCloud:
+    "Sans compte, tout reste sur ton appareil. Avec un compte, tes données sont aussi copiées sur le serveur de Sentier pour la synchro : personne d'autre ne les voit, sauf ton coach et ce que tu choisis de partager. Un backup de temps en temps reste une bonne idée.",
   disclaimer: "Sentier n'est pas un avis médical. Une douleur qui persiste, ça se fait voir par un pro.",
   empty: {
     plan: "Pas encore de plan. Choisis un objectif et on bâtit le reste ensemble.",

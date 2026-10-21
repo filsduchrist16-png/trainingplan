@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { db, requestPersistence } from '@/data/db';
+import { cloudConfigured } from '@/data/cloud/config';
 import { clearDemo } from '@/data/seed/demo';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
@@ -8,6 +9,9 @@ import { useIsDemo } from '@/ui/hooks/useAthlete';
 import { useTheme, type ThemePref } from '@/ui/hooks/useTheme';
 import { t } from '@/ui/lib/strings';
 import { cn } from '@/ui/lib/cn';
+
+// Chargé seulement si les comptes sont activés : l'app locale n'embarque pas ce code.
+const Account = lazy(async () => ({ default: (await import('./Account')).Account }));
 
 export function Settings() {
   const { pref, setPref } = useTheme();
@@ -74,9 +78,27 @@ export function Settings() {
         </div>
       </Card>
 
+      {cloudConfigured && (
+        <>
+          <Suspense fallback={null}>
+            <Account />
+          </Suspense>
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/communaute" className="rounded-2xl border border-line p-4 transition hover:bg-surface-2">
+              <span className="block font-medium">Communauté</span>
+              <span className="text-sm text-muted">Amis et courses partagées</span>
+            </Link>
+            <Link to="/coach" className="rounded-2xl border border-line p-4 transition hover:bg-surface-2">
+              <span className="block font-medium">Coach</span>
+              <span className="text-sm text-muted">Mon coach, mes athlètes</span>
+            </Link>
+          </div>
+        </>
+      )}
+
       <Card className="space-y-3">
         <Eyebrow>Tes données</Eyebrow>
-        <p className="text-sm text-muted">{t.privacy}</p>
+        <p className="text-sm text-muted">{cloudConfigured ? t.privacyCloud : t.privacy}</p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onExport}>Exporter un backup</Button>
           <Button variant="secondary" onClick={() => fileRef.current?.click()}>

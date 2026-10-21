@@ -2,7 +2,8 @@
 
 Générateur de plans d'entraînement **route et trail** (5 km → ultra, ou « courir de zéro »), dans l'esprit de Campus Coach et Runna, avec un moteur de coaching transparent : chaque recommandation a son « Pourquoi? ».
 
-- **Local-first** : les données restent dans le navigateur (IndexedDB). Aucun compte, aucun serveur, aucune donnée de santé envoyée nulle part.
+- **Local-first** : les données restent dans le navigateur (IndexedDB). Sans compte, rien n'est envoyé nulle part.
+- **Compte optionnel** (Supabase) : synchro entre appareils, coach, amis et communauté, avec partage choisi. Voir [`docs/SUPABASE.md`](docs/SUPABASE.md).
 - **PWA** installable sur téléphone, fonctionne hors-ligne.
 - **Backup** JSON complet (export/import) dans Réglages.
 
