@@ -270,3 +270,22 @@ export const GUT_TRAINING_MIN_MINUTES = 75;
 export const QUALITY_VS_LONG_RUN = 1.3;
 /** …avec un plancher : un coureur confirmé en décharge peut quand même faire un petit seuil. */
 export const MIN_QUALITY_CAP_KM = 4.5;
+
+// ─── Progression du parcours marche/course (validation par séance) ────────────
+
+/** Séances validées DE SUITE pour passer au palier suivant (3 en profil « lent »). À VALIDER. */
+export const RUN_WALK_VALIDATIONS = 2;
+export const RUN_WALK_VALIDATIONS_SLOW = 3;
+/** RPE maximal d'une séance validée (« je pouvais parler ») ; au-delà de ce seuil, c'est un échec. */
+export const RUN_WALK_MAX_RPE_OK = 5;
+export const RUN_WALK_RPE_FAIL = 8;
+/** Échecs de suite au même palier avant de reculer d'un palier. */
+export const RUN_WALK_FAILS_TO_STEP_BACK = 2;
+/** Douleur (0-10) qui bloque l'avancement (≥ 1) ou fait reculer (≥ 3), déclarée le jour même ou le lendemain. */
+export const RUN_WALK_PAIN_HOLD = 1;
+export const RUN_WALK_PAIN_BACK = 3;
+/** Trous sans séance (jours) : répéter le palier, reculer de 2 paliers, ou repartir du point d'entrée. */
+export const RUN_WALK_GAP_REPEAT_DAYS = 7;
+export const RUN_WALK_GAP_BACK_DAYS = 14;
+export const RUN_WALK_GAP_RESTART_DAYS = 28;
+export const RUN_WALK_GAP_BACK_STAGES = 2;

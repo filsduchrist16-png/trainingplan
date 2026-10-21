@@ -45,7 +45,19 @@ Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continu
    - **14 à 18 · transition continue** : 22, 24, 26, 28, 30 min ;
    - **19 · terminé** : la base normale reprend la main.
    Les km affichés sont estimés (course à l'allure facile, marche à 11 min/km) ; le parcours se pilote en minutes.
-5. « Courir de zéro » est toujours évalué comme un premier départ.
+5. **Progression par séance validée** (`nextRunWalkState`), pas par semaine. Une séance est validée si tous les intervalles sont faits, RPE ≤ 5 et aucune douleur le jour même ou le lendemain (et aucun garde-fou actif).
+
+   | Situation | Décision |
+   |---|---|
+   | 2 validées de suite (3 en profil lent) | palier suivant |
+   | RPE 6-7, ou douleur 1-2 | on répète (la série repart) |
+   | non terminée ou RPE ≥ 8 | on répète ; 2 échecs de suite → un palier plus bas |
+   | douleur ≥ 3 ou garde-fou actif | un palier plus bas (après les règles de `guards.ts`) |
+   | RPE ou complétion inconnus (import) | on attend, sans pénalité : le RPE noté plus tard réévalue la séance |
+   | pause de 7-13 j / 14-27 j / 28 j et plus | on répète / 2 paliers plus bas / point d'entrée recalculé |
+
+   L'état se **recalcule depuis le point d'entrée en rejouant toutes les séances** (journal) : idempotent, et une correction est prise en compte. En « marche d'abord », un échec garde les minutes acquises. Comme tout se compte en séances, 2 jours par semaine progressent simplement plus lentement.
+6. « Courir de zéro » est toujours évalué comme un premier départ.
 
 ## Protection des débutants (longueur de chaque sortie)
 
