@@ -1,0 +1,209 @@
+/**
+ * Constantes du moteur de coaching.
+ *
+ * Chaque seuil est nommé et commenté avec le principe qu'il applique.
+ * `À VALIDER` = chiffre raisonnable tiré de la pratique courante d'entraînement, mais sans
+ * consensus scientifique net : il reste configurable et peut être révisé sans toucher à la logique.
+ */
+
+// ─── Zones cardiaques ─────────────────────────────────────────────────────────
+
+/**
+ * Bornes supérieures de Z1 à Z4 en fraction de la FCmax.
+ * Pour FCmax 190 : Z1 < 123, Z2 123-143, Z3 143-162, Z4 162-176, Z5 176-190.
+ * Modèle 5 zones classique ; Z2 = « je peux parler en phrases complètes ».
+ */
+export const HR_ZONE_FRACTIONS = [0.647, 0.753, 0.853, 0.926] as const;
+
+/** Estimation de la FCmax par l'âge (formule de Tanaka : 208 − 0,7 × âge). Imprécise à ±10 bpm : on propose un test. */
+export const TANAKA_INTERCEPT = 208;
+export const TANAKA_SLOPE = 0.7;
+
+/**
+ * « Zone grise » : haut de Z2 / bas de Z3, trop dur pour être facile, trop facile pour être une vraie qualité.
+ * En fraction de FCmax (≈ 145-155 bpm pour FCmax 190).
+ */
+export const GREY_ZONE_FRACTIONS = [0.763, 0.816] as const;
+
+// ─── Allures (VDOT, équations de Daniels-Gilbert) ─────────────────────────────
+
+/**
+ * Fraction du VDOT sollicitée par type d'allure.
+ * E (facile) ≈ 59-74 % → milieu de fourchette ; T (seuil) ≈ 88 % ; I (intervalles) ≈ 97-100 % ; R (répétitions) > VO2max.
+ * À VALIDER : fractions usuelles des tables VDOT, arrondies.
+ */
+export const PACE_FRACTIONS = { E: 0.7, T: 0.88, I: 0.975, R: 1.05 } as const;
+
+/** Bornes plausibles du VDOT (débutant très lent → élite). En dehors, on refuse l'estimation. */
+export const VDOT_MIN = 20;
+export const VDOT_MAX = 85;
+
+/**
+ * Allure facile par défaut (min/km) si aucune référence de forme. Volontairement lente :
+ * mieux vaut sous-estimer au départ que pousser un débutant en Z3.
+ */
+export const DEFAULT_EASY_PACE_MIN_PER_KM = 7;
+
+/** En trail, une sortie facile prend plus de temps qu'en route au même effort. À VALIDER. */
+export const TRAIL_PACE_FACTOR = 1.2;
+
+/** Règle empirique : 100 m de D+ ≈ 1 km à plat en coût d'effort (approx. « km-effort »). À VALIDER. */
+export const KM_EFFORT_PER_100M_GAIN = 1;
+
+// ─── Charge et ACWR ───────────────────────────────────────────────────────────
+
+/** Poids par zone (minutes × poids), type TRIMP d'Edwards. */
+export const ZONE_LOAD_WEIGHTS = [1, 2, 3, 4, 5] as const;
+
+/** Bonus de charge par 100 m de D+ : ≈ 6 min à poids Z2 (2) → 12. À VALIDER. */
+export const ELEVATION_LOAD_PER_100M = 12;
+
+/** Fenêtres de l'ACWR (jours). */
+export const ACUTE_DAYS = 7;
+export const CHRONIC_DAYS = 28;
+
+/**
+ * Zone « verte » de l'ACWR. Sa valeur PRÉDICTIVE des blessures est débattue dans la littérature :
+ * l'app l'utilise comme indicateur de tendance, jamais comme prédiction.
+ */
+export const ACWR_LOW = 0.8;
+export const ACWR_HIGH = 1.3;
+export const ACWR_DANGER = 1.5;
+
+/** Jours d'historique nécessaires avant d'afficher un ACWR (sinon : « calibration »). */
+export const ACWR_MIN_HISTORY_DAYS = 28;
+
+// ─── Progression ──────────────────────────────────────────────────────────────
+
+/** Hausse hebdomadaire maximale du volume (règle des 10 %). */
+export const MAX_WEEKLY_INCREASE = 0.1;
+
+/** La hausse se mesure contre le max des N dernières semaines hors décharge (pas la semaine précédente). */
+export const PROGRESSION_REFERENCE_WEEKS = 4;
+
+/** Une semaine sous ce ratio de la référence est considérée comme une décharge (ou une semaine de vie). */
+export const DELOAD_DETECTION_RATIO = 0.8;
+
+/** Décharge : volume à 60-70 % du niveau courant → 65 %. */
+export const DELOAD_RATIO = 0.65;
+
+/** Cycle de charge : N semaines de build, puis 1 de décharge. 3:1 par défaut, 2:1 si on manque de récupération. */
+export const BUILD_WEEKS_BEFORE_DELOAD = 3;
+
+/** Semaine « maintien » (fatigue de vie cumulée) : 60-70 % du volume, 0 qualité. */
+export const MAINTENANCE_RATIO = 0.65;
+
+// ─── Taper et récupération ────────────────────────────────────────────────────
+
+/** Volume de chaque semaine de taper en fraction du pic, de la plus éloignée à la semaine de course. */
+export const TAPER_PROFILES: Record<1 | 2 | 3, number[]> = {
+  1: [0.6],
+  2: [0.6, 0.4], // −40 % puis −60 %
+  3: [0.8, 0.6, 0.4],
+};
+
+/** Course B (« effort test ») : mini-taper sur la semaine de course, reprise facile la semaine suivante. */
+export const B_RACE_WEEK_RATIO = 0.75;
+export const B_RACE_RECOVERY_RATIO = 0.8;
+
+/** Récupération post-course A : semaines de reprise et volume relatif au pic. À VALIDER. */
+export const RECOVERY_WEEKS_BY_DISTANCE: { maxKm: number; weeks: number }[] = [
+  { maxKm: 15, weeks: 1 },
+  { maxKm: 45, weeks: 2 },
+  { maxKm: Infinity, weeks: 3 },
+];
+export const RECOVERY_VOLUME_RATIOS = [0.35, 0.55, 0.7];
+
+// ─── Séances clés ─────────────────────────────────────────────────────────────
+
+/** Pas de VO2max avant N semaines de base solide. */
+export const VO2_MIN_BASE_WEEKS = 4;
+/** Max de séances clés par semaine (3 seulement en phase pic, si l'état le permet). */
+export const MAX_KEY_SESSIONS = 2;
+export const MAX_KEY_SESSIONS_PEAK = 3;
+/** Délai minimum entre deux séances qualité (heures). */
+export const MIN_HOURS_BETWEEN_KEYS = 48;
+
+/** Part maximale du volume hebdo dans la sortie longue. */
+export const LONG_RUN_SHARE_MAX = 0.4;
+
+// ─── Santé et red flags ───────────────────────────────────────────────────────
+
+/** Douleur tibiale (ou tendineuse) : seuils sur l'échelle 0-10. */
+export const PAIN_WARNING = 1;
+export const PAIN_STOP = 3;
+/** Jours consécutifs de douleur déclarée → douleur « persistante » → STOP course. */
+export const PAIN_PERSISTENT_DAYS = 2;
+/** Jours de douleur → suggestion de consulter. */
+export const PAIN_SEE_PRO_DAYS = 5;
+/** Jours sans douleur avant de lever le blocage des séances de course dures. */
+export const PAIN_FREE_DAYS_TO_RESUME = 3;
+/** Douleur tendineuse au-delà de 48 h = red flag. */
+export const TENDON_PAIN_FLAG_HOURS = 48;
+
+/** Body Battery bas plusieurs matins. */
+export const BODY_BATTERY_LOW = 20;
+export const BODY_BATTERY_LOW_MORNINGS = 2;
+/** HRV « bas/déséquilibré » plus de N jours. */
+export const HRV_BAD_DAYS = 3;
+/** FC repos au-dessus de la baseline. */
+export const HR_REST_ELEVATION_BPM = 5;
+/** Nuit courte (h). Sous le seuil sévère (nouveau-né…), on déplace la qualité. */
+export const SHORT_NIGHT_HOURS = 6;
+export const VERY_SHORT_NIGHT_HOURS = 4;
+
+// ─── Debrief ──────────────────────────────────────────────────────────────────
+
+/** Dérive cardiaque (découplage FC/allure entre 1re et 2e moitié) : < 5 % = bonne endurance aérobie. */
+export const CARDIAC_DRIFT_OK = 0.05;
+/** Part du temps hors zone tolérée sur une séance facile avant de le signaler. */
+export const EASY_OUT_OF_ZONE_TOLERANCE = 0.15;
+/** Part du temps en zone grise sur une Z2 avant de le signaler. */
+export const GREY_ZONE_TOLERANCE = 0.2;
+
+// ─── Adaptation de la forme (à la Runna) ──────────────────────────────────────
+
+/** Nombre de séances qualité concordantes avant d'ajuster le VDOT. Une séance isolée ne suffit pas. */
+export const FITNESS_UPDATE_MIN_SESSIONS = 3;
+/** Écart d'allure moyen (fraction) pour juger une cible « dépassée » ou « ratée ». */
+export const FITNESS_UPDATE_THRESHOLD = 0.03;
+/** Pas d'ajustement du VDOT, prudent. */
+export const FITNESS_UPDATE_STEP = 1;
+
+// ─── Périodisation ────────────────────────────────────────────────────────────
+
+/** Répartition des semaines hors taper : base / spécifique 1 / spécifique 2 (pic) / pré-compétition (bloc de 27 sem. → 9/7/6/3 + 2 taper). */
+export const PHASE_RATIOS = { spec1: 0.28, spec2: 0.24, precomp: 0.12 } as const;
+
+/** Sous ce volume hebdo (km), on commence par une phase « démarrage » en marche-course. */
+export const DEMARRAGE_THRESHOLD_KM = 10;
+/** Volume de départ minimal d'un plan démarrage (≈ 3 × 20 min de marche-course). */
+export const DEMARRAGE_START_KM = 6;
+
+/** Longueur maximale d'un plan. Au-delà, le plan démarre plus tard et on garde la forme d'ici là. */
+export const MAX_PLAN_WEEKS = 52;
+
+/** Pas de décharge dans les 2 premières semaines d'un plan. */
+export const MIN_WEEKS_BEFORE_FIRST_DELOAD = 2;
+
+/** Part de la sortie longue dans le volume hebdo, par phase. */
+export const LONG_RUN_SHARE_BY_PHASE = {
+  demarrage: 0.35, base: 0.28, spec1: 0.3, spec2: 0.33, precomp: 0.33, taper: 0.25, recup: 0.25, maintien: 0.28,
+} as const;
+
+/**
+ * Objectifs longs (marathon, trail moyen, ultra) : la longue pèse plus lourd en spécifique,
+ * jusqu'à LONG_RUN_SHARE_MAX, pour atteindre 4 h à 5 h en pré-compétition sur un trail de ~40 km.
+ */
+export const LONG_RUN_SHARE_LONG_GOALS = { spec1: 0.35, spec2: 0.4, precomp: 0.4 } as const;
+/** Seuil (minutes de longue max de l'objectif) au-delà duquel un objectif est « long ». */
+export const LONG_GOAL_MIN_LONG_RUN_MIN = 180;
+
+/** Croissance max de la sortie longue d'une semaine à l'autre : +10 % ou +1,5 km (le plus grand). */
+export const LONG_RUN_GROWTH = 0.1;
+export const LONG_RUN_GROWTH_MIN_KM = 1.5;
+
+/** D+ hebdo cible (trail) = km × (D+/km de la course) × facteur de phase. Descentes et D+ montent progressivement. */
+export const ELEVATION_PHASE_FACTOR = {
+  demarrage: 0.2, base: 0.5, spec1: 0.8, spec2: 1, precomp: 1, taper: 0.6, recup: 0.3, maintien: 0.5,
+} as const;
