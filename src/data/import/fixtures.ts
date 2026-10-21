@@ -58,7 +58,7 @@ ${Array.from({ length: 61 }, (_, i) => `      <Trackpoint><Time>${new Date(Date.
     </Track></Lap></Activity></Activities>
 </TrainingCenterDatabase>`;
 
-export const CSV_SAMPLE = `﻿Activity Type,Date,Favorite,Title,Distance,Calories,Time,Avg HR,Max HR,Avg Run Cadence,Total Ascent,Total Descent,Training Load
+export const CSV_SAMPLE = `\uFEFFActivity Type,Date,Favorite,Title,Distance,Calories,Time,Avg HR,Max HR,Avg Run Cadence,Total Ascent,Total Descent,Training Load
 Trail Running,2026-10-12 08:00:00,false,"Jacques-Cartier, boucle",21.35,1500,02:45:10,141,162,168,"1,050",1040,180
 Running,2026-10-10 05:30:00,false,Z2 matinal,8.02,600,48:12,134,148,170,60,58,--
 Strength Training,2026-10-09 19:00:00,false,Muscu,0.00,200,45:00,--,--,--,--,--,--
