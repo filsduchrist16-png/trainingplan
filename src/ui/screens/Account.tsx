@@ -11,7 +11,7 @@ import { useCloudModule, useCloudState } from '@/ui/hooks/useCloud';
 import { cn } from '@/ui/lib/cn';
 
 type Msg = { kind: 'ok' | 'error'; text: string } | null;
-type Mode = 'signin' | 'signup' | 'reset';
+export type Mode = 'signin' | 'signup' | 'reset';
 
 const USERNAME_RE = /^[a-z0-9_.]{3,24}$/;
 
@@ -33,10 +33,25 @@ export function Account() {
   return <SignedOut mod={mod} />;
 }
 
-type Mod = NonNullable<ReturnType<typeof useCloudModule>>;
+export type Mod = NonNullable<ReturnType<typeof useCloudModule>>;
 
 function SignedOut({ mod }: { mod: Mod }) {
-  const [mode, setMode] = useState<Mode>('signin');
+  return (
+    <Card className="space-y-4">
+      <div>
+        <Eyebrow>Compte</Eyebrow>
+        <p className="mt-2 text-sm text-muted">
+          Optionnel. Un compte synchronise tes plans entre tes appareils, te permet d'avoir un coach et de partager tes courses avec tes amis.
+        </p>
+      </div>
+      <AuthForm mod={mod} />
+    </Card>
+  );
+}
+
+/** Formulaire connexion / inscription / mot de passe oublié (Réglages et écran de connexion). */
+export function AuthForm({ mod, initialMode = 'signin' }: { mod: Mod; initialMode?: Mode }) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const [form, setForm] = useState({ email: '', password: '', username: '', displayName: '', consent: false });
@@ -70,14 +85,7 @@ function SignedOut({ mod }: { mod: Mod }) {
   const usernameInvalid = mode === 'signup' && form.username !== '' && !USERNAME_RE.test(form.username.trim().toLowerCase());
 
   return (
-    <Card className="space-y-4">
-      <div>
-        <Eyebrow>Compte</Eyebrow>
-        <p className="mt-2 text-sm text-muted">
-          Optionnel. Un compte synchronise tes plans entre tes appareils, te permet d'avoir un coach et de partager tes courses avec tes amis.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       <div role="tablist" aria-label="Connexion ou inscription" className="grid grid-cols-2 gap-2">
         {(
           [
@@ -163,7 +171,7 @@ function SignedOut({ mod }: { mod: Mod }) {
         </div>
       </form>
       <Status msg={msg} />
-    </Card>
+    </div>
   );
 }
 
@@ -270,7 +278,7 @@ function SignedIn({ mod, userId, email }: { mod: Mod; userId: string; email: str
   );
 }
 
-function NewPassword({ mod }: { mod: Mod }) {
+export function NewPassword({ mod }: { mod: Mod }) {
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState<Msg>(null);
   async function onSubmit(e: FormEvent) {

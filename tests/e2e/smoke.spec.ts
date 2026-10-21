@@ -21,3 +21,13 @@ test('premier lancement → démo → accueil vivant → backup → effacer', as
   await page.getByRole('link', { name: "Aujourd'hui" }).click();
   await expect(page.getByRole('button', { name: 'Commencer' })).toBeVisible();
 });
+
+test('accueil → connexion (comptes non activés sur ce build) → retour', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0);
+  await page.getByRole('button', { name: "J'ai déjà un compte" }).click();
+  await expect(page.getByRole('heading', { name: 'Connexion' })).toBeVisible();
+  await expect(page.getByText('Les comptes ne sont pas encore activés')).toBeVisible();
+  await page.getByRole('button', { name: 'Commencer sans compte' }).click();
+  await expect(page.getByRole('heading', { name: 'Sentier' })).toBeVisible();
+});
