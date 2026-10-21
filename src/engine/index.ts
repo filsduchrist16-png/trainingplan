@@ -13,7 +13,7 @@ export { weeklySummaries, progressionReference, maxAllowedVolume, checkWeekProgr
 export { GOALS, DIFFICULTY_FACTOR, trailGoalFor, type GoalFamily, type GoalProfile } from './goals';
 export { SESSION_LIBRARY, sessionInfo, isKeyType, isRunType, type SessionInfo, type SessionCategory } from './library';
 export { generatePlan, generateRecovery, toMaintenanceWeek, allocatePhases, timeCapKm, type PlanRequest, type PlanDraft, type WeekPlan } from './periodization';
-export { buildWeekSessions, pickRunDays, validateMove, type WeekContext, type SessionDraft, type MovableSession } from './scheduling';
+export { buildWeekSessions, pickRunDays, rescheduleJourney, validateMove, type JourneySlot, type WeekContext, type SessionDraft, type MovableSession } from './scheduling';
 export { paceForTarget, measure } from './builders';
 export { startMode, firstStage, type StartMode, type StartInput } from './startmode';
 export {

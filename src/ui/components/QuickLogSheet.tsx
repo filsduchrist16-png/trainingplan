@@ -15,6 +15,8 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
   const [duration, setDuration] = useState(session?.durationMin ?? 45);
   const [distance, setDistance] = useState(session?.distanceKm ?? 0);
   const [rpe, setRpe] = useState(session?.rpeTarget ?? 4);
+  const runWalk = session?.type === 'marche_course';
+  const [completed, setCompleted] = useState(true);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [pain, setPain] = useState<{ zone: BodyZone; intensity: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,6 +32,7 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
         distanceKm: distance,
         elevationGainM: session?.elevationGainM,
         rpe,
+        ...(runWalk ? { completed } : {}),
         feeling,
         pains: pain ? [pain] : [],
       });
@@ -45,6 +48,11 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
       <div className="space-y-4">
         <Stepper label="Durée" value={duration} onChange={setDuration} step={5} min={5} max={600} unit="min" />
         <Stepper label="Distance" value={distance} onChange={setDistance} step={0.5} max={200} unit="km" />
+        {runWalk && (
+          <Field label="Marche/course" hint="Décoche si tu as dû raccourcir ou sauter des intervalles : l'échelle s'ajuste." group>
+            <Chip selected={completed} onToggle={() => setCompleted(!completed)}>J'ai fait tous les intervalles</Chip>
+          </Field>
+        )}
         <Field label={`Effort perçu (RPE) : ${rpe}/10`} hint="1 = marche tranquille · 5 = soutenu · 10 = à bloc">
           <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full accent-[var(--accent)]" aria-label="RPE" />
         </Field>

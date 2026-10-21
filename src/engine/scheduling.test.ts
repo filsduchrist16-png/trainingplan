@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays, diffDays, weekday } from './dates';
 import { GOALS } from './goals';
 import { generatePlan, type PlanRequest } from './periodization';
-import { buildWeekSessions, pickKeyDays, pickRunDays, qualityTypes, validateMove, type SessionDraft, type WeekContext } from './scheduling';
+import { buildWeekSessions, pickKeyDays, pickRunDays, qualityTypes, rescheduleJourney, validateMove, type SessionDraft, type WeekContext } from './scheduling';
 import { isRunType } from './library';
 import type { Availability, GoalKind } from './types';
 
@@ -490,5 +490,34 @@ describe('T5 — volume débloqué après le démarrage, la longue reste la plus
     const { plan } = fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.3, vdot: undefined, availability: three });
     const note = plan.weeks.flatMap((w) => w.notes).find((n) => n.ruleId === 'week.sessioncap')!;
     expect(note.why).toContain('10 %');
+  });
+});
+
+describe('T7 — re-projection des séances marche/course depuis le réalisé', () => {
+  const ctx = { goal: 'debuter' as GoalKind, family: 'debuter' as const, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
+  const slots = [
+    { id: 'a', date: '2026-04-21', weekStart: '2026-04-20' },
+    { id: 'c', date: '2026-04-25', weekStart: '2026-04-20' },
+    { id: 'b', date: '2026-04-23', weekStart: '2026-04-20' },
+    { id: 'd', date: '2026-04-28', weekStart: '2026-04-27' },
+    { id: 'e', date: '2026-04-30', weekStart: '2026-04-27', raceWeek: true },
+  ];
+  it('chaque séance au palier projeté depuis l’état réel, dans l’ordre des dates', () => {
+    const r = rescheduleJourney({ stage: 5, validatedAtStage: 1, failsAtStage: 0 }, slots, ctx);
+    expect(r.map((x) => x.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(r.map((x) => x.stage)).toEqual([5, 6, 6, 7, 7]);
+    expect(r.every((x) => x.session.type === 'marche_course' && !x.session.isKey)).toBe(true);
+  });
+  it('+10 min de marche le jour de la longue (samedi), sinon la dernière de la semaine, jamais en semaine de course', () => {
+    const r = rescheduleJourney({ stage: 6, validatedAtStage: 0, failsAtStage: 0 }, slots, ctx, true);
+    expect(r.map((x) => x.stage)).toEqual([6, 6, 6, 7, 7]); // profil lent : 3 validations par palier
+    const [a, b, c, d, e] = r.map((x) => x.session.durationMin);
+    expect(c! - b!).toBe(10); // même palier 6 ; le samedi a +10 min
+    expect(a).toBe(b);
+    expect(e).toBe(d); // semaine de course : pas de marche en plus
+  });
+  it('parcours terminé : séances de 30 min continues', () => {
+    const r = rescheduleJourney({ stage: 19, validatedAtStage: 0, failsAtStage: 0 }, slots.slice(0, 1), ctx);
+    expect(r[0]!.stage).toBe(19);
   });
 });

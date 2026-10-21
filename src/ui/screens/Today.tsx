@@ -4,7 +4,7 @@ import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { frCA } from 'date-fns/locale';
 import { m } from 'motion/react';
 import {
-  SESSION_LIBRARY, addDays, adjustToday, findMoveTarget, generateRecovery, healthLight, mondayOf, zoneRange,
+  JOURNEY_DONE, SESSION_LIBRARY, addDays, adjustToday, stageLabel, validationsRequired, findMoveTarget, generateRecovery, healthLight, mondayOf, zoneRange,
   type Athlete, type DayDecision, type DayState, type HrvStatus, type PlannedSession, type ZoneKey,
 } from '@/engine';
 import { db } from '@/data/db';
@@ -52,9 +52,32 @@ function TodayFor({ athlete }: { athlete: Athlete }) {
 
       {ctx.health.level !== 'ok' && <HealthBanner ctx={ctx} />}
       <TodayCore athlete={athlete} ctx={ctx} />
+      {athlete.runWalk && <RunWalkCard runWalk={athlete.runWalk} />}
       <RaceCard ctx={ctx} />
       <Glance athlete={athlete} ctx={ctx} />
     </div>
+  );
+}
+
+/** Où en est l'échelle marche/course, et pourquoi (dernière décision du moteur). */
+function RunWalkCard({ runWalk }: { runWalk: NonNullable<Athlete['runWalk']> }) {
+  const { state, last } = runWalk;
+  const done = state.stage >= JOURNEY_DONE;
+  const needed = validationsRequired(state.stage);
+  return (
+    <Card className="space-y-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <Eyebrow>Ton démarrage</Eyebrow>
+        {!done && <span className="num text-xs text-muted">{state.validatedAtStage} / {needed} séance{needed > 1 ? 's' : ''} validée{state.validatedAtStage > 1 ? 's' : ''}</span>}
+      </div>
+      <p className="text-xl font-semibold" data-testid="runwalk-stage">{stageLabel(state.stage)}</p>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-label="Avancement du démarrage" aria-valuemin={0} aria-valuemax={JOURNEY_DONE} aria-valuenow={state.stage}>
+        <div className="h-full bg-accent" style={{ width: `${(Math.min(state.stage, JOURNEY_DONE) / JOURNEY_DONE) * 100}%` }} />
+      </div>
+      {last && (
+        <p className="text-sm"><strong>{last.title}.</strong> <span className="text-muted">{last.why}</span></p>
+      )}
+    </Card>
   );
 }
 

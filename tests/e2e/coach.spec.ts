@@ -113,3 +113,50 @@ test('courir de zéro : durée calculée par défaut, avertissement si on la rac
   for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText(/Ton plan finira au palier \d+ sur 13\./)).toBeVisible();
 });
+
+async function startFromZero(page: import('@playwright/test').Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /Courir de zéro/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Moins de 5 min' }).click();
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Créer mon plan' }).click();
+  await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 4 sur 13');
+}
+async function logToday(page: import('@playwright/test').Page, rpe: number) {
+  await page.getByRole('button', { name: "C'est fait" }).click();
+  await expect(page.getByRole('button', { name: "J'ai fait tous les intervalles" })).toBeVisible();
+  await page.getByRole('slider', { name: 'RPE' }).fill(String(rpe));
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeHidden();
+}
+async function goTo(page: import('@playwright/test').Page, iso: string) {
+  await page.clock.setSystemTime(new Date(`${iso}T08:00:00`));
+  await page.reload();
+}
+
+test('marche/course : 2 séances validées → la séance suivante passe au palier suivant', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-04-21T08:00:00') }); // mardi
+  await startFromZero(page);
+  await logToday(page, 4);
+  await expect(page.getByText('Séance validée (1 sur 2)')).toBeVisible();
+  await goTo(page, '2026-04-23');
+  await logToday(page, 3);
+  await goTo(page, '2026-04-25');
+  await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 5 sur 13');
+  await expect(page.getByText(/2 min course/).first()).toBeVisible();
+});
+
+test('marche/course : une séance à RPE 8 → palier répété', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-04-21T08:00:00') });
+  await startFromZero(page);
+  await logToday(page, 4);
+  await goTo(page, '2026-04-23');
+  await logToday(page, 8);
+  await goTo(page, '2026-04-25');
+  await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 4 sur 13');
+  await expect(page.getByText(/1 min 30 course/).first()).toBeVisible();
+});

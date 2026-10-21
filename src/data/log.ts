@@ -1,6 +1,7 @@
-import { activityLoad, isRunType, type Athlete, type BodyZone, type SessionType, type Subjective } from '@/engine';
+import { activityLoad, isRunType, toIsoDate, type Athlete, type BodyZone, type SessionType, type Subjective } from '@/engine';
 import type { SentierDB } from './db';
 import { newId, nowIso, stamp } from './ids';
+import { syncRunWalk } from './runwalk';
 
 export interface QuickLog {
   date: string;
@@ -10,6 +11,8 @@ export interface QuickLog {
   distanceKm?: number;
   elevationGainM?: number;
   rpe: number;
+  /** Marche/course : « J'ai fait tous les intervalles ». */
+  completed?: boolean;
   feeling?: Subjective['feeling'];
   pains: { zone: BodyZone; intensity: number }[];
   notes?: string;
@@ -38,10 +41,12 @@ export async function logManual(db: SentierDB, athlete: Athlete, q: QuickLog): P
       elevationLossM: q.elevationGainM ?? 0,
       load,
     }, id));
-    await db.subjectives.add(stamp({ athleteId: athlete.id, date: q.date, activityId: id, rpe: q.rpe, ...(q.feeling ? { feeling: q.feeling } : {}), pains: q.pains, context: [], ...(q.notes ? { notes: q.notes } : {}) }));
+    await db.subjectives.add(stamp({ athleteId: athlete.id, date: q.date, activityId: id, rpe: q.rpe, ...(q.completed !== undefined ? { completed: q.completed } : {}), ...(q.feeling ? { feeling: q.feeling } : {}), pains: q.pains, context: [], ...(q.notes ? { notes: q.notes } : {}) }));
     for (const p of q.pains.filter((x) => x.intensity > 0)) await db.painLogs.add(stamp({ athleteId: athlete.id, date: q.date, zone: p.zone, intensity: p.intensity, when: 'apres' as const }));
     if (q.sessionId) await db.sessions.update(q.sessionId, { status: 'faite', activityId: id, updatedAt: nowIso() });
   });
+  // Marche/course : l'échelle avance (ou pas) selon cette séance, et les suivantes sont re-projetées.
+  if (q.type === 'marche_course') await syncRunWalk(db, athlete.id, q.date > toIsoDate(new Date()) ? q.date : toIsoDate(new Date()));
   return id;
 }
 

@@ -4,9 +4,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { format, parseISO } from 'date-fns';
 import { frCA } from 'date-fns/locale';
 import { m } from 'motion/react';
-import { debrief, formatPace, type BodyZone } from '@/engine';
+import { debrief, formatPace, toIsoDate, type BodyZone } from '@/engine';
 import { db } from '@/data/db';
 import { stamp } from '@/data/ids';
+import { syncRunWalk } from '@/data/runwalk';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
 import { EmptyState } from '@/ui/components/EmptyState';
@@ -95,7 +96,7 @@ export function ActivityDebrief() {
           ))}
         </Card>
       )}
-      {!data.subjective && <SubjectiveForm activityId={a.id} athleteId={athlete.id} date={a.date} />}
+      {!data.subjective && <SubjectiveForm activityId={a.id} athleteId={athlete.id} date={a.date} runWalk={data.session?.type === 'marche_course'} />}
     </div>
   );
 }
@@ -113,15 +114,18 @@ const PAIN: { z: BodyZone; label: string }[] = [
   { z: 'tibia_g', label: 'Tibia G' }, { z: 'tibia_d', label: 'Tibia D' }, { z: 'achille_g', label: 'Achille G' }, { z: 'achille_d', label: 'Achille D' }, { z: 'genou_g', label: 'Genou G' }, { z: 'genou_d', label: 'Genou D' },
 ];
 
-function SubjectiveForm({ activityId, athleteId, date }: { activityId: string; athleteId: string; date: string }) {
+function SubjectiveForm({ activityId, athleteId, date, runWalk }: { activityId: string; athleteId: string; date: string; runWalk: boolean }) {
   const [rpe, setRpe] = useState(5);
+  const [completed, setCompleted] = useState(true);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [pain, setPain] = useState<{ zone: BodyZone; intensity: number } | null>(null);
   async function save() {
     await db.transaction('rw', db.subjectives, db.painLogs, async () => {
-      await db.subjectives.add(stamp({ athleteId, date, activityId, rpe, feeling, pains: pain ? [pain] : [], context: [] }));
+      await db.subjectives.add(stamp({ athleteId, date, activityId, rpe, ...(runWalk ? { completed } : {}), feeling, pains: pain ? [pain] : [], context: [] }));
       if (pain && pain.intensity > 0) await db.painLogs.add(stamp({ athleteId, date, zone: pain.zone, intensity: pain.intensity, when: 'apres' as const }));
     });
+    // Séance importée sans RPE : la marche/course est réévaluée dès qu'il est noté.
+    if (runWalk) await syncRunWalk(db, athleteId, toIsoDate(new Date()));
   }
   return (
     <Card className="space-y-4">
@@ -129,6 +133,7 @@ function SubjectiveForm({ activityId, athleteId, date }: { activityId: string; a
       <Field label={`Effort perçu : ${rpe}/10`}>
         <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full accent-[var(--accent)]" aria-label="RPE" />
       </Field>
+      {runWalk && <Chip selected={completed} onToggle={() => setCompleted(!completed)}>J'ai fait tous les intervalles</Chip>}
       <Segmented label="Sensations" value={feeling} onChange={setFeeling} options={[{ value: 1, label: '😖' }, { value: 2, label: '😕' }, { value: 3, label: '😐' }, { value: 4, label: '🙂' }, { value: 5, label: '😄' }]} />
       <div className="flex flex-wrap gap-2">
         <Chip selected={!pain} onToggle={() => setPain(null)}>Aucune douleur</Chip>

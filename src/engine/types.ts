@@ -59,6 +59,17 @@ export interface Availability {
   strengthPerWeek: 0 | 1 | 2;
 }
 
+/** État de l'échelle marche/course (parcours de démarrage). */
+export interface RunWalkState {
+  /** 0 = marche d'abord, 1-13 = paliers, 14-18 = transition 22 → 30 min, 19 = parcours terminé. */
+  stage: number;
+  /** Séances validées DE SUITE au palier courant. */
+  validatedAtStage: number;
+  /** Échecs de suite au palier courant. */
+  failsAtStage: number;
+  lastSessionDate?: ISODate;
+}
+
 export interface Athlete extends Entity {
   name: string;
   sex?: Sex;
@@ -79,6 +90,8 @@ export interface Athlete extends Entity {
   crossTraining: CrossTraining[];
   hasPoles: boolean;
   localVertical: 'plat' | 'vallonne' | 'montagneux';
+  /** Où en est l'échelle marche/course, recalculé du journal après chaque séance notée. */
+  runWalk?: { state: RunWalkState; last?: Explanation; updatedOn: ISODate };
   settings: {
     loadMethod: LoadMethod;
     theme: 'dark' | 'light' | 'system';
@@ -131,6 +144,8 @@ export interface Block extends Owned {
   warnings?: Explanation[];
   /** Paramètres de génération, pour régénérer les semaines futures (changement de date, de dispo…). */
   request?: unknown;
+  /** État d'entrée du parcours de démarrage (point de départ du journal). */
+  runWalkStart?: RunWalkState;
 }
 
 export interface Week extends Owned {
@@ -271,6 +286,8 @@ export interface Subjective extends Owned {
   date: ISODate;
   activityId?: Id;
   rpe?: number;
+  /** Marche/course : « J'ai fait tous les intervalles ». */
+  completed?: boolean;
   feeling?: 1 | 2 | 3 | 4 | 5;
   sleepHours?: number;
   sleepQuality?: 1 | 2 | 3 | 4 | 5;

@@ -6,7 +6,7 @@ import {
 } from './constants';
 import { addDays, diffDays } from './dates';
 import { explain } from './explain';
-import type { Explanation, ISODate } from './types';
+import type { Explanation, ISODate, RunWalkState } from './types';
 
 /**
  * Le parcours de démarrage, en un seul nombre (« palier ») :
@@ -75,14 +75,7 @@ export function stageLabel(stage: number): string {
 
 // ─── État et progression (validation par séance) ──────────────────────────────
 
-export interface RunWalkState {
-  stage: number;
-  /** Séances validées DE SUITE au palier courant. */
-  validatedAtStage: number;
-  /** Échecs de suite au palier courant. */
-  failsAtStage: number;
-  lastSessionDate?: ISODate;
-}
+export type { RunWalkState } from './types';
 
 export interface RunWalkSession {
   date: ISODate;

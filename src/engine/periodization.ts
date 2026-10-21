@@ -81,6 +81,8 @@ export interface PlanDraft {
   start?: StartMode;
   /** Choix à proposer quand la course tombe avant la fin du démarrage + 4 semaines de base. */
   options?: ('course_en_marche_course' | 'decaler')[];
+  /** État d'entrée du parcours de démarrage : point de départ du journal (recalcul après chaque séance). */
+  runWalkStart?: RunWalkState;
 }
 
 const roundKm = (km: number) => (km >= 10 ? Math.round(km) : Math.round(km * 2) / 2);
@@ -360,7 +362,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   if (family !== 'forme' && peakKm < targetPeak * 0.95) {
     warnings.push(explain('peak.unreachable', 'conseil', 'Pic plafonné', `Pic visé ${targetPeak} km/sem, atteignable ${peakKm} km d'ici la course en respectant +10 %/sem et les décharges. Pas grave : on arrive en santé, c'est ce qui compte.`, { target: targetPeak, reached: peakKm }));
   }
-  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}) };
+  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}), ...(journeyState ? { runWalkStart: journeyState } : {}) };
 }
 
 /**

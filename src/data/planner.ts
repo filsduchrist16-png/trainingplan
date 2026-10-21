@@ -86,6 +86,7 @@ export async function createPlan(
       peakVolumeKm: draft.peakKm,
       warnings: draft.warnings,
       request: req,
+      ...(draft.runWalkStart ? { runWalkStart: draft.runWalkStart } : {}),
     },
     blockId,
   );
@@ -133,6 +134,8 @@ export async function createPlan(
   });
 
   await persist(db, athlete.id, today, block, weeks, sessions, races);
+  // L'échelle repart de l'état d'entrée du nouveau plan (ou disparaît s'il n'y a pas de démarrage).
+  await db.athletes.update(athlete.id, { runWalk: draft.runWalkStart ? { state: draft.runWalkStart, updatedOn: today } : undefined, updatedAt: nowIso() });
   return { blockId, ok: true, warnings: draft.warnings };
 }
 

@@ -1,6 +1,7 @@
 import { activityLoad, timeInZones, toIsoDate, isRunType, type Activity, type Athlete, type PlannedSession } from '@/engine';
 import type { SentierDB } from '../db';
 import { stamp } from '../ids';
+import { syncRunWalk } from '../runwalk';
 import { parseGarminCsv } from './csv';
 import { parseFit } from './fit';
 import { parseGpx, parseTcx } from './xml';
@@ -87,6 +88,9 @@ export async function findMatch(db: SentierDB, a: Activity): Promise<PlannedSess
 /** Associe une activité à une séance planifiée (après confirmation de l'utilisateur). */
 export async function linkActivity(db: SentierDB, sessionId: string, activityId: string): Promise<void> {
   await db.sessions.update(sessionId, { status: 'faite', activityId, updatedAt: new Date().toISOString() });
+  const s = await db.sessions.get(sessionId);
+  // Séance marche/course importée : sans RPE, on répète le palier ; le debrief le demandera.
+  if (s?.type === 'marche_course') await syncRunWalk(db, s.athleteId, toIsoDate(new Date()));
 }
 
 /** Import multiple. Rien n'est envoyé nulle part : tout se passe dans le navigateur. */

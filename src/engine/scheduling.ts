@@ -2,7 +2,7 @@ import {
   MIN_EASY_RUN_KM, RUN_WALK_LADDER, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, RUN_WALK_MAX_SESSIONS_PER_WEEK,
   STRENGTH_SESSION_MIN, STRIDES_MIN_CONTINUOUS_MIN, VO2_MIN_BASE_WEEKS, WALK_PACE_MIN_PER_KM,
 } from './constants';
-import { stageKind, stageLabel, stageRunMinutes, walkFirstMinutes } from './runwalk';
+import { projectStages, stageKind, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
 import { dayOfWeek, diffDays, weekday } from './dates';
 import { explain } from './explain';
 import type { GoalFamily } from './goals';
@@ -408,6 +408,40 @@ function toDraft(date: ISODate, s: BuiltSession & { elevationGainM?: number }, i
     minimal: { title: info.mvv.title, durationMin: info.mvv.minutes, steps: info.mvv.steps },
     why: s.why,
   };
+}
+
+// ─── Parcours de démarrage : re-projection depuis le réalisé ─────────────────
+
+export interface JourneySlot {
+  id: string;
+  date: ISODate;
+  /** Lundi de la semaine de la séance. */
+  weekStart: ISODate;
+  /** Semaine avec une course : pas de marche en plus le jour de la longue. */
+  raceWeek?: boolean;
+}
+
+/**
+ * Re-projette les séances marche/course À VENIR depuis l'état réel de l'échelle (après chaque séance notée).
+ * Même règle que la génération : chaque séance au palier projeté si toutes sont validées, +10 min de marche
+ * le jour de la longue (le jour prévu s'il a une séance, sinon la dernière de la semaine).
+ */
+export function rescheduleJourney(
+  state: RunWalkState,
+  slots: JourneySlot[],
+  ctx: Pick<WeekContext, 'goal' | 'family' | 'vdot' | 'availability'>,
+  slow = false,
+): { id: string; stage: number; session: SessionDraft }[] {
+  const sorted = [...slots].sort((a, b) => a.date.localeCompare(b.date));
+  const stages = projectStages(state, sorted.length, slow);
+  const b: BuildContext = { goal: ctx.goal, trail: ctx.family === 'trail', vdot: ctx.vdot, phaseWeek: 0 };
+  return sorted.map((slot, i) => {
+    const p = stages[i]!;
+    const week = sorted.filter((x) => x.weekStart === slot.weekStart);
+    const longSlot = week.find((x) => weekday(x.date) === ctx.availability.longRunDay) ?? week.at(-1)!;
+    const extra = slot === longSlot && !slot.raceWeek ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0;
+    return { id: slot.id, stage: p.stage, session: toDraft(slot.date, runWalk(p.stage, b, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: extra }), false) };
+  });
 }
 
 // ─── Validation d'un déplacement (glisser-déposer) ────────────────────────────
