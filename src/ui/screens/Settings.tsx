@@ -49,7 +49,13 @@ export function Settings() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-3xl font-semibold">Réglages</h1>
+      <h1 className="text-3xl font-semibold">Plus</h1>
+
+      <Card className="space-y-2">
+        <Eyebrow>Raccourcis</Eyebrow>
+        <Link to="/importer" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Importer des activités Garmin (FIT, GPX, TCX, CSV)</Link>
+        <Link to="/objectif" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Nouvel objectif</Link>
+      </Card>
 
       <Card>
         <Eyebrow>Apparence</Eyebrow>

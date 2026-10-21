@@ -2,6 +2,23 @@
 
 > Statut : **validé (révision 2, 21 oct. 2026).** La section « Révision 2 » ci-dessous a priorité sur le reste du document.
 
+## MVP livré (Phases 0 à 3)
+
+Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités viendront plus tard.
+
+**Livré :** moteur complet et testé à 100 % (zones, allures VDOT, charge/ACWR, progression, périodisation route/trail/débuter/forme, planification hebdo, garde-fous santé, état du jour, debrief), assistant « Nouvel objectif », Aujourd'hui, Plan (glisser-déposer), fiche de séance, import Garmin + debrief, Corps minimal (douleurs + état santé), Progrès minimal (volume/D+), démo, backup, PWA.
+
+**Reporté (backlog, par ordre de valeur) :**
+1. Progrès complet : FC vs allure en Z2, découvertes (« ton Z2 est 18 s/km plus rapide »), distribution par zones vs 80/10/10, VO2max lissée, cadence, VFC et FC repos.
+2. Profil / zones : édition manuelle des zones, assistant de calibration (test 3 km), modifier ses dispos en cours de plan (régénérer les semaines futures).
+3. Muscu : programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo excentrique guidé, double progression.
+4. Nutrition : planificateur de gut training, log de tolérance, plan de course, carbo-loading.
+5. Équipement : km par soulier, rodage (200 km), usure, rotation.
+6. Corps complet : carte corporelle, routine de prévention à cocher (mollets 2×/sem).
+7. Jalons et séries de semaines cohérentes, confettis sobres sur les vrais jalons.
+8. Polish (Phase 5) : audit a11y, Lighthouse > 90 (bundle ~180 Ko gz à alléger), anglais.
+9. Comptes et synchro Supabase (opt-in).
+
 ## Révision 2 — décisions après les réponses
 
 ### Ce qui change

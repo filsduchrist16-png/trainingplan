@@ -6,7 +6,17 @@ Générateur de plans d'entraînement **route et trail** (5 km → ultra, ou « 
 - **PWA** installable sur téléphone, fonctionne hors-ligne.
 - **Backup** JSON complet (export/import) dans Réglages.
 
-> Statut : Phase 1 (fondations) terminée. Voir [`docs/PLAN.md`](docs/PLAN.md) pour la feuille de route.
+> Statut : **MVP**. Ce qui est livré et ce qui est reporté : section « MVP » de [`docs/PLAN.md`](docs/PLAN.md). Comment le moteur décide : [`docs/ENGINE.md`](docs/ENGINE.md).
+
+## Ce que fait le MVP
+
+- **Nouvel objectif** à tout moment (5 km → ultra, courir de zéro, garder la forme) : assistant en 9 étapes, aperçu du plan, puis génération par le moteur (phases, décharges, taper, règle des 10 %).
+- **Aujourd'hui** : séance du jour ajustée en direct selon la santé et ton état (🟢🟡🔴, nuit courte), version minimale viable, log en moins de 30 s, jauge de charge (ACWR), compte à rebours de course, récup puis nouveau cycle après une course A.
+- **Plan** : semaine (glisser-déposer validé par le moteur), mois, bloc ; fiche complète de chaque séance avec son « Pourquoi? ».
+- **Import Garmin** FIT/GPX/TCX/CSV, 100 % dans le navigateur, avec debrief par règles (zones, zone grise, dérive cardiaque, cadence).
+- **Corps** : déclaration de douleur, garde-fous (STOP course sur douleur tibiale persistante, croisé à la place).
+- **Progrès** : volume et D+ des 12 dernières semaines.
+- Données de démo réalistes, export/import JSON, PWA hors-ligne, thèmes sombre et clair.
 
 ## Démarrer
 
