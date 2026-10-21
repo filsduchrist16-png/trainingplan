@@ -1,6 +1,50 @@
 # Sentier — Phase 0 : plan
 
-> Statut : **en attente du feu vert.** Aucun code tant que les questions bloquantes (fin du document) n'ont pas de réponse ou que les défauts proposés ne sont pas acceptés.
+> Statut : **validé (révision 2, 21 oct. 2026).** La section « Révision 2 » ci-dessous a priorité sur le reste du document.
+
+## Révision 2 — décisions après les réponses
+
+### Ce qui change
+Sentier devient un **générateur de plans générique, route ET trail**, qu'on peut lancer vers un objectif à tout moment, dans l'esprit de Campus Coach et Runna. Nicolas n'est plus codé en dur : son profil devient un **profil de démo** parmi d'autres. L'app est pensée pour une publication publique éventuelle.
+
+### Ce qu'on reprend de Campus / Runna (d'après leurs descriptions publiques)
+| Inspiration | Ce qu'ils font | Dans Sentier |
+|---|---|---|
+| Runna — onboarding | Questionnaire : niveau, expérience, jours de course, distance et date, volume/difficulté réglables, terrain local | Assistant « Nouvel objectif » en 8 étapes (ci-dessous), avec aperçu du plan avant de confirmer |
+| Runna — une estimation de forme | Un seul temps estimé fixe les allures de toutes les séances ; le modifier recalcule tout | Un **niveau de forme** (VDOT, via les équations publiques de Daniels-Gilbert) calculé depuis un temps de course récent, une VMA ou un test. Il fixe les allures E/M/T/I/R en route. |
+| Runna — adaptation | Les allures changent si on rate ou dépasse la cible **de façon répétée** (pas sur une seule séance) ; les répétitions aberrantes sont ignorées | Règle « 3 séances qualité concordantes » avant d'ajuster le VDOT, en excluant les répétitions aberrantes |
+| Runna — « Not Feeling 100% » | Adapter la séance si malade, douleur ou pressé, puis revenir au plan proprement | Sélecteur d'état du jour 🟢🟡🔴, nuit courte, douleur, « pas le temps » → version minimale viable |
+| Runna — calendrier de courses | Plusieurs courses dans le calendrier | Courses A/B/C ; les B/C deviennent des mini-tapers ou des séances dans le bloc |
+| Runna — changer la date | Changer la date de course ou rater une séance ajuste le plan | Régénération des semaines futures seulement ; le passé est figé |
+| Campus — plans par objectif | 10 km, semi, marathon, trail, ultra ; de 6 semaines à 12 mois | Catalogue : 5 km, 10 km, semi, marathon, trail court (<30 km), trail moyen (30-60 km), ultra (60 km+), « courir de zéro », « garder la forme » (sans course) |
+| Campus — trail | Prise en compte du dénivelé ; effort cible (pas une allure) en trail | En trail : prescription en **FC/RPE** avec une allure indicative ; D+ cible par semaine ; côtes, descentes, back-to-back |
+| Campus — difficulté réglable | Le coureur ajuste le niveau de difficulté | Niveau « prudent / équilibré / ambitieux », qui module le volume de pointe et la densité de qualité, **jamais** la règle des 10 % |
+| Campus — paliers nutrition | Paliers progressifs pour entraîner le ventre | Planificateur de gut training (déjà prévu au §5.7 du brief) |
+| Les deux — renfo, échauffements | Séances de renforcement intégrées au plan | Muscu par phase (déjà prévu) |
+
+### Assistant « Nouvel objectif »
+1. **Objectif** : route (5 km / 10 km / semi / marathon), trail (distance + D+), « courir de zéro » (0 → 30 min continues), « garder la forme » (sans course).
+2. **Course** : nom, date (ou pas de date → durée choisie de 6 à 24 semaines), distance, D+, priorité.
+3. **Expérience** : jamais couru / débutant / régulier / avancé.
+4. **Point de départ** : volume actuel (0 accepté) et plus longue sortie récente. Ces valeurs sont **pré-remplies depuis l'historique importé** s'il existe.
+5. **Forme** : temps récent sur une distance, ou VMA, ou « je sais pas » → test de calibration planifié en semaine 1.
+6. **Disponibilités** : jours de course par semaine (2-7), jours possibles, jour de la sortie longue, temps max en semaine et la fin de semaine.
+7. **Options** : renfo (0-2 par semaine), dénivelé accessible près de chez soi, bâtons, difficulté.
+8. **Santé** : blessures passées (zone), douleur actuelle. Une douleur actuelle active les garde-fous dès le départ.
+
+Ensuite : **aperçu** (frise des phases, volume par semaine, pic, séances clés, avertissements du moteur s'il ne peut pas tout respecter) → confirmer.
+
+### Départ de zéro ou avec historique
+- **De zéro** : aucun historique requis. Le plan démarre au volume déclaré, l'ACWR reste en « calibration » 4 semaines, et les zones sont estimées puis recalibrées par un test.
+- **Avec historique** : import de fichiers FIT/GPX/TCX/CSV. Le moteur en tire le volume réel, la plus longue sortie et une estimation de forme (meilleurs efforts), qui pré-remplissent l'assistant.
+
+### Question 3 tranchée
+L'ACWR utilise **la charge calculée par Sentier** (durée × intensité par zone + bonus D+) pour toutes les activités. Le Training Load Garmin est affiché à côté quand il existe, sans entrer dans le calcul. Le réglage reste modifiable.
+
+### Hébergement et futur public
+- **v1 : Cloudflare Pages** (site statique, HTTPS, gratuit, CDN). Les données restent 100 % sur l'appareil.
+- **Plus tard : Supabase** (comptes + synchronisation multi-appareils, **opt-in**, Postgres avec RLS), avec consentement explicite pour les données de santé. Le code passe dès maintenant par une couche « repos » pour qu'on puisse brancher la synchro sans réécrire l'UI.
+- **Prêt pour le public** : textes centralisés (fr-CA par défaut, prêt pour l'anglais), avertissement « ceci n'est pas un avis médical », aucune donnée personnelle codée en dur.
 
 ## 0. Constat de départ
 
