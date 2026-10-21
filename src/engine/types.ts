@@ -70,11 +70,32 @@ export interface RunWalkState {
   lastSessionDate?: ISODate;
 }
 
+/** Questions du questionnaire santé (inspiré du PAR-Q+ et du dépistage ACSM, reformulé). */
+export type HealthQuestion = 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8' | 'q9';
+export type ChronicCondition = 'diabete' | 'asthme' | 'cardio' | 'renal' | 'autre';
+
+export interface HealthProfile {
+  /** Réponses oui/non. Q9 (« peux-tu marcher 30 min ? ») : `true` = oui, c'est la bonne réponse. */
+  answers: Record<HealthQuestion, boolean>;
+  answeredAt: ISODate;
+  /** « Un médecin m'autorise » : date de l'autorisation (débloque Q2, Q3, Q7). */
+  clearance?: ISODate;
+  /** Q5 : médicament qui modifie la FC (bêtabloquant…) → zones au RPE. */
+  hrUnreliable?: boolean;
+  /** Q4 : maladies chroniques déclarées. */
+  conditions: ChronicCondition[];
+  /** Q8 : grossesse en cours (date prévue) ou post-partum (date d'accouchement). */
+  pregnancy?: { status: 'enceinte' | 'post_partum'; dueOrBirthDate: ISODate };
+}
+
 export interface Athlete extends Entity {
   name: string;
   sex?: Sex;
   birthYear?: number;
   weightKg?: number;
+  heightCm?: number;
+  /** Questionnaire santé ; absent = jamais rempli. */
+  health?: HealthProfile;
   experience: Experience;
   hrMax: number;
   hrMaxSource: 'estimee' | 'test';

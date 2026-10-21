@@ -101,6 +101,16 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 - **Muscu** : greffée aux jours durs (« jours durs durs, jours faciles faciles »), jamais la veille de la longue ni d'une course.
 - **Volume restant** : il va aux sorties faciles, avec un plafond horaire par jour. Si le temps manque, le moteur laisse du volume de côté plutôt que d'allonger tout, et le dit.
 
+## Dépistage santé (`screen`)
+
+Questionnaire à l'inscription (étape de l'assistant et écran « Questionnaire santé » dans Plus), inspiré du PAR-Q+ et du dépistage ACSM, questions reformulées (`HEALTH_QUESTIONS`). `screen(health, today)` renvoie `{ level: 'ok' | 'prudent' | 'bloque', explanations }` ; il **restreint** le plan, jamais l'inverse :
+
+- Q2 (douleur thoracique), Q3 (malaise, perte de connaissance), Q7 (activité supervisée seulement) → **`bloque`** (`health.clearance`, sévérité `stop`) tant que « Un médecin m'autorise » n'est pas coché ; l'autorisation ne compte que si elle est postérieure aux réponses (une réponse qui change la rend caduque). Débloqué → `prudent` (`health.cleared`).
+- Q1 (cœur, hypertension) → `prudent` + conseil fort de consulter (`health.cardio`) ; Q4 (maladie chronique) → `prudent` (`health.chronic`, maladies nommées).
+- Q5 avec médicament qui modifie la FC → zones au RPE (`health.hr_unreliable`) ; Q6 → retour de blessure (`health.injury`) ; Q8 → grossesse ou post-partum (`health.pregnancy`) ; Q9 = non → marche d'abord (`health.walk_first`). Ces profils sont appliqués par les règles de profil.
+- Sans questionnaire : `ok` + invitation à le remplir (`health.missing`). Réponses de plus de 12 mois (`HEALTH_RENEW_DAYS`) : à refaire (`health.renew`).
+- Données : `Athlete.health` (réponses, date, autorisation, maladies, FC non fiable, grossesse) et `Athlete.heightCm` ; champs non indexés, donc pas de nouvelle version Dexie ; validés par le schéma zod du backup.
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |

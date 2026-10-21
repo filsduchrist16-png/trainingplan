@@ -15,7 +15,7 @@ test('créer un plan 10 km depuis zéro avec l’assistant', async ({ page }) =>
   await page.getByRole('radio', { name: 'Un temps' }).click();
   await page.getByRole('textbox', { name: /Ton temps récent/ }).fill('50:00');
   await expect(page.getByText(/Tes allures/)).toBeVisible();
-  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByRole('heading', { name: 'Ton plan' })).toBeVisible();
   await expect(page.getByText('Ta première semaine')).toBeVisible();
   await page.getByRole('button', { name: 'Créer mon plan' }).click();
@@ -92,7 +92,7 @@ test('l’assistant décide de la marche-course selon ce que tu cours d’une tr
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Moins de 5 min' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
-  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText('On commence en marche-course')).toBeVisible();
   await expect(page.getByText(/1 min 30 course/).first()).toBeVisible(); // < 5 min d'affilée → palier 4
 });
@@ -103,14 +103,14 @@ test('courir de zéro : durée calculée par défaut, avertissement si on la rac
   await page.getByRole('radio', { name: /Courir de zéro/ }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText(/le temps qu'il faut pour courir 30 min/)).toBeVisible();
-  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText('À la fin : tu cours 30 min.')).toBeVisible();
   await expect(page.getByText(/Ton plan finira au palier/)).toHaveCount(0);
   // Retour à la durée : on choisit 6 semaines.
-  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: /Retour/ }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: /Retour/ }).click();
   await page.getByRole('radio', { name: 'Je choisis' }).click();
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Durée du plan : moins' }).click();
-  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText(/Ton plan finira au palier \d+ sur 13\./)).toBeVisible();
 });
 
@@ -122,7 +122,7 @@ async function startFromZero(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Moins de 5 min' }).click();
-  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Créer mon plan' }).click();
   await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 4 sur 13');
 }
@@ -159,4 +159,16 @@ test('marche/course : une séance à RPE 8 → palier répété', async ({ page 
   await goTo(page, '2026-04-25');
   await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 4 sur 13');
   await expect(page.getByText(/1 min 30 course/).first()).toBeVisible();
+});
+
+test('questionnaire santé : un oui à la douleur thoracique demande un avis médical', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^5 km/ }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByRole('heading', { name: 'Ta santé' })).toBeVisible();
+  await page.getByRole('radiogroup', { name: /douleurs ou un serrement dans la poitrine/ }).getByRole('radio', { name: 'Oui' }).click();
+  await expect(page.getByText('Un avis médical avant de commencer.')).toBeVisible();
+  await page.getByRole('button', { name: "Un médecin m'autorise à courir" }).click();
+  await expect(page.getByText('Autorisation médicale enregistrée.')).toBeVisible();
 });

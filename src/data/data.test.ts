@@ -73,6 +73,12 @@ describe('backup JSON', () => {
     expect(await db.activities.count()).toBe(before);
   });
 
+  it('garde le questionnaire santé, et refuse une version mal formée', () => {
+    const athlete = { id: 'a', createdAt: 'x', updatedAt: 'x', name: 'A', hrMax: 190, hrRest: 60, heightCm: 170, health: { answers: { q1: false, q9: true }, answeredAt: '2026-10-01', conditions: [] } };
+    expect(parseBackup({ app: 'sentier', schemaVersion: 1, exportedAt: 'x', tables: { athletes: [athlete] } }).ok).toBe(true);
+    expect(parseBackup({ app: 'sentier', schemaVersion: 1, exportedAt: 'x', tables: { athletes: [{ ...athlete, health: { answers: { q1: 'oui' }, answeredAt: '2026-10-01', conditions: [] } }] } }).ok).toBe(false);
+  });
+
   it('refuse un backup d’une version plus récente', () => {
     const r = parseBackup({ app: 'sentier', schemaVersion: 999, exportedAt: 'x', tables: {} });
     expect(r.ok).toBe(false);

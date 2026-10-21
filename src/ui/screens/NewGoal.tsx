@@ -4,7 +4,7 @@ import { m, AnimatePresence } from 'motion/react';
 import {
   GOALS, addDays, buildWeekSessions, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
   isPlausibleVdot, zonesFromHrMax,
-  type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type PlanRequest, type Weekday,
+  type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type HealthProfile, type PlanRequest, type Weekday,
 } from '@/engine';
 import { db } from '@/data/db';
 import { updateAthlete } from '@/data/athlete';
@@ -13,6 +13,7 @@ import { stamp } from '@/data/ids';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
 import { ChoiceCard, ChoiceGroup, Chip, Field, Segmented, Stepper, TextInput } from '@/ui/components/forms';
+import { HealthForm, emptyHealth, stampHealth, type BodyStats } from '@/ui/components/HealthForm';
 import { PlanTimeline } from '@/ui/components/PlanTimeline';
 import { Why } from '@/ui/components/Why';
 import { useActiveAthlete } from '@/ui/hooks/useAthlete';
@@ -21,7 +22,7 @@ import { cn } from '@/ui/lib/cn';
 const DAYS: { d: Weekday; short: string }[] = [
   { d: 1, short: 'Lun' }, { d: 2, short: 'Mar' }, { d: 3, short: 'Mer' }, { d: 4, short: 'Jeu' }, { d: 5, short: 'Ven' }, { d: 6, short: 'Sam' }, { d: 7, short: 'Dim' },
 ];
-const STEPS = ['Objectif', 'Course', 'Expérience', 'Départ', 'Forme', 'Dispos', 'Options', 'Santé', 'Aperçu'] as const;
+const STEPS = ['Objectif', 'Course', 'Expérience', 'Départ', 'Forme', 'Dispos', 'Options', 'Questionnaire', 'Santé', 'Aperçu'] as const;
 const PAIN_ZONES: { z: BodyZone; label: string }[] = [
   { z: 'tibia_g', label: 'Tibia G' }, { z: 'tibia_d', label: 'Tibia D' }, { z: 'achille_g', label: 'Achille G' }, { z: 'achille_d', label: 'Achille D' },
   { z: 'genou_g', label: 'Genou G' }, { z: 'genou_d', label: 'Genou D' }, { z: 'itb_g', label: 'Bandelette G' }, { z: 'itb_d', label: 'Bandelette D' },
@@ -58,6 +59,8 @@ interface State {
   hrMax: number;
   hrMaxTested: boolean;
   hrRest: number;
+  health: HealthProfile;
+  body: BodyStats;
 }
 
 /** « 22:30 » → 22,5 min ; « 1:45:00 » → 105 min. */
@@ -105,6 +108,8 @@ function Wizard({ athlete }: { athlete: Athlete }) {
     hrMax: athlete.hrMax,
     hrMaxTested: athlete.hrMaxSource === 'test',
     hrRest: athlete.hrRest,
+    health: athlete.health ?? emptyHealth(today),
+    body: { birthYear: athlete.birthYear, heightCm: athlete.heightCm, weightKg: athlete.weightKg },
   }));
   const set = (patch: Partial<State>) => setS((prev) => ({ ...prev, ...patch }));
 
@@ -154,6 +159,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
     s.availability.allowedDays.length >= Math.min(2, s.availability.runDaysPerWeek),
     true,
     true,
+    true,
     Boolean(preview?.ok),
   ][step];
 
@@ -177,6 +183,10 @@ function Wizard({ athlete }: { athlete: Athlete }) {
         hrMax: s.hrMax,
         hrMaxSource: s.hrMaxTested ? 'test' : 'estimee',
         hrRest: s.hrRest,
+        health: stampHealth(s.health, athlete.health, today),
+        birthYear: s.body.birthYear,
+        heightCm: s.body.heightCm,
+        weightKg: s.body.weightKg,
         zones: athlete.zones.mode === 'manuel' && athlete.hrMax === s.hrMax ? athlete.zones : { mode: 'auto', bounds: zones },
         ...(validVdot ? { vdot: validVdot, vdotSource: s.fitnessMode === 'vma' ? 'vma' : 'course' } : {}),
         injuries: [
@@ -365,6 +375,14 @@ function Wizard({ athlete }: { athlete: Athlete }) {
 
           {step === 7 && (
             <>
+              <h1 className="text-3xl font-semibold">Ta santé</h1>
+              <p className="text-muted">Quelques questions oui/non, comme chez le médecin du sport. Elles rendent le plan plus prudent si besoin, jamais plus dur.</p>
+              <HealthForm health={s.health} onChange={(health) => set({ health })} body={s.body} onBodyChange={(body) => set({ body })} today={today} />
+            </>
+          )}
+
+          {step === 8 && (
+            <>
               <h1 className="text-3xl font-semibold">Santé</h1>
               <Field label="Blessures passées (ça rend le plan plus prudent)" group>
                 <div className="flex flex-wrap gap-2">
@@ -388,7 +406,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
             </>
           )}
 
-          {step === 8 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} />}
+          {step === 9 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} />}
         </m.section>
       </AnimatePresence>
 

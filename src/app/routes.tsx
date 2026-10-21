@@ -16,6 +16,7 @@ export const router = createBrowserRouter([
       { path: 'progres', lazy: async () => ({ Component: (await import('@/ui/screens/Progress')).Progress }) },
       { path: 'corps', lazy: async () => ({ Component: (await import('@/ui/screens/Body')).Body }) },
       { path: 'plus', element: <Settings /> },
+      { path: 'sante', lazy: async () => ({ Component: (await import('@/ui/screens/Health')).Health }) },
       { path: 'profil', lazy: async () => ({ Component: (await import('@/ui/screens/Profile')).Profile }) },
       { path: 'connexion', lazy: async () => ({ Component: (await import('@/ui/screens/Login')).Login }) },
       { path: 'objectif', lazy: async () => ({ Component: (await import('@/ui/screens/NewGoal')).NewGoal }) },

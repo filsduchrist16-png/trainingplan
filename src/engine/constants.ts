@@ -287,3 +287,7 @@ export const RUN_WALK_GAP_REPEAT_DAYS = 7;
 export const RUN_WALK_GAP_BACK_DAYS = 14;
 export const RUN_WALK_GAP_RESTART_DAYS = 28;
 export const RUN_WALK_GAP_BACK_STAGES = 2;
+
+// ─── Questionnaire santé (dépistage) ──────────────────────────────────────────
+/** Le questionnaire santé est à refaire tous les 12 mois (et dès qu'une réponse change). */
+export const HEALTH_RENEW_DAYS = 365;
