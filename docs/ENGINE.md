@@ -32,6 +32,17 @@ Quand le moteur doit choisir, il choisit la santé et le dit.
 - **Volume** : au plus +10 % par semaine, mesuré contre le **maximum des 4 dernières semaines**. Comparer à la semaine précédente pénaliserait à tort la remontée après une décharge.
 - **Un seul nouveau stress à la fois** : volume OU intensité. À l'entrée d'une phase plus intense, le volume est tenu.
 
+## Protection des débutants (longueur de chaque sortie)
+
+Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km chacune, ce qui est trop pour quelqu'un dont la plus longue sortie est de 3 km. Le moteur ajoute donc des règles **par séance** :
+
+- la sortie longue ne grimpe que d'environ **10 %** par rapport à la plus longue sortie récente (pas minimum de 0,3 km sous 10 km, 1,5 km au-delà) ;
+- **aucune sortie facile ne dépasse la sortie longue** de la semaine ;
+- le volume de la semaine est plafonné par ce que les sorties peuvent contenir (`sorties × sortie longue`), avec une explication, au lieu de gonfler chaque sortie : pour monter, il faut **plus de sorties**, pas des sorties plus longues ;
+- une **séance dure** (échauffement et retour au calme inclus) ne dépasse pas ~1,3 × la sortie longue, sinon elle est remplacée par du facile avec strides ;
+- le **test 3 km chrono** est réservé aux coureurs réguliers et avancés ;
+- sans plus longue sortie déclarée, elle est estimée à `volume hebdo ÷ 3`, jamais « illimitée ».
+
 ## Périodisation (`generatePlan`)
 
 - **Objectifs** : 5 km, 10 km, semi, marathon, trail court, trail moyen, ultra, « courir de zéro », « garder la forme ».

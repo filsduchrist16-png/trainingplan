@@ -246,3 +246,38 @@ describe('récupération et maintien', () => {
     expect(m.notes.at(-1)!.ruleId).toBe('week.maintenance');
   });
 });
+
+describe('débutant dont la plus longue sortie est courte (garde-fou de séance)', () => {
+  const beginner = (over: Partial<PlanRequest> = {}) => generatePlan({
+    goal: 'route_5k', startDate: '2026-10-19', race: { date: '2027-01-23', distanceKm: 5, elevationGainM: 0 },
+    experience: 'debutant', difficulty: 'equilibre', currentWeeklyKm: 15, longestRecentRunKm: 3.2,
+    availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] }, ...over,
+  });
+
+  it('la sortie longue ne grimpe que de ~10 % par rapport à la plus longue sortie', () => {
+    const p = beginner();
+    expect(p.weeks[0]!.longRunKm).toBeLessThanOrEqual(3.5);
+  });
+  it('le volume est plafonné par ce que 3 sorties peuvent contenir, et le plan l’explique', () => {
+    const w = beginner().weeks[0]!;
+    expect(w.targetKm).toBeLessThanOrEqual(10.5);
+    expect(w.notes.map((n) => n.ruleId)).toContain('week.sessioncap');
+  });
+  it('plus de sorties = plus de volume permis (c’est la façon sûre de monter)', () => {
+    const three = beginner().weeks[0]!.targetKm;
+    const five = beginner({ availability: { ...avail, runDaysPerWeek: 5, allowedDays: [1, 2, 4, 5, 6] } }).weeks[0]!.targetKm;
+    expect(five).toBeGreaterThan(three);
+  });
+  it('sans plus longue sortie déclarée, on l’estime depuis le volume (jamais « illimitée »)', () => {
+    const w = beginner({ longestRecentRunKm: undefined, currentWeeklyKm: 12 }).weeks[0]!;
+    expect(w.longRunKm).toBeLessThanOrEqual(4.5); // 12 / 3 sorties = 4 km → ≤ ~4,5
+  });
+  it('un coureur confirmé n’est pas bridé', () => {
+    const w = generatePlan({ ...beginnerBase(), currentWeeklyKm: 40, longestRecentRunKm: 16, experience: 'regulier' }).weeks[0]!;
+    expect(w.notes.map((n) => n.ruleId)).not.toContain('week.sessioncap');
+  });
+});
+
+function beginnerBase(): PlanRequest {
+  return { goal: 'route_10k', startDate: '2026-10-19', race: { date: '2027-03-20', distanceKm: 10, elevationGainM: 0 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 40, availability: avail };
+}

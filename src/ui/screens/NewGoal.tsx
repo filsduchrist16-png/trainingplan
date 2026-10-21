@@ -261,7 +261,8 @@ function Wizard({ athlete }: { athlete: Athlete }) {
               <p className="text-muted">Ton volume <strong>actuel</strong>, pas celui que tu voudrais. Le plan monte d'au plus 10 % par semaine à partir de là.</p>
               {fromHistory && <p className="rounded-xl bg-ok/10 p-3 text-sm text-ok">Pré-rempli à partir de ton historique importé.</p>}
               <Stepper label="Volume par semaine" value={s.currentKm} onChange={(v) => set({ currentKm: v })} max={250} unit="km" />
-              <Stepper label="Plus longue sortie récente" value={s.longestKm} onChange={(v) => set({ longestKm: v })} max={100} unit="km" />
+              <Stepper label="Plus longue sortie récente" value={s.longestKm} onChange={(v) => set({ longestKm: v })} step={0.5} max={100} unit="km" />
+              <p className="text-xs text-muted">Ta plus longue course d'une traite, en km. C'est elle qui limite la longueur de <em>chaque</em> sortie du plan : on l'allonge de ~10 % à la fois. Pas sûr? Mets une valeur un peu basse.</p>
               <Why>Partir de ton vrai volume, c'est la base de la prévention : os, tendons et périoste s'adaptent plus lentement que le cardio. Sous 10 km/sem, le plan commence par de la marche-course.</Why>
             </>
           )}

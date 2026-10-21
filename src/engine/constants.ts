@@ -202,6 +202,14 @@ export const LONG_GOAL_MIN_LONG_RUN_MIN = 180;
 /** Croissance max de la sortie longue d'une semaine à l'autre : +10 % ou +1,5 km (le plus grand). */
 export const LONG_RUN_GROWTH = 0.1;
 export const LONG_RUN_GROWTH_MIN_KM = 1.5;
+/**
+ * Coureur dont la plus longue sortie est courte (< 10 km) : on ne peut pas ajouter 1,5 km d'un coup
+ * (+47 % sur 3,2 km). Le pas minimum est plus petit, donc la croissance reste ≈ +10 %.
+ */
+export const LONG_RUN_GROWTH_MIN_KM_SHORT = 0.3;
+export const LONG_RUN_SHORT_THRESHOLD_KM = 10;
+/** Sans plus longue sortie déclarée, on suppose que le volume hebdo se répartit sur ce nombre de sorties. */
+export const ASSUMED_RUNS_PER_WEEK = 3;
 
 /** D+ hebdo cible (trail) = km × (D+/km de la course) × facteur de phase. Descentes et D+ montent progressivement. */
 export const ELEVATION_PHASE_FACTOR = {
@@ -218,3 +226,8 @@ export const MIN_RUN_WALK_KM = 1.5;
 export const STRENGTH_SESSION_MIN = 45;
 /** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */
 export const GUT_TRAINING_MIN_MINUTES = 75;
+
+/** Une séance dure (échauffement et retour au calme inclus) ne dépasse pas ~1,3 × la sortie longue de la semaine… */
+export const QUALITY_VS_LONG_RUN = 1.3;
+/** …avec un plancher : un coureur confirmé en décharge peut quand même faire un petit seuil. */
+export const MIN_QUALITY_CAP_KM = 4.5;

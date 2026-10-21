@@ -1,4 +1,4 @@
-import { MIN_EASY_RUN_KM, MIN_RUN_WALK_KM, STRENGTH_SESSION_MIN, VO2_MIN_BASE_WEEKS } from './constants';
+import { MIN_EASY_RUN_KM, MIN_QUALITY_CAP_KM, MIN_RUN_WALK_KM, QUALITY_VS_LONG_RUN, STRENGTH_SESSION_MIN, VO2_MIN_BASE_WEEKS } from './constants';
 import { dayOfWeek, diffDays, weekday } from './dates';
 import { explain } from './explain';
 import type { GoalFamily } from './goals';
@@ -143,7 +143,9 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
 
   // ── Séances clés ──────────────────────────────────────────────────────────
   const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek;
-  const needsTest = ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.kind !== 'course';
+  // Test à fond (3 km chrono) : réservé aux coureurs expérimentés. Un débutant garde ses zones estimées,
+  // et peut calibrer plus tard depuis le Profil quand il a la base.
+  const needsTest = ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
   let qualityCount = Math.max(0, week.keySessions - (longIsKey ? 1 : 0) - (raceInWeek ? 1 : 0));
   if (needsTest) qualityCount = Math.max(qualityCount, 1);
   const maxByDays = Math.floor((runDays.length - 1) / 2);
@@ -157,9 +159,18 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   }
   const qualities = needsTest ? (['test'] as const) : qualityTypes(ctx, week, keyDays.length);
   keyDays = keyDays.slice(0, qualities.length);
+  // Une séance dure ne doit pas être beaucoup plus longue que la sortie longue : échauffement et retour au calme
+  // compris, le total dépasserait ce que le corps a déjà fait. Sinon : du facile avec strides, et on le dit.
+  const qualityCapKm = week.longRunKm > 0 && week.kind !== 'course' && week.kind !== 'taper' ? Math.max(week.longRunKm * QUALITY_VS_LONG_RUN, MIN_QUALITY_CAP_KM) : Infinity;
   keyDays.forEach((d, i) => {
     const q = qualities[i]!;
-    setDay(d, q === 'test' ? calibrationTest(b) : buildQuality(q, b));
+    const built = q === 'test' ? calibrationTest(b) : buildQuality(q, b);
+    if (built.distanceKm > qualityCapKm) {
+      setDay(d, strides(Math.min(qualityCapKm, week.longRunKm), b), false);
+      notes.push(explain('week.quality.light', 'info', 'Qualité reportée', `Cette séance dure ferait ${built.distanceKm} km au total, plus que ta sortie longue (${week.longRunKm} km). On garde du facile avec strides et on bâtit d'abord la base : la qualité reviendra quand tes sorties seront plus longues.`, { seance: built.distanceKm, longue: week.longRunKm }));
+      return;
+    }
+    setDay(d, built);
   });
   if (needsTest) notes.push(explain('week.test', 'conseil', 'Test de calibration', 'Ta FC max est estimée. Un test de 3 km cette semaine, et tes zones et allures deviennent justes.'));
 
@@ -212,7 +223,8 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   for (const d of easyDays) {
     // Plafond horaire du jour : on ne transforme pas une sortie facile en longue cachée.
     const maxMin = d >= 6 ? av.maxWeekendMinutes : av.maxWeekdayMinutes;
-    const capKm = maxMin / paceForTarget({ zone: 'z2' }, b);
+    // Jamais plus long que la sortie longue de la semaine (sinon la « longue » n'en est plus une).
+    const capKm = Math.min(maxMin / paceForTarget({ zone: 'z2' }, b), week.longRunKm > 0 && week.kind !== 'taper' && week.kind !== 'course' ? Math.max(week.longRunKm, MIN_EASY_RUN_KM) : Infinity);
     const km = Math.round(Math.min(perEasy, capKm) * 2) / 2;
     unplaced += Math.max(0, perEasy - capKm);
     const dayAfterLong = d === nextDay && byDay.has(longDay);

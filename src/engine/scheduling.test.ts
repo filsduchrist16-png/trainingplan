@@ -150,7 +150,10 @@ describe('spécificités', () => {
   it('toutes les sorties prises par la qualité : avertissement de volume', () => {
     const tiny = { ...avail, runDaysPerWeek: 2, allowedDays: [2, 6] as Availability['allowedDays'] };
     const { weeks } = fullPlan('route_marathon', { availability: tiny, currentWeeklyKm: 40, experience: 'avance' });
-    expect(weeks.flatMap((w) => w.notes).some((n) => n.ruleId === 'week.volume.short')).toBe(true);
+    // Le plan plafonne d'abord le volume à ce que 2 sorties peuvent contenir, et le dit…
+    expect(weeks.flatMap((w) => w.week.notes).some((n) => n.ruleId === 'week.sessioncap')).toBe(true);
+    // …donc la semaine planifiée colle à la cible plafonnée.
+    for (const { week, sessions } of weeks) expect(Math.abs(runKm(sessions) - week.targetKm)).toBeLessThan(week.targetKm * 0.25 + 3);
   });
   it('course B dans la semaine : course le jour J, repos autour', () => {
     const plan = generatePlan({ goal: 'trail_moyen', startDate: START, race: { date: '2026-10-24', distanceKm: 43, elevationGainM: 1500 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 30, availability: avail, bRaces: [{ date: '2026-06-06', distanceKm: 30 }] });
@@ -232,5 +235,45 @@ describe('back-to-back sur 7 jours', () => {
     const { weeks } = fullPlan('trail_moyen', { availability: { ...avail, runDaysPerWeek: 7 } });
     const w = weeks.find((x) => x.sessions.some((s) => s.type === 'back_to_back' && !s.isKey))!;
     expect(w.sessions.filter((s) => weekday(s.date) === 7 && isRunType(s.type))).toHaveLength(1);
+  });
+});
+
+describe('cohérence des sorties dans la semaine', () => {
+  it('aucune sortie facile n’est plus longue que la sortie longue de la semaine', () => {
+    const { weeks } = fullPlan('route_5k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.2, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] } });
+    for (const { week, sessions } of weeks) {
+      if (week.kind === 'taper' || week.kind === 'course' || !week.longRunKm) continue;
+      const easy = sessions.filter((s) => s.type === 'z2_endurance' || s.type === 'strides' || s.type === 'z1_recup');
+      for (const s of easy) expect(s.distanceKm ?? 0, `${s.date} ${s.title}`).toBeLessThanOrEqual(Math.max(week.longRunKm, 3) + 1.2);
+    }
+  });
+  it('première semaine du débutant : rien au-dessus de ~4 km', () => {
+    const { weeks } = fullPlan('route_5k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.2, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] } });
+    for (const s of weeks[0]!.sessions.filter((x) => x.distanceKm)) expect(s.distanceKm!).toBeLessThanOrEqual(4.5);
+  });
+});
+
+describe('débutant : ni test à fond ni séance dure plus longue que la longue', () => {
+  const novice = { experience: 'debutant' as const, currentWeeklyKm: 15, longestRecentRunKm: 3.2, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
+  it('pas de test 3 km chrono', () => {
+    const { weeks } = fullPlan('route_5k', novice);
+    expect(weeks.flatMap((w) => w.sessions).some((s) => s.type === 'test')).toBe(false);
+  });
+  it('aucune séance de course de la 1re semaine ne dépasse la longue + marge', () => {
+    const { weeks } = fullPlan('route_5k', novice);
+    const w0 = weeks[0]!;
+    for (const s of w0.sessions.filter((x) => x.distanceKm)) expect(s.distanceKm!).toBeLessThanOrEqual(Math.max(w0.week.longRunKm * 1.3, 4.5));
+  });
+  it('une séance dure trop longue est remplacée par du facile, avec explication', () => {
+    const { weeks } = fullPlan('route_5k', novice);
+    const notes = weeks.flatMap((w) => w.notes).map((n) => n.ruleId);
+    expect(notes).toContain('week.quality.light');
+    const w = weeks.find((x) => x.notes.some((n) => n.ruleId === 'week.quality.light'))!;
+    expect(w.sessions.some((s) => s.isKey && s.type !== 'course')).toBe(false);
+  });
+  it('un coureur confirmé garde ses séances dures et son test', () => {
+    const { weeks } = fullPlan('route_10k', { experience: 'regulier', currentWeeklyKm: 40, longestRecentRunKm: 14 });
+    expect(weeks[1]!.sessions.some((s) => s.type === 'test')).toBe(true);
+    expect(weeks.flatMap((w) => w.notes).map((n) => n.ruleId)).not.toContain('week.quality.light');
   });
 });
