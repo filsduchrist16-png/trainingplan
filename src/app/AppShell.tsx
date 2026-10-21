@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router';
 import { cn } from '@/ui/lib/cn';
 import { t } from '@/ui/lib/strings';
 import { UpdatePrompt } from './UpdatePrompt';
+import { versionLabel } from './buildInfo';
 
 const tabs = [
   { to: '/', label: t.nav.today, icon: SunIcon, end: true },
@@ -19,6 +20,7 @@ export function AppShell() {
       </a>
       <main id="contenu" className="flex-1 px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <Outlet />
+        <footer className="num mt-10 text-center text-[11px] text-muted" aria-label="Version de l'app">{versionLabel()}</footer>
       </main>
       <nav
         aria-label="Navigation principale"
