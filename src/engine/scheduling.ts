@@ -26,6 +26,8 @@ export interface WeekContext {
   hasPoles: boolean;
   /** Index de la semaine dans le plan. */
   planWeek: number;
+  /** Niveau de départ en marche-course (résultat de startMode). */
+  runWalkStage?: number;
   /** Index de la semaine dans sa phase. */
   phaseWeek: number;
   race?: { date: ISODate; distanceKm: number };
@@ -128,7 +130,7 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   const av = ctx.availability;
   const trail = ctx.family === 'trail';
   const b: BuildContext = {
-    goal: ctx.goal, trail, vdot: ctx.vdot, phaseWeek: ctx.phaseWeek, planWeek: ctx.planWeek, hasPoles: ctx.hasPoles,
+    goal: ctx.goal, trail, vdot: ctx.vdot, phaseWeek: ctx.phaseWeek, planWeek: ctx.planWeek, hasPoles: ctx.hasPoles, runWalkStage: ctx.runWalkStage,
     light: week.phase === 'base' || week.kind === 'decharge' || week.kind === 'maintien',
     taper: week.kind === 'taper' || week.kind === 'course',
   };

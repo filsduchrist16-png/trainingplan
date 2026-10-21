@@ -1,12 +1,13 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  DEMARRAGE_THRESHOLD_KM, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_GROWTH_MIN_KM, LONG_RUN_GROWTH_MIN_KM_SHORT, LONG_RUN_SHARE_BY_PHASE, LONG_RUN_SHORT_THRESHOLD_KM,
+  ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_GROWTH_MIN_KM, LONG_RUN_GROWTH_MIN_KM_SHORT, LONG_RUN_SHARE_BY_PHASE, LONG_RUN_SHORT_THRESHOLD_KM,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
   PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
 } from './constants';
 import { addDays, diffDays, mondayOf } from './dates';
 import { explain } from './explain';
+import { startMode, type StartMode } from './startmode';
 import { DIFFICULTY_FACTOR, GOALS, experienceIndex, type GoalFamily } from './goals';
 import { easyMinutes } from './paces';
 import { progressionReference } from './progression';
@@ -33,6 +34,8 @@ export interface PlanRequest {
   /** Volumes des dernières semaines (plus ancienne → plus récente), pour la référence de progression. */
   recentWeeksKm?: number[];
   longestRecentRunKm?: number;
+  /** Minutes de course sans s'arrêter (décide de la marche-course). */
+  continuousMin?: number;
   availability: Availability;
   vdot?: number;
   bRaces?: { date: ISODate; distanceKm: number; name?: string }[];
@@ -60,6 +63,8 @@ export interface PlanDraft {
   peakKm: number;
   warnings: Explanation[];
   ok: boolean;
+  /** Marche-course ou course continue au départ, et niveau de départ. */
+  start?: StartMode;
 }
 
 const roundKm = (km: number) => (km >= 10 ? Math.round(km) : Math.round(km * 2) / 2);
@@ -137,7 +142,10 @@ export function generatePlan(req: PlanRequest): PlanDraft {
 
   // ── Volumes cible ─────────────────────────────────────────────────────────
   const exp = experienceIndex(req.experience);
-  const needsDemarrage = req.currentWeeklyKm < DEMARRAGE_THRESHOLD_KM && family !== 'forme';
+  // « Courir de zéro » est toujours évalué comme un premier départ.
+  const start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
+  const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
+  if (family !== 'forme') warnings.unshift(start.explanation);
   const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
   let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[req.difficulty]);
   const cap = timeCapKm(req.availability, req.vdot, trail);
@@ -154,12 +162,12 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   let phases: Phase[];
   if (family === 'forme') phases = Array<Phase>(buildWeeks).fill('maintien');
   else if (family === 'debuter') {
-    const dem = Math.max(1, Math.ceil(buildWeeks * 0.6));
+    const dem = Math.max(1, Math.min(start.weeksToExit || 2, buildWeeks - 1));
     phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(buildWeeks - dem).fill('base')];
   } else {
     phases = allocatePhases(buildWeeks);
     if (needsDemarrage) {
-      const dem = Math.min(phases.filter((p) => p === 'base').length, Math.max(3, Math.round(buildWeeks * 0.3)));
+      const dem = Math.min(phases.filter((p) => p === 'base').length, Math.max(2, start.weeksToExit));
       phases = phases.map((p, i) => (i < dem ? 'demarrage' : p));
     }
   }
@@ -272,7 +280,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   if (family !== 'forme' && peakKm < targetPeak * 0.95) {
     warnings.push(explain('peak.unreachable', 'conseil', 'Pic plafonné', `Pic visé ${targetPeak} km/sem, atteignable ${peakKm} km d'ici la course en respectant +10 %/sem et les décharges. Pas grave : on arrive en santé, c'est ce qui compte.`, { target: targetPeak, reached: peakKm }));
   }
-  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true };
+  return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start };
 }
 
 function longRunFor(km: number, phase: Phase, longest: number, maxMin: number, req: PlanRequest, trail: boolean, gainPerKm: number): number {

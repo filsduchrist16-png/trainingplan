@@ -48,10 +48,10 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
         <Field label={`Effort perçu (RPE) : ${rpe}/10`} hint="1 = marche tranquille · 5 = soutenu · 10 = à bloc">
           <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full accent-[var(--accent)]" aria-label="RPE" />
         </Field>
-        <Field label="Sensations">
+        <Field label="Sensations" group>
           <Segmented label="Sensations" value={feeling} onChange={setFeeling} options={[{ value: 1, label: '😖' }, { value: 2, label: '😕' }, { value: 3, label: '😐' }, { value: 4, label: '🙂' }, { value: 5, label: '😄' }]} />
         </Field>
-        <Field label="Une douleur?">
+        <Field label="Une douleur?" group>
           <div className="flex flex-wrap gap-2">
             <Chip selected={!pain} onToggle={() => setPain(null)}>Aucune</Chip>
             {PAIN.map(({ z, label }) => (

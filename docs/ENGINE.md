@@ -32,6 +32,16 @@ Quand le moteur doit choisir, il choisit la santé et le dit.
 - **Volume** : au plus +10 % par semaine, mesuré contre le **maximum des 4 dernières semaines**. Comparer à la semaine précédente pénaliserait à tort la remontée après une décharge.
 - **Un seul nouveau stress à la fois** : volume OU intensité. À l'entrée d'une phase plus intense, le volume est tenu.
 
+## Marche-course : qui commence comment (`startMode`)
+
+Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continue, 10 × 1 km n'en est pas), mais ce que la personne peut **courir d'une traite**.
+
+1. **Capacité continue** (minutes), dans l'ordre : ce que la personne déclare ; sinon plus longue sortie × allure facile (7 min/km par défaut) ; sinon volume hebdo ÷ 3 sorties × allure ; sinon *inconnue*.
+2. **Seuil selon l'expérience** : marche-course si la capacité est **sous** ce seuil. Jamais couru : 30 min · débutant : 20 min · régulier : 10 min (reprise après une grosse pause) · avancé : jamais. Capacité inconnue : prudence (marche-course, sauf avancé). Seuils marqués *À VALIDER*.
+3. **Niveau de départ** : le 1er intervalle de course vaut la **moitié** de la capacité (marge), sur l'échelle 1 · 2 · 3 · 4 · 5 · 8 · 10 · 15 · 20 · 30 min. Qui tient 10 min d'affilée démarre à 5 min de course, pas à 1.
+4. **Sortie** : on monte d'un cran par semaine jusqu'à 20 min de course continue (au moins 2 semaines). La phase « démarrage » dure exactement ce temps.
+5. « Courir de zéro » est toujours évalué comme un premier départ.
+
 ## Protection des débutants (longueur de chaque sortie)
 
 Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km chacune, ce qui est trop pour quelqu'un dont la plus longue sortie est de 3 km. Le moteur ajoute donc des règles **par séance** :

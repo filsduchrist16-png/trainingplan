@@ -119,6 +119,7 @@ export async function createPlan(
       hrMaxEstimated: athlete.hrMaxSource === 'estimee',
       hasPoles: athlete.hasPoles,
       planWeek: i,
+      runWalkStage: draft.start?.stage,
       phaseWeek: phaseWeekIndex(draft.weeks, i),
       ...(req.race ? { race: { date: req.race.date, distanceKm: req.race.distanceKm } } : {}),
       ...(bRace ? { bRace: { date: bRace.date, distanceKm: bRace.distanceKm } } : {}),

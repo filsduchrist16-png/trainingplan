@@ -15,6 +15,7 @@ export { SESSION_LIBRARY, sessionInfo, isKeyType, isRunType, type SessionInfo, t
 export { generatePlan, generateRecovery, toMaintenanceWeek, allocatePhases, timeCapKm, type PlanRequest, type PlanDraft, type WeekPlan } from './periodization';
 export { buildWeekSessions, pickRunDays, validateMove, type WeekContext, type SessionDraft, type MovableSession } from './scheduling';
 export { paceForTarget, measure } from './builders';
+export { startMode, firstStage, type StartMode, type StartInput } from './startmode';
 export { evaluateHealth, healthLight, zoneLabel, type HealthStatus, type HealthLevel, type HealthInput } from './guards';
 export { adjustToday, findMoveTarget, scaleSession, easySession, crossSession, restSession, type DayDecision, type DayAction, type TodaySession } from './readiness';
 export { debrief, cardiacDrift, type Debrief, type DebriefInput } from './debrief';

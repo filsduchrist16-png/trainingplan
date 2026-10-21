@@ -80,3 +80,18 @@ test('profil : zones manuelles et FC max', async ({ page }) => {
   await page.getByRole('radio', { name: 'Automatiques' }).click();
   await expect(page.getByText('123–143 bpm')).toBeVisible();
 });
+
+test('l’assistant décide de la marche-course selon ce que tu cours d’une traite', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^5 km/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: /Je n'ai jamais couru/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('button', { name: 'Moins de 5 min' }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('On commence en marche-course')).toBeVisible();
+  await expect(page.getByText(/1 min course/)).toBeVisible();
+});

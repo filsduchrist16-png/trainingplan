@@ -40,6 +40,8 @@ interface State {
   experience: Experience;
   currentKm: number;
   longestKm: number;
+  /** Minutes courues d'une traite ; undefined = je ne sais pas. */
+  continuousMin?: number;
   fitnessMode: 'temps' | 'vma' | 'inconnu';
   refKm: number;
   refTime: string;
@@ -133,6 +135,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
         difficulty: s.difficulty,
         currentWeeklyKm: s.currentKm,
         ...(s.longestKm ? { longestRecentRunKm: s.longestKm } : {}),
+        ...(s.continuousMin !== undefined ? { continuousMin: s.continuousMin } : {}),
         availability: s.availability,
         ...(validVdot ? { vdot: validVdot } : {}),
       }
@@ -261,6 +264,13 @@ function Wizard({ athlete }: { athlete: Athlete }) {
               <p className="text-muted">Ton volume <strong>actuel</strong>, pas celui que tu voudrais. Le plan monte d'au plus 10 % par semaine à partir de là.</p>
               {fromHistory && <p className="rounded-xl bg-ok/10 p-3 text-sm text-ok">Pré-rempli à partir de ton historique importé.</p>}
               <Stepper label="Volume par semaine" value={s.currentKm} onChange={(v) => set({ currentKm: v })} max={250} unit="km" />
+              <Field label="Combien de temps peux-tu courir sans t'arrêter ni marcher?" hint="C'est ça qui décide si on commence par de la marche-course. Pas sûr? Choisis le plus bas." group>
+                <div className="flex flex-wrap gap-2">
+                  {([[undefined, 'Je sais pas'], [3, 'Moins de 5 min'], [8, '5 à 10 min'], [15, '10 à 20 min'], [25, '20 à 30 min'], [40, '30 min et +']] as [number | undefined, string][]).map(([v, label]) => (
+                    <Chip key={label} selected={s.continuousMin === v} onToggle={() => set({ continuousMin: v })}>{label}</Chip>
+                  ))}
+                </div>
+              </Field>
               <Stepper label="Plus longue sortie récente" value={s.longestKm} onChange={(v) => set({ longestKm: v })} step={0.5} max={100} unit="km" />
               <p className="text-xs text-muted">Ta plus longue course d'une traite, en km. C'est elle qui limite la longueur de <em>chaque</em> sortie du plan : on l'allonge de ~10 % à la fois. Pas sûr? Mets une valeur un peu basse.</p>
               <Why>Partir de ton vrai volume, c'est la base de la prévention : os, tendons et périoste s'adaptent plus lentement que le cardio. Sous 10 km/sem, le plan commence par de la marche-course.</Why>
@@ -289,10 +299,10 @@ function Wizard({ athlete }: { athlete: Athlete }) {
           {step === 5 && (
             <>
               <h1 className="text-3xl font-semibold">Ta semaine type</h1>
-              <Field label="Sorties de course par semaine">
+              <Field label="Sorties de course par semaine" group>
                 <Segmented label="Sorties par semaine" value={s.availability.runDaysPerWeek} onChange={(v) => set({ availability: { ...s.availability, runDaysPerWeek: v } })} options={[2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
               </Field>
-              <Field label="Jours possibles">
+              <Field label="Jours possibles" group>
                 <div className="flex flex-wrap gap-2">
                   {DAYS.map(({ d, short }) => (
                     <Chip key={d} selected={s.availability.allowedDays.includes(d)} onToggle={() => {
@@ -302,7 +312,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                   ))}
                 </div>
               </Field>
-              <Field label="Jour de la sortie longue">
+              <Field label="Jour de la sortie longue" group>
                 <div className="flex flex-wrap gap-2">
                   {DAYS.filter(({ d }) => s.availability.allowedDays.includes(d)).map(({ d, short }) => (
                     <Chip key={d} selected={s.availability.longRunDay === d} onToggle={() => set({ availability: { ...s.availability, longRunDay: d } })}>{short}</Chip>
@@ -317,20 +327,20 @@ function Wizard({ athlete }: { athlete: Athlete }) {
           {step === 6 && (
             <>
               <h1 className="text-3xl font-semibold">Options</h1>
-              <Field label="Renforcement par semaine">
+              <Field label="Renforcement par semaine" group>
                 <Segmented label="Renforcement" value={s.availability.strengthPerWeek} onChange={(v) => set({ availability: { ...s.availability, strengthPerWeek: v } })} options={[{ value: 0 as const, label: 'Aucun' }, { value: 1 as const, label: '1×' }, { value: 2 as const, label: '2×' }]} />
               </Field>
-              <Field label="Difficulté">
+              <Field label="Difficulté" group>
                 <ChoiceGroup label="Difficulté">
                   <ChoiceCard selected={s.difficulty === 'prudent'} onSelect={() => set({ difficulty: 'prudent' })} title="Prudent" subtitle="Volume de pointe plus bas, idéal en reprise ou si la vie est chargée" />
                   <ChoiceCard selected={s.difficulty === 'equilibre'} onSelect={() => set({ difficulty: 'equilibre' })} title="Équilibré" subtitle="Le bon dosage pour la plupart" />
                   <ChoiceCard selected={s.difficulty === 'ambitieux'} onSelect={() => set({ difficulty: 'ambitieux' })} title="Ambitieux" subtitle="Plus de volume et de qualité. La règle des 10 % reste la même." />
                 </ChoiceGroup>
               </Field>
-              <Field label="Terrain près de chez toi">
+              <Field label="Terrain près de chez toi" group>
                 <Segmented label="Terrain" value={s.localVertical} onChange={(v) => set({ localVertical: v })} options={[{ value: 'plat', label: 'Plat' }, { value: 'vallonne', label: 'Vallonné' }, { value: 'montagneux', label: 'Montagne' }]} />
               </Field>
-              <Field label="Si la course doit être remplacée (blessure)">
+              <Field label="Si la course doit être remplacée (blessure)" group>
                 <div className="flex flex-wrap gap-2">
                   {([['velo', 'Vélo'], ['home_trainer', 'Home trainer'], ['natation', 'Natation'], ['elliptique', 'Elliptique']] as [CrossTraining, string][]).map(([c, label]) => (
                     <Chip key={c} selected={s.crossTraining.includes(c)} onToggle={() => set({ crossTraining: s.crossTraining.includes(c) ? s.crossTraining.filter((x) => x !== c) : [...s.crossTraining, c] })}>{label}</Chip>
@@ -344,14 +354,14 @@ function Wizard({ athlete }: { athlete: Athlete }) {
           {step === 7 && (
             <>
               <h1 className="text-3xl font-semibold">Santé</h1>
-              <Field label="Blessures passées (ça rend le plan plus prudent)">
+              <Field label="Blessures passées (ça rend le plan plus prudent)" group>
                 <div className="flex flex-wrap gap-2">
                   {PAIN_ZONES.map(({ z, label }) => (
                     <Chip key={z} selected={s.pastInjuries.includes(z)} onToggle={() => set({ pastInjuries: s.pastInjuries.includes(z) ? s.pastInjuries.filter((x) => x !== z) : [...s.pastInjuries, z] })}>{label}</Chip>
                   ))}
                 </div>
               </Field>
-              <Field label="Une douleur en ce moment?">
+              <Field label="Une douleur en ce moment?" group>
                 <div className="flex flex-wrap gap-2">
                   <Chip selected={!s.currentPain} onToggle={() => set({ currentPain: undefined })}>Non</Chip>
                   {PAIN_ZONES.slice(0, 6).map(({ z, label }) => (
@@ -412,7 +422,7 @@ function Preview({ request, preview, athlete }: { request: PlanRequest; preview:
   const firstWeek = first
     ? buildWeekSessions(first, {
         goal: request.goal, family: preview.family, availability: request.availability, experience: request.experience, vdot: request.vdot,
-        hrMaxEstimated: athlete.hrMaxSource === 'estimee', hasPoles: athlete.hasPoles, planWeek: 0, phaseWeek: phaseWeekIndex(preview.weeks, 0),
+        hrMaxEstimated: athlete.hrMaxSource === 'estimee', hasPoles: athlete.hasPoles, planWeek: 0, runWalkStage: preview.start?.stage, phaseWeek: phaseWeekIndex(preview.weeks, 0),
         ...(request.race ? { race: { date: request.race.date, distanceKm: request.race.distanceKm } } : {}), fromDate: request.startDate,
       }).sessions.filter((x) => x.type !== 'repos')
     : [];

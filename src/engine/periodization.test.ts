@@ -119,7 +119,7 @@ describe('cas limites', () => {
     const p = generatePlan(req({ race: { date: addDays(START, 70 * 7), distanceKm: 43, elevationGainM: 1500 } }));
     expect(p.weeks).toHaveLength(52);
     expect(p.weeks[0]!.startDate > START).toBe(true);
-    expect(p.warnings[0]!.ruleId).toBe('plan.long');
+    expect(p.warnings.map((w) => w.ruleId)).toContain('plan.long');
   });
   it('démarrage en cours de semaine : le plan commence au lundi', () => {
     expect(generatePlan(req({ startDate: '2026-04-23' })).weeks[0]!.startDate).toBe(START);

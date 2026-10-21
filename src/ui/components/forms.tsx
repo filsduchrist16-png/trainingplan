@@ -111,12 +111,26 @@ export function Chip({ selected, onToggle, children }: { selected: boolean; onTo
   );
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+/**
+ * Champ avec libellé. Un seul contrôle : <label> (cliquer le libellé donne le focus).
+ * Un GROUPE de boutons (puces, segments) : `group`, sinon le libellé devient le nom du premier bouton.
+ */
+export function Field({ label, hint, children, group }: { label: string; hint?: ReactNode; children: ReactNode; group?: boolean }) {
+  const hintEl = hint && <span className="block text-xs text-muted">{hint}</span>;
+  if (group) {
+    return (
+      <div role="group" aria-label={label} className="space-y-1.5">
+        <span aria-hidden className="block text-sm font-medium">{label}</span>
+        {children}
+        {hintEl}
+      </div>
+    );
+  }
   return (
     <label className="block space-y-1.5">
       <span className="text-sm font-medium">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-muted">{hint}</span>}
+      {hintEl}
     </label>
   );
 }

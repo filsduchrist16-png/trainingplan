@@ -175,8 +175,19 @@ export const FITNESS_UPDATE_STEP = 1;
 /** Répartition des semaines hors taper : base / spécifique 1 / spécifique 2 (pic) / pré-compétition (bloc de 27 sem. → 9/7/6/3 + 2 taper). */
 export const PHASE_RATIOS = { spec1: 0.28, spec2: 0.24, precomp: 0.12 } as const;
 
-/** Sous ce volume hebdo (km), on commence par une phase « démarrage » en marche-course. */
-export const DEMARRAGE_THRESHOLD_KM = 10;
+/**
+ * Marche-course : on démarre ainsi quand la capacité de course CONTINUE est sous ce seuil (minutes), selon l'expérience.
+ * Ce n'est pas le volume hebdo qui compte (3 × 4 km est continu, 10 × 1 km ne l'est pas) mais ce qu'on peut courir d'une traite.
+ * Jamais couru : 30 min (os, tendons et périoste ne sont pas adaptés, même si le souffle suit).
+ * Débutant : 20 min. Régulier : 10 min (reprise après une longue pause). Avancé : jamais. À VALIDER.
+ */
+export const RUN_WALK_BELOW_CONTINUOUS_MIN = { jamais: 30, debutant: 20, regulier: 10, avance: 0 } as const;
+/** Échelle de marche-course : minutes de course par intervalle, semaine après semaine (1 min → 30 min continues). */
+export const RUN_WALK_LADDER_MIN = [1, 2, 3, 4, 5, 8, 10, 15, 20, 30] as const;
+/** Le 1er intervalle vaut la moitié de ce qu'on court d'une traite : on garde de la marge. */
+export const RUN_WALK_FIRST_INTERVAL_SHARE = 0.5;
+/** On quitte la marche-course quand l'intervalle atteint cette durée (minutes de course continue). */
+export const RUN_WALK_EXIT_MIN = 20;
 /** Volume de départ minimal d'un plan démarrage (≈ 3 × 20 min de marche-course). */
 export const DEMARRAGE_START_KM = 6;
 

@@ -1,4 +1,4 @@
-import { GUT_TRAINING_MIN_MINUTES, TRAIL_PACE_FACTOR } from './constants';
+import { GUT_TRAINING_MIN_MINUTES, RUN_WALK_LADDER_MIN, TRAIL_PACE_FACTOR } from './constants';
 import { pacesFromVdot, easyPace, type PaceKey } from './paces';
 import { SESSION_LIBRARY } from './library';
 import type { GoalKind, Intensity, SessionType, Step } from './types';
@@ -20,6 +20,8 @@ export interface BuildContext {
   hasPoles?: boolean;
   /** Semaine du plan (pour la marche-course). */
   planWeek?: number;
+  /** Niveau de départ dans l'échelle de marche-course (voir startmode.ts). */
+  runWalkStage?: number;
 }
 
 export interface BuiltSession {
@@ -204,7 +206,8 @@ export function backToBackSecond(minutes: number, ctx: BuildContext): BuiltSessi
 
 export function runWalk(km: number, ctx: BuildContext): BuiltSession {
   const w = ctx.planWeek ?? 0;
-  const run = pick([1, 2, 3, 4, 5, 8, 10, 15, 20, 30], w);
+  // On part du niveau de la personne (pas toujours de 1 min) et on monte d'un cran par semaine.
+  const run = pick([...RUN_WALK_LADDER_MIN], (ctx.runWalkStage ?? 0) + w);
   const walk = run >= 20 ? 0 : run <= 3 ? 1 : 2;
   const total = Math.max(15, Math.round(km * paceForTarget({ zone: 'z2' }, ctx) * 1.15));
   const reps = Math.max(1, Math.round(total / (run + walk)));

@@ -69,10 +69,10 @@ function ProfileFor({ athlete }: { athlete: Athlete }) {
 
       <Card className="space-y-4">
         <Eyebrow>Disponibilités</Eyebrow>
-        <Field label="Sorties par semaine">
+        <Field label="Sorties par semaine" group>
           <Segmented label="Sorties par semaine" value={athlete.availability.runDaysPerWeek} onChange={(v) => void save({ availability: { ...athlete.availability, runDaysPerWeek: v } })} options={[2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
         </Field>
-        <Field label="Jours possibles">
+        <Field label="Jours possibles" group>
           <div className="flex flex-wrap gap-2">
             {DAYS.map(({ d, short }) => (
               <Chip key={d} selected={athlete.availability.allowedDays.includes(d)} onToggle={() => {
@@ -82,7 +82,7 @@ function ProfileFor({ athlete }: { athlete: Athlete }) {
             ))}
           </div>
         </Field>
-        <Field label="Jour de la sortie longue">
+        <Field label="Jour de la sortie longue" group>
           <div className="flex flex-wrap gap-2">
             {DAYS.filter(({ d }) => athlete.availability.allowedDays.includes(d)).map(({ d, short }) => (
               <Chip key={d} selected={athlete.availability.longRunDay === d} onToggle={() => void save({ availability: { ...athlete.availability, longRunDay: d } })}>{short}</Chip>
