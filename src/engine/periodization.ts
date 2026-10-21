@@ -1,6 +1,6 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_GROWTH_MIN_KM, LONG_RUN_GROWTH_MIN_KM_SHORT, LONG_RUN_SHARE_BY_PHASE, LONG_RUN_SHORT_THRESHOLD_KM,
+  ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_GROWTH_MIN_KM, LONG_RUN_GROWTH_MIN_KM_SHORT, LONG_RUN_SHARE_BY_PHASE, LONG_RUN_SHORT_THRESHOLD_KM,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
   PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
@@ -8,6 +8,9 @@ import {
 import { addDays, diffDays, mondayOf } from './dates';
 import { explain } from './explain';
 import { startMode, type StartMode } from './startmode';
+import { runWalk as runWalkSession } from './builders';
+import { JOURNEY_DONE, initialRunWalkState, projectStages, sessionsToReach, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
+import { journeyDays } from './scheduling';
 import { DIFFICULTY_FACTOR, GOALS, experienceIndex, type GoalFamily } from './goals';
 import { easyMinutes } from './paces';
 import { progressionReference } from './progression';
@@ -36,6 +39,8 @@ export interface PlanRequest {
   longestRecentRunKm?: number;
   /** Minutes de course sans s'arrêter (décide de la marche-course). */
   continuousMin?: number;
+  /** État courant du parcours de démarrage (re-planification) ; sinon dérivé de startMode. */
+  runWalk?: RunWalkState;
   availability: Availability;
   vdot?: number;
   bRaces?: { date: ISODate; distanceKm: number; name?: string }[];
@@ -53,6 +58,10 @@ export interface WeekPlan {
   notes: Explanation[];
   raceDate?: ISODate;
   bRaceDate?: ISODate;
+  /** Semaine du parcours de démarrage : palier prévu de chaque séance (si toutes sont validées). */
+  runWalk?: { sessions: { stage: number; validatedAtStage: number }[] };
+  /** Volume du démarrage, exprimé en minutes (les km sont estimés, pour l'affichage). */
+  targetMinutes?: number;
 }
 
 export interface PlanDraft {
@@ -159,18 +168,19 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   // ── Phases ────────────────────────────────────────────────────────────────
   const taperWeeks = req.race ? Math.min(profile.taperWeeks, totalWeeks) : 0;
   const buildWeeks = totalWeeks - taperWeeks;
+  // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
+  const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
+  const spw = Math.max(1, journeyDays(req.availability).length);
+  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE) / spw) : 0;
+  const dem = Math.min(journeyWeeksNeeded, buildWeeks);
   let phases: Phase[];
   if (family === 'forme') phases = Array<Phase>(buildWeeks).fill('maintien');
-  else if (family === 'debuter') {
-    const dem = Math.max(1, Math.min(start.weeksToExit || 2, buildWeeks - 1));
-    phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(buildWeeks - dem).fill('base')];
-  } else {
-    phases = allocatePhases(buildWeeks);
-    if (needsDemarrage) {
-      const dem = Math.min(phases.filter((p) => p === 'base').length, Math.max(2, start.weeksToExit));
-      phases = phases.map((p, i) => (i < dem ? 'demarrage' : p));
-    }
-  }
+  else if (family === 'debuter') phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(buildWeeks - dem).fill('base')];
+  else phases = [...Array<Phase>(dem).fill('demarrage'), ...allocatePhases(buildWeeks - dem)];
+
+  // ── Parcours de démarrage : paliers projetés, séance par séance ───────────
+  const projected = journeyState ? projectStages(journeyState, dem * spw) : [];
+  const buildCtx = { goal: req.goal, trail, vdot: req.vdot, phaseWeek: 0 };
 
   // ── Construction semaine par semaine ──────────────────────────────────────
   const history = [...(req.recentWeeksKm ?? []), ...(req.currentWeeklyKm > 0 ? [req.currentWeeklyKm] : [])];
@@ -184,6 +194,30 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   for (let i = 0; i < buildWeeks; i++) {
     const phase = phases[i]!;
     const notes: Explanation[] = [];
+    if (phase === 'demarrage' && journeyState) {
+      // Semaine de démarrage : pilotée en minutes et en séances validées, pas en km ni en décharges.
+      const chunk = projected.slice(i * spw, (i + 1) * spw);
+      const built = chunk.map((p, k) => runWalkSession(p.stage, buildCtx, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: k === chunk.length - 1 ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0 }));
+      const km = Math.round(built.reduce((a, x) => a + x.distanceKm, 0) * 10) / 10;
+      weeks.push({
+        index: i,
+        startDate: addDays(startMonday, i * 7),
+        phase,
+        kind: 'build',
+        targetKm: km,
+        targetMinutes: built.reduce((a, x) => a + x.durationMin, 0),
+        targetElevationM: 0,
+        keySessions: 0,
+        longRunKm: built.at(-1)!.distanceKm,
+        notes,
+        runWalk: { sessions: chunk },
+      });
+      history.push(km);
+      level = km;
+      // Plus longue sortie de COURSE atteinte (pour faire grandir la longue après le démarrage).
+      longest = Math.max(longest, stageRunMinutes(Math.min(chunk.at(-1)!.stage, JOURNEY_DONE)) / easyMinutes(1, req.vdot));
+      continue;
+    }
     const isLastBeforeTaper = req.race !== undefined && i === buildWeeks - 1;
     let kind: WeekKind;
     let km: number;

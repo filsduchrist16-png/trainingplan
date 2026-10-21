@@ -173,9 +173,11 @@ describe('autres objectifs', () => {
     expect(p.weeks).toHaveLength(10);
     expect(p.weeks[0]!.phase).toBe('demarrage');
     expect(p.weeks[0]!.keySessions).toBe(0);
-    expect(p.weeks[0]!.targetKm).toBe(6);
-    expect(p.weeks.at(-1)!.phase).toBe('base');
-    assertTenPercentRule(p.weeks.map((w) => w.targetKm), [6]);
+    // Volume du démarrage en minutes : paliers 1, 1, 2 (31 + 31 + 30 min), +10 min de marche le jour de la longue.
+    expect(p.weeks[0]!.targetMinutes).toBe(31 + 31 + 30 + 10);
+    expect(p.weeks[0]!.runWalk!.sessions.map((x) => x.stage)).toEqual([1, 1, 2]);
+    // 10 semaines ne suffisent pas pour 30 min depuis le palier 1 : tout le plan reste en démarrage (jamais tronqué).
+    expect(p.weeks.every((w) => w.phase === 'demarrage')).toBe(true);
   });
   it('objectif course pour un débutant à faible volume : phase démarrage d’abord', () => {
     const p = generatePlan(req({ goal: 'route_10k', experience: 'jamais', currentWeeklyKm: 4, race: { date: addDays(START, 15 * 7 + 6), distanceKm: 10, elevationGainM: 0 } }));

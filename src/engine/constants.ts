@@ -212,6 +212,10 @@ export const WALK_PACE_MIN_PER_KM = 11;
 export const WALK_FIRST_START_MIN = 20;
 export const WALK_FIRST_STEP_MIN = 5;
 export const WALK_FIRST_TARGET_MIN = 30;
+/** Strides et sprints en côte seulement quand on court au moins 30 min d'affilée (sortie longue ≥ 30 min). */
+export const STRIDES_MIN_CONTINUOUS_MIN = 30;
+/** Démarrage : au plus 3 séances par semaine, jamais deux jours de suite. */
+export const RUN_WALK_MAX_SESSIONS_PER_WEEK = 3;
 /** Le jour de la longue, pendant le démarrage : même palier, plus 10 min de marche. */
 export const RUN_WALK_LONG_DAY_EXTRA_WALK_MIN = 10;
 /** Le 1er intervalle vaut au plus la moitié de ce qu'on court d'une traite : on garde de la marge. */
@@ -259,8 +263,6 @@ export const ELEVATION_PHASE_FACTOR = {
 
 /** Sortie facile minimale : en dessous, mieux vaut un jour de repos. */
 export const MIN_EASY_RUN_KM = 3;
-/** Idem en marche-course (≈ 15-20 min). */
-export const MIN_RUN_WALK_KM = 1.5;
 /** Durée d'une séance de muscu (min). */
 export const STRENGTH_SESSION_MIN = 45;
 /** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */

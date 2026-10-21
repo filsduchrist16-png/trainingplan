@@ -110,9 +110,9 @@ describe('dans le plan', () => {
     const p = generatePlan({ goal: 'debuter', startDate: '2026-10-19', experience: 'avance', difficulty: 'prudent', currentWeeklyKm: 0, availability: av });
     expect(p.start!.runWalk).toBe(true);
   });
-  it('« courir de zéro » avec déjà 40 min continues : démarrage court (2 semaines) puis base', () => {
+  it('« courir de zéro » avec déjà 40 min continues : pas de démarrage à faire, on passe à la base', () => {
     const p = generatePlan({ goal: 'debuter', startDate: '2026-10-19', experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, continuousMin: 40, availability: av });
-    expect(p.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(2);
+    expect(p.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(0);
   });
   it('« garder la forme » : pas de verdict de marche-course', () => {
     const p = generatePlan({ goal: 'forme', startDate: '2026-10-19', durationWeeks: 6, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 20, availability: av });

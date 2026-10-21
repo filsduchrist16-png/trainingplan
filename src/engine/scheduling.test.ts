@@ -124,9 +124,9 @@ describe('spécificités', () => {
     const types = new Set(weeks.flatMap((w) => w.sessions.map((s) => s.type)));
     expect([...types].every((t) => ['marche_course', 'repos', 'muscu_generale'].includes(t))).toBe(true);
     expect(weeks[0]!.sessions.filter((s) => s.type === 'marche_course')).toHaveLength(3);
-    const first = weeks[0]!.sessions.find((s) => s.type === 'marche_course')!;
-    const last = weeks.at(-1)!.sessions.find((s) => s.type === 'marche_course')!;
-    expect(last.title).not.toBe(first.title);
+    expect(weeks[0]!.sessions[1]!.title).toBe('Marche-course 14 × (30 s course / 1 min marche)');
+    const last = weeks.at(-1)!.sessions.filter((s) => s.type === 'marche_course').at(-1)!;
+    expect(last.title).toMatch(/^(Course continue \d+ min|Marche-course)/);
   });
   it('récup post-course : Z1 puis Z2, sans qualité ni muscu', async () => {
     const { generateRecovery } = await import('./periodization');
@@ -249,14 +249,16 @@ describe('cohérence des sorties dans la semaine', () => {
       for (const s of easy) expect(s.distanceKm ?? 0, `${s.date} ${s.title}`).toBeLessThanOrEqual(Math.max(week.longRunKm, 3) + 1.2);
     }
   });
-  it('première semaine du débutant : rien au-dessus de ~4 km', () => {
-    const { weeks } = fullPlan('route_5k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.2, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] } });
+  it('première semaine du débutant en course continue : rien au-dessus de ~4,5 km', () => {
+    // Sans VDOT (7 min/km), 3,2 km ≈ 22 min : au-dessus du seuil de 20 min, donc pas de marche/course.
+    const { weeks } = fullPlan('route_5k', { experience: 'debutant', currentWeeklyKm: 15, longestRecentRunKm: 3.2, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] } });
+    expect(weeks[0]!.week.phase).toBe('base');
     for (const s of weeks[0]!.sessions.filter((x) => x.distanceKm)) expect(s.distanceKm!).toBeLessThanOrEqual(4.5);
   });
 });
 
 describe('débutant : ni test à fond ni séance dure plus longue que la longue', () => {
-  const novice = { experience: 'debutant' as const, currentWeeklyKm: 15, longestRecentRunKm: 3.2, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
+  const novice = { experience: 'debutant' as const, currentWeeklyKm: 15, longestRecentRunKm: 3.2, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
   it('pas de test 3 km chrono', () => {
     const { weeks } = fullPlan('route_5k', novice);
     expect(weeks.flatMap((w) => w.sessions).some((s) => s.type === 'test')).toBe(false);
@@ -277,5 +279,115 @@ describe('débutant : ni test à fond ni séance dure plus longue que la longue'
     const { weeks } = fullPlan('route_10k', { experience: 'regulier', currentWeeklyKm: 40, longestRecentRunKm: 14 });
     expect(weeks[1]!.sessions.some((s) => s.type === 'test')).toBe(true);
     expect(weeks.flatMap((w) => w.notes).map((n) => n.ruleId)).not.toContain('week.quality.light');
+  });
+});
+
+describe('T3 — semaines de démarrage', () => {
+  const zero = { experience: 'jamais' as const, currentWeeklyKm: 0, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
+  const forbidden = ['longue_facile', 'longue_specifique', 'back_to_back', 'strides', 'hill_sprints', 'descentes', 'test', 'plyo'];
+
+  it('jamais couru + 5 km en 10 semaines : ni longue, ni strides, ni test, ni séance clé pendant le démarrage (F1)', () => {
+    const { weeks } = fullPlan('route_5k', zero);
+    const demarrage = weeks.filter((w) => w.week.phase === 'demarrage');
+    expect(demarrage.length).toBeGreaterThan(0);
+    for (const { sessions } of demarrage) {
+      for (const s of sessions) {
+        expect(forbidden, `${s.date} ${s.title}`).not.toContain(s.type);
+        if (s.type !== 'course') expect(s.isKey).toBe(false);
+      }
+    }
+  });
+  it('le jour de la longue est une marche/course au même palier, +10 min de marche', async () => {
+    const { weeks } = fullPlan('route_5k', zero);
+    const { stageDurationMinutes } = await import('./runwalk');
+    const saturday = weeks[0]!.sessions.find((s) => s.type === 'marche_course' && weekday(s.date) === 6)!;
+    const stage = weeks[0]!.week.runWalk!.sessions.at(-1)!.stage;
+    expect(saturday.durationMin).toBe(stageDurationMinutes(stage) + 10);
+  });
+  it('régulier sans info de capacité : pas de test en semaine 2 pendant le démarrage (F9)', () => {
+    const { weeks } = fullPlan('route_semi', { experience: 'regulier', currentWeeklyKm: 0 });
+    expect(weeks[1]!.week.phase).toBe('demarrage');
+    expect(weeks.filter((w) => w.week.phase === 'demarrage').flatMap((w) => w.sessions).some((s) => s.type === 'test')).toBe(false);
+  });
+  it('au plus 3 séances, jamais deux jours de suite ; les jours en plus deviennent marche ou vélo', () => {
+    const { weeks } = fullPlan('route_5k', { ...zero, availability: { ...avail, runDaysPerWeek: 6, allowedDays: [1, 2, 3, 4, 5, 6] } });
+    const runs = weeks[0]!.sessions.filter((s) => s.type === 'marche_course');
+    expect(runs).toHaveLength(3);
+    for (let i = 1; i < runs.length; i++) expect(diffDays(runs[i - 1]!.date, runs[i]!.date)).toBeGreaterThanOrEqual(2);
+    expect(weeks[0]!.sessions.filter((s) => s.type === 'croise').length).toBeGreaterThan(0);
+  });
+  it('seulement muscu générale, jamais de plyo', () => {
+    const { weeks } = fullPlan('route_5k', { ...zero, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6], strengthPerWeek: 2 } });
+    const strength = weeks.filter((w) => w.week.phase === 'demarrage').flatMap((w) => w.sessions).filter((s) => s.type.startsWith('muscu') || s.type === 'plyo');
+    expect(strength.length).toBeGreaterThan(0);
+    expect(strength.every((s) => s.type === 'muscu_generale')).toBe(true);
+  });
+  it('strides et sprints seulement à partir de 30 min de course continue, même hors marche/course', () => {
+    const { weeks } = fullPlan('route_5k', { experience: 'debutant', currentWeeklyKm: 10, longestRecentRunKm: 3.5, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] } });
+    for (const { week, sessions } of weeks) {
+      if (week.longRunKm * 7 < 30) expect(sessions.some((s) => s.type === 'strides' || s.type === 'hill_sprints'), week.startDate).toBe(false);
+    }
+  });
+});
+
+describe('jours de démarrage', () => {
+  it('maximise le nombre de séances sans jamais deux jours de suite', async () => {
+    const { journeyDays } = await import('./scheduling');
+    expect(journeyDays({ ...avail, runDaysPerWeek: 3, allowedDays: [5, 6, 7], longRunDay: 6 })).toEqual([5, 7]);
+    expect(journeyDays({ ...avail, runDaysPerWeek: 5 })).toHaveLength(3);
+    expect(journeyDays({ ...avail, runDaysPerWeek: 2, allowedDays: [2, 4, 6] })).toEqual([2, 6]);
+    expect(journeyDays({ ...avail, runDaysPerWeek: 1, allowedDays: [3], longRunDay: 3 })).toEqual([3]);
+  });
+});
+
+describe('T3 — course pendant le démarrage (semaine construite à la main)', () => {
+  const ctx: WeekContext = { goal: 'route_5k', family: 'route', availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] }, experience: 'jamais', hrMaxEstimated: true, hasPoles: false, planWeek: 8, phaseWeek: 8, race: { date: '2026-11-07', distanceKm: 5 } };
+  const week = (stage: number) => ({
+    index: 8, startDate: '2026-11-02', phase: 'demarrage' as const, kind: 'course' as const, targetKm: 10, targetElevationM: 0, keySessions: 0, longRunKm: 3, notes: [],
+    runWalk: { sessions: [{ stage, validatedAtStage: 0 }, { stage, validatedAtStage: 1 }, { stage, validatedAtStage: 1 }] },
+  });
+  it('la course se fait en marche/course au palier courant, sans « allure course », pas la veille', () => {
+    const { sessions, notes } = buildWeekSessions(week(6), ctx);
+    const race = sessions.find((s) => s.date === '2026-11-07')!;
+    expect(race.type).toBe('course');
+    expect(race.title).toBe('Course : 5 km en marche/course');
+    expect(race.steps[0]!.note).toMatch(/3 min de course et 1 min de marche/);
+    expect(sessions.some((s) => s.type === 'tempo')).toBe(false);
+    expect(sessions.find((s) => s.date === '2026-11-06')!.type).toBe('repos');
+    expect(sessions.filter((s) => s.type === 'marche_course').length).toBeLessThanOrEqual(2);
+    expect(notes.map((n) => n.ruleId)).toContain('week.runwalk.race');
+  });
+  it('libellé selon le palier : marche, intervalles courts, course continue', () => {
+    const note = (stage: number) => buildWeekSessions(week(stage), ctx).sessions.find((s) => s.type === 'course')!.steps[0]!.note;
+    expect(note(0)).toMatch(/en marchant/);
+    expect(note(1)).toMatch(/30 s de course/);
+    expect(note(15)).toMatch(/course continue/);
+  });
+  it('durée estimée cohérente : plus lente en marche/course qu’en continu', () => {
+    const dur = (stage: number) => buildWeekSessions(week(stage), ctx).sessions.find((s) => s.type === 'course')!.durationMin;
+    expect(dur(0)).toBeGreaterThan(dur(6));
+    expect(dur(6)).toBeGreaterThan(dur(15));
+  });
+});
+
+describe('T3 — cas particuliers de la semaine de démarrage', () => {
+  const week = { index: 0, startDate: '2026-11-02', phase: 'demarrage' as const, kind: 'build' as const, targetKm: 10, targetElevationM: 0, keySessions: 0, longRunKm: 3, notes: [], runWalk: { sessions: [{ stage: 3, validatedAtStage: 0 }, { stage: 3, validatedAtStage: 1 }, { stage: 4, validatedAtStage: 0 }] } };
+  const ctx: WeekContext = { goal: 'route_5k', family: 'route', availability: { ...avail, runDaysPerWeek: 5, allowedDays: [1, 2, 3, 4, 5, 6, 7] }, experience: 'jamais', hrMaxEstimated: true, hasPoles: false, planWeek: 0, phaseWeek: 0 };
+  it('semaine entamée : rien avant aujourd’hui', () => {
+    const { sessions } = buildWeekSessions(week, { ...ctx, fromDate: '2026-11-05' });
+    expect(sessions.every((s) => s.date >= '2026-11-05')).toBe(true);
+  });
+  it('semaine de course : les jours en plus restent avant la veille de la course', () => {
+    const { sessions } = buildWeekSessions(week, { ...ctx, race: { date: '2026-11-07', distanceKm: 5 } });
+    const extras = sessions.filter((s) => s.type === 'croise');
+    expect(extras.every((s) => s.date < '2026-11-06')).toBe(true);
+  });
+});
+
+describe('semaine sans sortie longue prévue', () => {
+  it('pas de longue fantôme à 0 km', () => {
+    const week = { index: 3, startDate: '2026-11-02', phase: 'base' as const, kind: 'build' as const, targetKm: 12, targetElevationM: 0, keySessions: 0, longRunKm: 0, notes: [] };
+    const { sessions } = buildWeekSessions(week, { goal: 'route_10k', family: 'route', availability: avail, experience: 'regulier', hrMaxEstimated: false, hasPoles: false, planWeek: 3, phaseWeek: 3 });
+    expect(sessions.some((s) => s.type.startsWith('longue'))).toBe(false);
   });
 });

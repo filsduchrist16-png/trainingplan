@@ -41,7 +41,8 @@ test('importer un FIT → debrief avec temps par zone', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
   await expect(page.getByText('Séance du jour')).toBeVisible();
-  await page.goto('/importer');
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /Importer des activités/ }).click();
   const fit = Buffer.from(makeFit({ minutes: 45, start: new Date() }));
   await page.locator('input[type=file]').setInputFiles({ name: 'sortie.fit', mimeType: 'application/octet-stream', buffer: fit });
   await expect(page.getByText(/1 activité importée/)).toBeVisible();
@@ -93,5 +94,5 @@ test('l’assistant décide de la marche-course selon ce que tu cours d’une tr
   await page.getByRole('button', { name: 'Continuer' }).click();
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText('On commence en marche-course')).toBeVisible();
-  await expect(page.getByText(/1 min course/)).toBeVisible();
+  await expect(page.getByText(/1 min 30 course/).first()).toBeVisible(); // < 5 min d'affilée → palier 4
 });

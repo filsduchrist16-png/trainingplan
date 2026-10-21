@@ -146,6 +146,10 @@ export interface Week extends Owned {
   notes?: Explanation[];
   raceDate?: ISODate;
   bRaceDate?: ISODate;
+  /** Semaine du parcours de démarrage : palier prévu de chaque séance. */
+  runWalk?: { sessions: { stage: number; validatedAtStage: number }[] };
+  /** Volume du démarrage en minutes. */
+  targetMinutes?: number;
   manualOverride?: boolean;
 }
 

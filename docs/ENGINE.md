@@ -57,7 +57,10 @@ Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continu
    | pause de 7-13 j / 14-27 j / 28 j et plus | on répète / 2 paliers plus bas / point d'entrée recalculé |
 
    L'état se **recalcule depuis le point d'entrée en rejouant toutes les séances** (journal) : idempotent, et une correction est prise en compte. En « marche d'abord », un échec garde les minutes acquises. Comme tout se compte en séances, 2 jours par semaine progressent simplement plus lentement.
-6. « Courir de zéro » est toujours évalué comme un premier départ.
+6. **Semaines de démarrage** (`buildJourneyWeek`) : chaque semaine porte le palier prévu de ses séances (projection si toutes sont validées). Toutes les séances sont au palier courant, **y compris le jour de la longue** (+10 min de marche). Au plus 3 séances, **jamais deux jours de suite** ; les jours disponibles en plus deviennent marche ou vélo facultatifs. Ni séance clé, ni strides, ni sprints, ni test, ni plyo (muscu générale permise). Volume exprimé en minutes. Une course qui tombe pendant le démarrage se fait en marche/course au palier courant, sans « allure course ».
+7. Le démarrage dure jusqu'à 30 min de course continue (séances à faire ÷ séances par semaine) : il n'est **jamais tronqué**.
+8. Strides et sprints en côte : seulement quand la sortie longue fait au moins 30 min, pour tout le monde.
+9. « Courir de zéro » est toujours évalué comme un premier départ.
 
 ## Protection des débutants (longueur de chaque sortie)
 
