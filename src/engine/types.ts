@@ -127,6 +127,10 @@ export interface Block extends Owned {
   difficulty: Difficulty;
   startVolumeKm: number;
   peakVolumeKm: number;
+  /** Avertissements du moteur à la génération (pic plafonné, délai court…). */
+  warnings?: Explanation[];
+  /** Paramètres de génération, pour régénérer les semaines futures (changement de date, de dispo…). */
+  request?: unknown;
 }
 
 export interface Week extends Owned {
@@ -138,6 +142,10 @@ export interface Week extends Owned {
   targetKm: number;
   targetElevationM: number;
   keySessions: number;
+  longRunKm?: number;
+  notes?: Explanation[];
+  raceDate?: ISODate;
+  bRaceDate?: ISODate;
   manualOverride?: boolean;
 }
 
