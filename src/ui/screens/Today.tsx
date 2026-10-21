@@ -4,7 +4,7 @@ import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { frCA } from 'date-fns/locale';
 import { m } from 'motion/react';
 import {
-  JOURNEY_DONE, SESSION_LIBRARY, addDays, adjustToday, stageLabel, validationsRequired, findMoveTarget, generateRecovery, healthLight, mondayOf, zoneRange,
+  JOURNEY_DONE, SESSION_LIBRARY, addDays, adjustToday, stageLabel, validationsRequired, findMoveTarget, generateRecovery, healthLight, mondayOf, zoneTarget,
   type Athlete, type DayDecision, type DayState, type HrvStatus, type PlannedSession, type ZoneKey,
 } from '@/engine';
 import { db } from '@/data/db';
@@ -191,12 +191,12 @@ function TodayCore({ athlete, ctx }: { athlete: Athlete; ctx: CoachContext }) {
 
 function SessionFacts({ athlete, session }: { athlete: Athlete; session: Pick<PlannedSession, 'durationMin' | 'distanceKm' | 'elevationGainM' | 'steps'> }) {
   const zone = session.steps.map((s) => ('zone' in s.target ? s.target.zone : undefined)).find((z): z is ZoneKey => Boolean(z) && z !== 'z1') ?? 'z2';
-  const [lo, hi] = zoneRange(zone, athlete.zones.bounds, athlete.hrMax);
+  const z = zoneTarget(zone, { bounds: athlete.zones.bounds, hrMax: athlete.hrMax, hrUnreliable: athlete.health?.hrUnreliable });
   return (
     <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
       <Fact label="durée" value={formatMinutes(session.durationMin)} />
       <Fact label={session.elevationGainM ? 'D+' : 'distance'} value={session.elevationGainM ? `${session.elevationGainM} m` : session.distanceKm ? `${session.distanceKm} km` : '—'} />
-      <Fact label={zone.toUpperCase()} value={`${lo}-${hi}`} />
+      <Fact label={z.unit === 'RPE' ? `${zone.toUpperCase()} · RPE` : zone.toUpperCase()} value={z.value} />
     </dl>
   );
 }

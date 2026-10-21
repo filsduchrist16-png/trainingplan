@@ -40,6 +40,7 @@ export function ActivityDebrief() {
       bounds: athlete.zones.bounds,
       hrMax: athlete.hrMax,
       cadenceTarget: athlete.cadenceTarget,
+      hrUnreliable: athlete.health?.hrUnreliable,
     });
   }, [data, athlete]);
 

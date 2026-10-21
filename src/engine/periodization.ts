@@ -9,8 +9,9 @@ import { addDays, diffDays, mondayOf } from './dates';
 import { explain } from './explain';
 import { firstStage, startMode, type StartMode } from './startmode';
 import type { Screening } from './screening';
+import type { ProfileAdjustments } from './profiles';
 import { runWalk as runWalkSession } from './builders';
-import { JOURNEY_DONE, initialRunWalkState, projectStages, sessionsToReach, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
+import { JOURNEY_DONE, STAGE_WALK, initialRunWalkState, projectStages, sessionsToReach, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
 import { journeyDays } from './scheduling';
 import { DIFFICULTY_FACTOR, GOALS, experienceIndex, type GoalFamily } from './goals';
 import { easyMinutes } from './paces';
@@ -50,6 +51,8 @@ export interface PlanRequest {
   bRaces?: { date: ISODate; distanceKm: number; name?: string }[];
   /** Résultat du questionnaire santé (`screen`) : bloque le plan ou le rend prudent. */
   screening?: Screening;
+  /** Ajustements de profil (âge, IMC, santé, blessure : `deriveProfile`), qui restreignent le plan. */
+  profile?: ProfileAdjustments;
 }
 
 export interface WeekPlan {
@@ -137,7 +140,11 @@ export function timeCapKm(availability: Availability, vdot: number | undefined, 
   return floorKm(minutes / easyMinutes(1, vdot, { trail }));
 }
 
-export function generatePlan(req: PlanRequest): PlanDraft {
+export function generatePlan(input: PlanRequest): PlanDraft {
+  // Profil « jamais deux jours de suite » : seuls les jours non consécutifs comptent comme jours de course.
+  const req: PlanRequest = input.profile?.noConsecutiveDays
+    ? { ...input, availability: { ...input.availability, runDaysPerWeek: journeyDays(input.availability, input.availability.runDaysPerWeek).length } }
+    : input;
   const profile = GOALS[req.goal];
   const family = profile.family;
   const trail = family === 'trail';
@@ -146,23 +153,36 @@ export function generatePlan(req: PlanRequest): PlanDraft {
 
   // ── Santé : le dépistage passe avant tout ─────────────────────────────────
   if (req.screening?.level === 'bloque') return { goal: req.goal, family, weeks: [], targetPeakKm: 0, peakKm: 0, warnings: req.screening.explanations, ok: false };
+  const prof = req.profile;
+  if (prof?.injuryActive) return fail(prof.explanations.find((e) => e.ruleId === 'profile.injury.active')!);
+  if (prof?.forbiddenGoals.includes(req.goal)) return fail(explain('profile.goal.forbidden', 'stop', `${profile.label} : pas avant 18 ans`, "Le squelette grandit encore : on vise un objectif plus court (5 km, 10 km, semi ou trail court) d'ici là.", { objectif: req.goal }));
   const prudent = req.screening?.level === 'prudent';
-  const difficulty = prudent ? 'prudent' : req.difficulty;
+  const RANK: Difficulty[] = ['prudent', 'equilibre', 'ambitieux'];
+  const capped = prof?.maxDifficulty && RANK.indexOf(req.difficulty) > RANK.indexOf(prof.maxDifficulty) ? prof.maxDifficulty : req.difficulty;
+  const difficulty: Difficulty = prudent ? 'prudent' : capped;
+  // Expérience retenue (rétrogradée d'un niveau après une blessure récente).
+  const experience = prof?.experience ?? req.experience;
+  const slow = Boolean(prof?.slow);
+  const capKeys = (n: number) => Math.min(n, prof?.maxKeySessions ?? n);
+  if (prof) warnings.push(...prof.explanations);
   if (prudent) {
     warnings.push(...req.screening!.explanations);
-    warnings.push(explain('plan.prudent', 'conseil', 'Plan prudent', `Selon ton questionnaire santé : difficulté « prudent », rien au-dessus de Z2 les ${HEALTH_PRUDENT_EASY_WEEKS} premières semaines (ni séance clé, ni strides), pas de test à fond${req.experience === 'jamais' || req.experience === 'debutant' ? ', et on commence en marche/course' : ''}.`, { semaines: HEALTH_PRUDENT_EASY_WEEKS }));
+    warnings.push(explain('plan.prudent', 'conseil', 'Plan prudent', `Selon ton questionnaire santé : difficulté « prudent », rien au-dessus de Z2 les ${HEALTH_PRUDENT_EASY_WEEKS} premières semaines (ni séance clé, ni strides), pas de test à fond${experience === 'jamais' || experience === 'debutant' ? ', et on commence en marche/course' : ''}.`, { semaines: HEALTH_PRUDENT_EASY_WEEKS }));
   }
 
   // ── Point de départ ───────────────────────────────────────────────────────
   // « Courir de zéro » est toujours évalué comme un premier départ.
-  let start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
+  let start = startMode({ experience: family === 'debuter' ? 'jamais' : experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
   // Plan prudent : marche/course d'office pour qui n'a jamais couru ou débute (au plus haut palier que permet sa capacité).
-  if (prudent && !start.runWalk && (req.experience === 'jamais' || req.experience === 'debutant')) start = { ...start, runWalk: true, stage: firstStage(start.capacityMin) };
+  // Profils 65+ et blessure récente : marche/course sous 20 min de capacité continue. Niveau 0 : marche d'abord.
+  const forceRunWalk = (prudent && (experience === 'jamais' || experience === 'debutant')) || (prof?.runWalkMinCapacity !== undefined && start.capacityMin < prof.runWalkMinCapacity);
+  if (!start.runWalk && forceRunWalk) start = { ...start, runWalk: true, stage: firstStage(start.capacityMin) };
+  if (prof?.walkFirst) start = { ...start, runWalk: true, stage: STAGE_WALK };
   const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
   // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
   const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
   const spw = Math.max(1, journeyDays(req.availability).length);
-  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE) / spw) : 0;
+  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE, slow) / spw) : 0;
 
   // ── Calendrier ────────────────────────────────────────────────────────────
   let startMonday = mondayOf(req.startDate);
@@ -189,7 +209,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   }
 
   // ── Volumes cible ─────────────────────────────────────────────────────────
-  const exp = experienceIndex(req.experience);
+  const exp = experienceIndex(experience);
   if (family !== 'forme') warnings.unshift(start.explanation);
   const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
   let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[difficulty]);
@@ -221,7 +241,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   else phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(baseAfter).fill('base'), ...allocatePhases(buildWeeks - dem - baseAfter)];
 
   // ── Parcours de démarrage : paliers projetés, séance par séance ───────────
-  const projected = journeyState ? projectStages(journeyState, dem * spw) : [];
+  const projected = journeyState ? projectStages(journeyState, dem * spw, slow) : [];
   // « Courir de zéro » plus court que le parcours : on n'accélère JAMAIS l'échelle, on dit où le plan finira (F5).
   const journeyDone = dem >= journeyWeeksNeeded;
   const endStage = projected.at(-1)?.stage ?? JOURNEY_DONE;
@@ -269,11 +289,11 @@ export function generatePlan(req: PlanRequest): PlanDraft {
     const isLastBeforeTaper = req.race !== undefined && i === buildWeeks - 1;
     let kind: WeekKind;
     let km: number;
-    if (buildCount >= BUILD_WEEKS_BEFORE_DELOAD && i >= MIN_WEEKS_BEFORE_FIRST_DELOAD && !isLastBeforeTaper) {
+    if (buildCount >= (prof?.buildWeeksBeforeDeload ?? BUILD_WEEKS_BEFORE_DELOAD) && i >= MIN_WEEKS_BEFORE_FIRST_DELOAD && !isLastBeforeTaper) {
       kind = 'decharge';
       km = roundKm(level * DELOAD_RATIO);
       buildCount = 0;
-      notes.push(explain('week.deload', 'info', 'Semaine de décharge', `Volume à ~${Math.round(DELOAD_RATIO * 100)} % : le corps assimile les 3 dernières semaines. C'est ici que la forme apparaît.`));
+      notes.push(explain('week.deload', 'info', 'Semaine de décharge', `Volume à ~${Math.round(DELOAD_RATIO * 100)} % : le corps assimile les ${prof?.buildWeeksBeforeDeload ?? BUILD_WEEKS_BEFORE_DELOAD} dernières semaines. C'est ici que la forme apparaît.`));
     } else {
       kind = family === 'forme' ? 'maintien' : 'build';
       const ref = progressionReference(history.map((k) => ({ km: k })));
@@ -313,7 +333,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
       targetKm: km,
       targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR[phase]),
       // « Courir de zéro » : aucune séance clé, la régularité est l'objectif. Après un démarrage : 4 semaines de base sans clé.
-      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) || (prudent && i < HEALTH_PRUDENT_EASY_WEEKS) ? 0 : keySessionsFor(phase, kind, i, req.experience, difficulty),
+      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) || (prudent && i < HEALTH_PRUDENT_EASY_WEEKS) ? 0 : capKeys(keySessionsFor(phase, kind, i, experience, difficulty)),
       ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
       longRunKm,
       ...(before > 0 ? { longestRunKm: before } : {}),
@@ -338,7 +358,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
         kind: isRaceWeek ? 'course' : 'taper',
         targetKm: km,
         targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR.taper),
-        keySessions: prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? 0 : keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, req.experience, difficulty),
+        keySessions: prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? 0 : capKeys(keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, experience, difficulty)),
         ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
         longRunKm: isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, km * LONG_RUN_SHARE_BY_PHASE.taper * 1.6)),
         ...(longest > 0 ? { longestRunKm: floorTenth(longest) } : {}),

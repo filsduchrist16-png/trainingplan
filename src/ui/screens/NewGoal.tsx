@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { m, AnimatePresence } from 'motion/react';
 import {
-  GOALS, addDays, buildWeekSessions, screen, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
+  GOALS, addDays, buildWeekSessions, deriveProfile, screen, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
   isPlausibleVdot, zonesFromHrMax,
   type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type HealthProfile, type PlanRequest, type Weekday,
 } from '@/engine';
@@ -147,6 +147,10 @@ function Wizard({ athlete }: { athlete: Athlete }) {
         availability: s.availability,
         ...(validVdot ? { vdot: validVdot } : {}),
         screening: screen(stampHealth(s.health, athlete.health, today), today),
+        profile: deriveProfile({
+          experience: s.experience, ...s.body, health: stampHealth(s.health, athlete.health, today), today,
+          injuries: [...athlete.injuries.filter((i) => i.status === 'active' || s.pastInjuries.includes(i.zone)), ...s.pastInjuries.filter((z) => !athlete.injuries.some((i) => i.zone === z)).map((zone) => ({ zone, label: zone, status: 'dormante' as const }))],
+        }),
       }
     : undefined;
   const preview = request && step === STEPS.length - 1 ? generatePlan(request) : undefined;
@@ -452,6 +456,7 @@ function Preview({ request, preview, athlete, onPostpone }: { request: PlanReque
   const first = preview.weeks[0];
   const firstWeek = first
     ? buildWeekSessions(first, {
+        ...(request.profile ? { profile: request.profile } : {}),
         goal: request.goal, family: preview.family, availability: request.availability, experience: request.experience, vdot: request.vdot,
         hrMaxEstimated: athlete.hrMaxSource === 'estimee', hasPoles: athlete.hasPoles, planWeek: 0, runWalkStage: preview.start?.stage, phaseWeek: phaseWeekIndex(preview.weeks, 0),
         ...(request.race ? { race: { date: request.race.date, distanceKm: request.race.distanceKm } } : {}), fromDate: request.startDate,

@@ -112,6 +112,26 @@ Questionnaire à l'inscription (étape de l'assistant et écran « Questionnaire
 - **Appliqué au plan** (`PlanRequest.screening`, calculé par la couche data à la création si l'appelant ne l'a pas fait) : `bloque` → `generatePlan` renvoie `ok: false` avec les explications (`health.clearance` en tête) ; `prudent` → difficulté forcée à `prudent` (`plan.prudent`), semaines `easyOnly` les `HEALTH_PRUDENT_EASY_WEEKS` (4) premières semaines, affûtage compris : ni séance clé, ni strides ni sprints, ni longue spécifique, ni test à fond ; et marche/course d'office pour `jamais` et `debutant` (au plus haut palier que permet leur capacité).
 - Données : `Athlete.health` (réponses, date, autorisation, maladies, FC non fiable, grossesse) et `Athlete.heightCm` ; champs non indexés, donc pas de nouvelle version Dexie ; validés par le schéma zod du backup.
 
+## Profils (`deriveProfile`)
+
+`deriveProfile({ experience, birthYear, heightCm, weightKg, health, injuries, today })` dérive les ajustements qui **restreignent** le plan (seuils `PROFILE_*` dans `constants.ts`, tous À VALIDER). La couche data les calcule à la création du plan (`PlanRequest.profile`) ; `generatePlan` et `buildWeekSessions` (`WeekContext.profile`) les consomment.
+
+| Profil | Détection | Effet |
+| --- | --- | --- |
+| Niveau 0 | Q9 = non | Marche d'abord (palier 0), profil lent (`profile.walk_first`) |
+| Profil lent | ≥ 60 ans, IMC ≥ 30, Q1 ou Q4, retour de blessure, niveau 0 | 3 séances validées par palier (journal et projection), décharge toutes les 3 semaines (`profile.slow`) |
+| 50 ans et plus | âge | Décharge 2:1, au plus 1 séance clé pour `jamais`/`debutant`, muscu 2×/sem conseillée (`profile.masters`) |
+| 65 ans et plus | âge | Marche/course si capacité < 20 min, note « équilibre » sur la muscu, pas de VO2max pour qui débute (`profile.senior`) |
+| IMC ≥ 30 | taille + poids | Profil lent, jamais deux jours de course de suite (jours non consécutifs, pas de back-to-back, volume calculé sur ces jours), note « surfaces souples » (`profile.bmi`) |
+| FC non fiable | Q5 + médicament qui modifie la FC | Zones au RPE et au test de la parole (`zoneTarget`), pas de test FCmax, debrief sans FC (`debrief.hr_unreliable`) |
+| Diabète | Q4 | Note « sucre rapide, glycémie » sur les séances de 45 min et plus |
+| Asthme | Q4 | Note « inhalateur, 10 min d'échauffement » sur chaque sortie |
+| Blessure active | `injuries` active | Pas de plan (`profile.injury.active`, sévérité `stop`) : croisé seulement |
+| Blessure récente | dormante depuis < 12 sem. | Expérience rétrogradée d'un niveau, marche/course si capacité < 20 min (`profile.injury.recent`) |
+| Mineur | < 18 ans | Marathon, trail moyen et ultra refusés (`profile.goal.forbidden`), difficulté au plus « équilibré » |
+
+Les notes de profil sont ajoutées aux séances (`SessionDraft.notes`) et affichées dans le détail de la séance (« Pour toi »).
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |

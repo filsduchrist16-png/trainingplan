@@ -1,4 +1,4 @@
-import { ZONE_FEEL, formatPace, paceForTarget, zoneRange, type Athlete, type Step } from '@/engine';
+import { ZONE_FEEL, formatPace, paceForTarget, zoneTarget, type Athlete, type Step } from '@/engine';
 
 const KIND: Record<Step['kind'], string> = { echauffement: 'Échauffement', effort: 'Effort', recup: 'Récup', retour_calme: 'Retour au calme', continu: 'Continu' };
 
@@ -13,9 +13,9 @@ export function StepList({ steps, athlete, trail }: { steps: Step[]; athlete: At
         let label: string;
         let feel: string;
         if ('zone' in target) {
-          const [lo, hi] = zoneRange(target.zone, athlete.zones.bounds, athlete.hrMax);
-          label = `${target.zone.toUpperCase()} · ${lo}-${hi} bpm`;
-          feel = ZONE_FEEL[target.zone];
+          const z = zoneTarget(target.zone, { bounds: athlete.zones.bounds, hrMax: athlete.hrMax, hrUnreliable: athlete.health?.hrUnreliable });
+          label = `${target.zone.toUpperCase()} · ${z.unit === 'RPE' ? `RPE ${z.value}` : `${z.value} bpm`}`;
+          feel = z.feel;
         } else if ('pace' in target) {
           label = { E: 'Allure facile', M: 'Allure marathon', T: 'Allure seuil', I: 'Allure intervalles', R: 'Allure répétitions' }[target.pace];
           feel = { E: ZONE_FEEL.z2, M: 'Soutenu mais contrôlé.', T: '« Confortablement dur » : quelques mots.', I: 'Dur : tu tiens 3-5 min, pas plus.', R: 'Vite et relâché.' }[target.pace];

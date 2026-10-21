@@ -12,6 +12,7 @@ import {
 } from './builders';
 import { SESSION_LIBRARY, isKeyType, isRunType } from './library';
 import type { WeekPlan } from './periodization';
+import { notesFor, type ProfileAdjustments } from './profiles';
 import type { Availability, Experience, Explanation, GoalKind, ISODate, SessionType, Step, Weekday } from './types';
 
 /**
@@ -38,6 +39,8 @@ export interface WeekContext {
   bRace?: { date: ISODate; distanceKm: number };
   /** Date à partir de laquelle planifier (les jours passés d'une semaine entamée sont laissés vides). */
   fromDate?: ISODate;
+  /** Ajustements de profil (deriveProfile) : pas de VO2max, pas de jours consécutifs, FC non fiable, notes. */
+  profile?: Pick<ProfileAdjustments, 'noVo2' | 'noConsecutiveDays' | 'hrUnreliable' | 'sessionNotes'>;
 }
 
 export interface SessionDraft {
@@ -52,6 +55,8 @@ export interface SessionDraft {
   isKey: boolean;
   minimal: { title: string; durationMin: number; steps: Step[] };
   why: string;
+  /** Notes de profil (diabète, asthme, surfaces souples, équilibre…). */
+  notes?: string[];
 }
 
 const circ = (a: number, b: number) => Math.min(Math.abs(a - b), 7 - Math.abs(a - b));
@@ -103,7 +108,7 @@ type Quality = 'seuil' | 'vo2max' | 'cotes_longues' | 'tempo';
 
 /** Types de qualité par famille et phase (au plus un VO2max par semaine, jamais avant la base). */
 export function qualityTypes(ctx: WeekContext, week: WeekPlan, count: number): Quality[] {
-  const vo2ok = ctx.planWeek >= VO2_MIN_BASE_WEEKS || ctx.experience === 'avance';
+  const vo2ok = (ctx.planWeek >= VO2_MIN_BASE_WEEKS || ctx.experience === 'avance') && !ctx.profile?.noVo2;
   const longRoad = ctx.goal === 'route_semi' || ctx.goal === 'route_marathon';
   const alt = ctx.phaseWeek % 2 === 0;
   let pool: Quality[];
@@ -210,7 +215,7 @@ function buildJourneyWeek(week: WeekPlan, ctx: WeekContext): { sessions: Session
     if (strengthDays.includes(d)) sessions.push(toDraft(date, strength('muscu_generale', STRENGTH_SESSION_MIN), false));
   }
   notes.push(explain('week.runwalk', 'info', 'Semaine de démarrage', `${days.length} séance(s) au ${stageLabel(plan[0]!.stage).toLowerCase()}, jamais deux jours de suite. Tu avances d'un palier quand tes séances sont faciles : c'est ton corps qui donne le rythme, pas le calendrier.`));
-  return { sessions, notes };
+  return { sessions: withProfileNotes(sessions, ctx), notes };
 }
 
 export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions: SessionDraft[]; notes: Explanation[] } {
@@ -223,7 +228,8 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
     light: week.phase === 'base' || week.kind === 'decharge' || week.kind === 'maintien',
     taper: week.kind === 'taper' || week.kind === 'course',
   };
-  const runDays = pickRunDays(av);
+  // Profil « jamais deux jours de suite » (IMC élevé) : jours non consécutifs.
+  const runDays = ctx.profile?.noConsecutiveDays ? journeyDays(av, av.runDaysPerWeek) : pickRunDays(av);
   const longDay = av.longRunDay;
   const byDay = new Map<Weekday, BuiltSession & { isKey: boolean }>();
   // Strides et sprints : seulement si on court au moins 30 min d'affilée (la sortie longue en donne la mesure).
@@ -239,7 +245,7 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek && !week.easyOnly;
   // Test à fond (3 km chrono) : réservé aux coureurs expérimentés. Un débutant garde ses zones estimées,
   // et peut calibrer plus tard depuis le Profil quand il a la base.
-  const needsTest = !week.easyOnly && ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.phase !== 'demarrage' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
+  const needsTest = !week.easyOnly && !ctx.profile?.hrUnreliable && ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.phase !== 'demarrage' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
   let qualityCount = Math.max(0, week.keySessions - (longIsKey ? 1 : 0) - (raceInWeek ? 1 : 0));
   if (needsTest) qualityCount = Math.max(qualityCount, 1);
   const maxByDays = Math.floor((runDays.length - 1) / 2);
@@ -293,7 +299,7 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
 
   // Back-to-back : trail long, pic, une semaine sur deux, lendemain disponible.
   const nextDay = (longDay === 7 ? 1 : longDay + 1) as Weekday;
-  const b2b = trail && (ctx.goal === 'trail_moyen' || ctx.goal === 'ultra') && week.phase === 'spec2' && week.kind === 'build' && ctx.phaseWeek % 2 === 1
+  const b2b = !ctx.profile?.noConsecutiveDays && trail && (ctx.goal === 'trail_moyen' || ctx.goal === 'ultra') && week.phase === 'spec2' && week.kind === 'build' && ctx.phaseWeek % 2 === 1
     && longDay !== 7 && av.allowedDays.includes(nextDay) && !raceInWeek;
   if (b2b) {
     // On répartit la longue sur deux jours (~75 % + ~50 %) plutôt que d'ajouter une 2e longue complète.
@@ -391,7 +397,17 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
       sessions.push(toDraft(date, st, false));
     }
   }
-  return { sessions, notes };
+  return { sessions: withProfileNotes(sessions, ctx), notes };
+}
+
+/** Ajoute les notes de profil aux séances concernées. */
+function withProfileNotes(sessions: SessionDraft[], ctx: WeekContext): SessionDraft[] {
+  const all = ctx.profile?.sessionNotes;
+  if (!all?.length) return sessions;
+  return sessions.map((s) => {
+    const n = notesFor(all, s, isRunType(s.type) && s.type !== 'repos');
+    return n.length ? { ...s, notes: n } : s;
+  });
 }
 
 function toDraft(date: ISODate, s: BuiltSession & { elevationGainM?: number }, isKey: boolean): SessionDraft {

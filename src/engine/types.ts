@@ -258,6 +258,8 @@ export interface PlannedSession extends Owned {
   status: SessionStatus;
   activityId?: Id;
   adjustments: Explanation[];
+  /** Notes de profil (diabète, asthme, surfaces souples, équilibre…). */
+  notes?: string[];
 }
 
 // ─── Réalisé ──────────────────────────────────────────────────────────────────

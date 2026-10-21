@@ -24,6 +24,8 @@ export interface DebriefInput {
   bounds: ZoneBounds;
   hrMax: number;
   cadenceTarget: [number, number];
+  /** FC non fiable (médicament) : l'intensité se juge au RPE, pas à la FC. */
+  hrUnreliable?: boolean;
 }
 
 export interface Debrief {
@@ -97,7 +99,9 @@ export function debrief(input: DebriefInput): Debrief {
   const hm = Math.round(a.durationSec / 60);
   summary.push(`${label} : ${a.distanceKm.toFixed(1)} km en ${hm} min${a.elevationGainM ? `, ${Math.round(a.elevationGainM)} m D+` : ''}.`);
 
-  if (!tiz || tizTotal === 0) {
+  if (input.hrUnreliable) {
+    findings.push(explain('debrief.hr_unreliable', 'info', 'Intensité au ressenti', 'Ton médicament modifie ta FC : on ne la juge pas. Ton RPE et le test de la parole font foi.'));
+  } else if (!tiz || tizTotal === 0) {
     findings.push(explain('debrief.nohr', 'info', 'Pas de données cardio', 'Sans FC, je ne peux pas juger l’intensité. Note ton RPE : c’est mieux que rien, et c’est honnête.'));
   } else {
     const zs = tiz.map((x) => x / tizTotal) as [number, number, number, number, number];
@@ -144,7 +148,7 @@ export function debrief(input: DebriefInput): Debrief {
   }
 
   // Dérive cardiaque (sur terrain roulant seulement).
-  if (a.samples && a.durationSec >= DRIFT_MIN_DURATION_SEC && a.elevationGainM / Math.max(a.distanceKm, 0.1) <= DRIFT_MAX_GAIN_PER_KM) {
+  if (!input.hrUnreliable && a.samples && a.durationSec >= DRIFT_MIN_DURATION_SEC && a.elevationGainM / Math.max(a.distanceKm, 0.1) <= DRIFT_MAX_GAIN_PER_KM) {
     const drift = cardiacDrift(a.samples);
     if (drift !== null) {
       metrics.drift = drift;

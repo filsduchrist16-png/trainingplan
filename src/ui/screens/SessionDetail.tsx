@@ -42,6 +42,12 @@ export function SessionDetail() {
         </p>
       </header>
 
+      {session.notes && session.notes.length > 0 && (
+        <Card className="space-y-1 bg-warn/10">
+          <Eyebrow>Pour toi</Eyebrow>
+          {session.notes.map((n) => <p key={n} className="text-sm">{n}</p>)}
+        </Card>
+      )}
       {session.steps.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xl">Structure</h2>

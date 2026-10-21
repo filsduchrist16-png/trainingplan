@@ -1,4 +1,4 @@
-import { GOALS, addDays, mondayOf, nextRunWalkState, rescheduleJourney, type Athlete, type GoalKind, type ISODate, type RunWalkSession } from '@/engine';
+import { GOALS, addDays, mondayOf, nextRunWalkState, rescheduleJourney, type Athlete, type GoalKind, type ISODate, type PlanRequest, type RunWalkSession } from '@/engine';
 import type { SentierDB } from './db';
 import { nowIso } from './ids';
 
@@ -22,7 +22,8 @@ export async function syncRunWalk(db: SentierDB, athleteId: string, today: ISODa
     return { date: s.date, ...(sub?.rpe !== undefined ? { rpe: sub.rpe } : {}), ...(sub?.completed !== undefined ? { completed: sub.completed } : {}) };
   });
   const pains = (await db.painLogs.where('athleteId').equals(athleteId).toArray()).filter((p) => p.date >= block.startDate);
-  const r = nextRunWalkState(block.runWalkStart, journal, pains, today, { entryStage: block.runWalkStart.stage });
+  const slow = Boolean((block.request as PlanRequest | undefined)?.profile?.slow);
+  const r = nextRunWalkState(block.runWalkStart, journal, pains, today, { entryStage: block.runWalkStart.stage, slow });
   const last = r.upcomingExplanation ?? r.explanations.at(-1);
   const runWalk: NonNullable<Athlete['runWalk']> = { state: r.upcoming, ...(last ? { last } : {}), updatedOn: today };
 
@@ -34,7 +35,7 @@ export async function syncRunWalk(db: SentierDB, athleteId: string, today: ISODa
     return { id: s.id, date: s.date, weekStart, raceWeek: raceDays.some((d) => d >= weekStart && d <= addDays(weekStart, 6)) };
   });
   const goal = block.goal as GoalKind;
-  const rebuilt = rescheduleJourney(r.upcoming, slots, { goal, family: GOALS[goal].family, vdot: athlete.vdot, availability: athlete.availability });
+  const rebuilt = rescheduleJourney(r.upcoming, slots, { goal, family: GOALS[goal].family, vdot: athlete.vdot, availability: athlete.availability }, slow);
   await db.transaction('rw', [db.athletes, db.sessions], async () => {
     await db.athletes.update(athleteId, { runWalk, updatedAt: nowIso() });
     for (const { id, session } of rebuilt) {

@@ -6,7 +6,7 @@ export * from './types';
 export * as C from './constants';
 export { addDays, diffDays, mondayOf, weekday, dayOfWeek, toIsoDate, isBetween } from './dates';
 export { explain, bySeverity, worstSeverity } from './explain';
-export { zonesFromHrMax, zonesKarvonen, estimateHrMax, zoneOf, zoneRange, timeInZones, greyZone, hrMaxFromTest, ZONE_FEEL } from './zones';
+export { zonesFromHrMax, zonesKarvonen, estimateHrMax, zoneOf, zoneRange, timeInZones, greyZone, hrMaxFromTest, zoneTarget, ZONE_FEEL } from './zones';
 export { vdotFromRace, vdotFromVma, predictRaceTime, pacesFromVdot, easyPace, easyMinutes, formatPace, isPlausibleVdot, suggestVdotUpdate, type PaceKey, type QualityResult } from './paces';
 export { activityLoad, dailyLoads, acwr, acwrEwma, type AcwrResult, type AcwrStatus, type LoadBasis } from './load';
 export { weeklySummaries, progressionReference, maxAllowedVolume, checkWeekProgression, type WeekSummary } from './progression';
@@ -21,6 +21,7 @@ export {
   stageDurationMinutes, stageKind, stageLabel, stageRunMinutes, validationsRequired, walkFirstMinutes,
   type RunWalkOptions, type RunWalkSession, type RunWalkState,
 } from './runwalk';
+export { deriveProfile, bmi, notesFor, type ProfileAdjustments, type ProfileInput, type SessionNote } from './profiles';
 export { screen, HEALTH_QUESTIONS, type Screening, type ScreeningLevel } from './screening';
 export { evaluateHealth, healthLight, zoneLabel, type HealthStatus, type HealthLevel, type HealthInput } from './guards';
 export { adjustToday, findMoveTarget, scaleSession, easySession, crossSession, restSession, type DayDecision, type DayAction, type TodaySession } from './readiness';

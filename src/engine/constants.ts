@@ -293,3 +293,27 @@ export const RUN_WALK_GAP_BACK_STAGES = 2;
 export const HEALTH_RENEW_DAYS = 365;
 /** Plan prudent (dépistage) : semaines du début sans intensité au-dessus de Z2 (ni séance clé, ni strides, ni test). À VALIDER. */
 export const HEALTH_PRUDENT_EASY_WEEKS = 4;
+
+// ─── Profils (âge, IMC, santé, blessure) ── seuils À VALIDER par un professionnel ──
+/** Âge à partir duquel le profil est « lent » (3 validations par palier, décharge 2:1). À VALIDER. */
+export const PROFILE_SLOW_AGE = 60;
+/** 50 ans et plus : cycle 2:1 par défaut, au plus 1 séance clé pour qui débute, muscu 2×/sem conseillée. À VALIDER. */
+export const PROFILE_MASTERS_AGE = 50;
+/** 65 ans et plus : marche/course si capacité < 20 min, équilibre en muscu, pas de VO2max sans base. À VALIDER. */
+export const PROFILE_SENIOR_AGE = 65;
+/** Mineur : pas de marathon, trail moyen ni ultra ; difficulté au plus « équilibré ». */
+export const PROFILE_MINOR_AGE = 18;
+/** IMC à partir duquel le profil est « lent », sans jours de course consécutifs. À VALIDER. */
+export const PROFILE_BMI_SLOW = 30;
+/** Blessure « récente » (semaines × 7) : expérience rétrogradée d'un niveau. À VALIDER. */
+export const PROFILE_RECENT_INJURY_DAYS = 84;
+/** Capacité continue minimale (min) sous laquelle 65+ et retour de blessure récente commencent en marche/course. À VALIDER. */
+export const PROFILE_RUNWALK_MIN_CAPACITY = 20;
+/** Cycle de décharge des profils lents et des 50+ : 2 semaines de charge, 1 de décharge. À VALIDER. */
+export const PROFILE_BUILD_WEEKS_BEFORE_DELOAD = 2;
+/** 50+ qui débute : au plus 1 séance clé par semaine. À VALIDER. */
+export const PROFILE_MASTERS_MAX_KEY_NOVICE = 1;
+/** Diabète : note « sucre rapide, glycémie » sur les séances de plus de 45 min. À VALIDER. */
+export const PROFILE_DIABETES_NOTE_MIN = 45;
+/** Effort perçu (RPE) par zone, pour les zones sans cardio (FC non fiable). */
+export const ZONE_RPE: Record<'z1' | 'z2' | 'z3' | 'z4' | 'z5', [number, number]> = { z1: [1, 2], z2: [3, 4], z3: [5, 6], z4: [7, 8], z5: [9, 10] };

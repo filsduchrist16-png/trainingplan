@@ -1,5 +1,5 @@
 import {
-  addDays, buildWeekSessions, generatePlan, generateRecovery, mondayOf, screen, weeklySummaries, GOALS,
+  addDays, buildWeekSessions, generatePlan, generateRecovery, mondayOf, screen, deriveProfile, weeklySummaries, GOALS,
   type Athlete, type Block, type GoalKind, type ISODate, type PlannedSession, type PlanRequest, type Race, type Week, type WeekPlan,
 } from '@/engine';
 import type { SentierDB } from './db';
@@ -49,7 +49,11 @@ export async function createPlan(
   planFrom: ISODate = today,
 ): Promise<{ blockId: string; ok: boolean; warnings: Block['warnings'] }> {
   // Le questionnaire santé passe avant tout : s'il n'a pas été évalué par l'appelant, on le fait ici.
-  const req: PlanRequest = { ...input.request, screening: input.request.screening ?? screen(athlete.health, today) };
+  const req: PlanRequest = {
+    ...input.request,
+    screening: input.request.screening ?? screen(athlete.health, today),
+    profile: input.request.profile ?? deriveProfile({ ...athlete, experience: input.request.experience, today }),
+  };
   const draft = generatePlan(req);
   if (!draft.ok) return { blockId: '', ok: false, warnings: draft.warnings };
 
@@ -117,6 +121,7 @@ export async function createPlan(
     weeks.push(week);
     const bRace = req.bRaces?.find((b) => b.date === w.bRaceDate);
     const { sessions: drafts, notes } = buildWeekSessions(w, {
+      ...(req.profile ? { profile: req.profile } : {}),
       goal: req.goal,
       family: draft.family,
       availability: req.availability,
@@ -172,7 +177,7 @@ export async function createRecoveryPlan(db: SentierDB, athlete: Athlete, race: 
     weeks.push(week);
     const { sessions: drafts } = buildWeekSessions(w, {
       goal: 'forme', family: 'forme', availability: athlete.availability, experience: athlete.experience, vdot: athlete.vdot,
-      hrMaxEstimated: false, hasPoles: athlete.hasPoles, planWeek: i, phaseWeek: i, fromDate: today,
+      hrMaxEstimated: false, hasPoles: athlete.hasPoles, planWeek: i, phaseWeek: i, fromDate: today, profile: deriveProfile({ ...athlete, today }),
     });
     for (const d of drafts) sessions.push(stamp({ ...d, athleteId: athlete.id, weekId: week.id, status: 'prevue' as const, adjustments: [] }));
   });
