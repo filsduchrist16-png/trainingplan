@@ -169,6 +169,15 @@ test('questionnaire santé : un oui à la douleur thoracique demande un avis mé
   await expect(page.getByRole('heading', { name: 'Ta santé' })).toBeVisible();
   await page.getByRole('radiogroup', { name: /douleurs ou un serrement dans la poitrine/ }).getByRole('radio', { name: 'Oui' }).click();
   await expect(page.getByText('Un avis médical avant de commencer.')).toBeVisible();
+  // Pas de plan sans avis médical.
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByRole('heading', { name: 'Un avis médical avant de commencer' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Créer mon plan' })).toBeDisabled();
+  // Un médecin autorise : plan prudent.
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: /Retour/ }).click();
   await page.getByRole('button', { name: "Un médecin m'autorise à courir" }).click();
   await expect(page.getByText('Autorisation médicale enregistrée.')).toBeVisible();
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Plan prudent.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Créer mon plan' })).toBeEnabled();
 });

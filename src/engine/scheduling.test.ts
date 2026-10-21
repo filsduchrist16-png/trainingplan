@@ -4,6 +4,7 @@ import { GOALS } from './goals';
 import { generatePlan, type PlanRequest } from './periodization';
 import { buildWeekSessions, pickKeyDays, pickRunDays, qualityTypes, rescheduleJourney, validateMove, type SessionDraft, type WeekContext } from './scheduling';
 import { isRunType } from './library';
+import { screen } from './screening';
 import type { Availability, GoalKind } from './types';
 
 const avail: Availability = { runDaysPerWeek: 5, allowedDays: [1, 2, 3, 4, 5, 6, 7], longRunDay: 6, maxWeekdayMinutes: 90, maxWeekendMinutes: 300, strengthPerWeek: 2 };
@@ -519,5 +520,56 @@ describe('T7 — re-projection des séances marche/course depuis le réalisé', 
   it('parcours terminé : séances de 30 min continues', () => {
     const r = rescheduleJourney({ stage: 19, validatedAtStage: 0, failsAtStage: 0 }, slots.slice(0, 1), ctx);
     expect(r[0]!.stage).toBe(19);
+  });
+});
+
+describe('T9 — le dépistage santé s’applique au plan', () => {
+  const answers = { q1: false, q2: false, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: true };
+  const health = (yes: Partial<typeof answers>, clearance?: string) => ({ answers: { ...answers, ...yes }, answeredAt: '2026-04-01', conditions: [], ...(clearance ? { clearance } : {}) });
+  const forbidden = ['test', 'strides', 'hill_sprints', 'descentes', 'longue_specifique', 'seuil', 'vo2max', 'tempo', 'cotes_longues'];
+
+  it('bloqué : pas de plan, explication health.clearance', () => {
+    const { plan } = fullPlan('route_10k', { screening: screen(health({ q2: true }), START) });
+    expect(plan.ok).toBe(false);
+    expect(plan.weeks).toHaveLength(0);
+    expect(plan.warnings[0]!.ruleId).toBe('health.clearance');
+  });
+
+  it('prudent : difficulté prudente, rien au-dessus de Z2 ni test les 4 premières semaines, explications', () => {
+    const base = fullPlan('route_10k', { difficulty: 'ambitieux' });
+    const { plan, weeks } = fullPlan('route_10k', { difficulty: 'ambitieux', screening: screen(health({ q1: true }), START) });
+    expect(plan.ok).toBe(true);
+    expect(plan.targetPeakKm).toBeLessThan(base.plan.targetPeakKm);
+    expect(plan.warnings.map((w) => w.ruleId)).toEqual(expect.arrayContaining(['health.cardio', 'plan.prudent']));
+    for (const { week, sessions } of weeks.slice(0, 4)) {
+      expect(week.easyOnly).toBe(true);
+      expect(week.keySessions).toBe(0);
+      expect(sessions.filter((s) => s.isKey || forbidden.includes(s.type)), `semaine ${week.index}`).toEqual([]);
+    }
+    expect(weeks[4]!.week.easyOnly).toBeUndefined();
+    // Sans dépistage prudent, ce coureur aurait eu son test en semaine 2.
+    expect(base.weeks[1]!.sessions.some((s) => s.type === 'test')).toBe(true);
+  });
+
+  it('blocage levé par un médecin : plan prudent', () => {
+    const { plan, weeks } = fullPlan('route_10k', { screening: screen(health({ q3: true }, '2026-04-10'), START) });
+    expect(plan.ok).toBe(true);
+    expect(plan.warnings.map((w) => w.ruleId)).toContain('health.cleared');
+    expect(weeks[0]!.week.easyOnly).toBe(true);
+  });
+
+  it('prudent : marche/course d’office pour un débutant, pas pour un régulier', () => {
+    const prudent = screen(health({ q4: true }), START);
+    const deb = fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 15, continuousMin: 40, screening: prudent });
+    expect(deb.plan.weeks[0]!.phase).toBe('demarrage');
+    expect(deb.plan.start!.stage).toBe(13);
+    const reg = fullPlan('route_10k', { experience: 'regulier', screening: prudent });
+    expect(reg.plan.weeks[0]!.phase).not.toBe('demarrage');
+    expect(fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 15, continuousMin: 40 }).plan.weeks[0]!.phase).not.toBe('demarrage');
+  });
+
+  it('plan court en prudent : l’affûtage des 4 premières semaines reste facile aussi', () => {
+    const { plan } = fullPlan('route_5k', { screening: screen(health({ q1: true }), START), race: { date: addDays(START, 3 * 7 + 5), distanceKm: 5, elevationGainM: 0 } });
+    expect(plan.weeks.every((w) => w.keySessions === 0 && w.easyOnly)).toBe(true);
   });
 });

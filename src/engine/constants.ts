@@ -291,3 +291,5 @@ export const RUN_WALK_GAP_BACK_STAGES = 2;
 // ─── Questionnaire santé (dépistage) ──────────────────────────────────────────
 /** Le questionnaire santé est à refaire tous les 12 mois (et dès qu'une réponse change). */
 export const HEALTH_RENEW_DAYS = 365;
+/** Plan prudent (dépistage) : semaines du début sans intensité au-dessus de Z2 (ni séance clé, ni strides, ni test). À VALIDER. */
+export const HEALTH_PRUDENT_EASY_WEEKS = 4;

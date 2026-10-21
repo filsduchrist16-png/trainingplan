@@ -109,6 +109,7 @@ Questionnaire à l'inscription (étape de l'assistant et écran « Questionnaire
 - Q1 (cœur, hypertension) → `prudent` + conseil fort de consulter (`health.cardio`) ; Q4 (maladie chronique) → `prudent` (`health.chronic`, maladies nommées).
 - Q5 avec médicament qui modifie la FC → zones au RPE (`health.hr_unreliable`) ; Q6 → retour de blessure (`health.injury`) ; Q8 → grossesse ou post-partum (`health.pregnancy`) ; Q9 = non → marche d'abord (`health.walk_first`). Ces profils sont appliqués par les règles de profil.
 - Sans questionnaire : `ok` + invitation à le remplir (`health.missing`). Réponses de plus de 12 mois (`HEALTH_RENEW_DAYS`) : à refaire (`health.renew`).
+- **Appliqué au plan** (`PlanRequest.screening`, calculé par la couche data à la création si l'appelant ne l'a pas fait) : `bloque` → `generatePlan` renvoie `ok: false` avec les explications (`health.clearance` en tête) ; `prudent` → difficulté forcée à `prudent` (`plan.prudent`), semaines `easyOnly` les `HEALTH_PRUDENT_EASY_WEEKS` (4) premières semaines, affûtage compris : ni séance clé, ni strides ni sprints, ni longue spécifique, ni test à fond ; et marche/course d'office pour `jamais` et `debutant` (au plus haut palier que permet leur capacité).
 - Données : `Athlete.health` (réponses, date, autorisation, maladies, FC non fiable, grossesse) et `Athlete.heightCm` ; champs non indexés, donc pas de nouvelle version Dexie ; validés par le schéma zod du backup.
 
 ## Garde-fous santé (`evaluateHealth`)

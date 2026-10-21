@@ -227,7 +227,8 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   const longDay = av.longRunDay;
   const byDay = new Map<Weekday, BuiltSession & { isKey: boolean }>();
   // Strides et sprints : seulement si on court au moins 30 min d'affilée (la sortie longue en donne la mesure).
-  const neuroOk = week.longRunKm * paceForTarget({ zone: 'z2' }, b) >= STRIDES_MIN_CONTINUOUS_MIN;
+  // Plan prudent (dépistage santé) : rien au-dessus de Z2 les premières semaines.
+  const neuroOk = !week.easyOnly && week.longRunKm * paceForTarget({ zone: 'z2' }, b) >= STRIDES_MIN_CONTINUOUS_MIN;
   const setDay = (d: Weekday, s: BuiltSession, isKey = SESSION_LIBRARY[s.type].isKey) => byDay.set(d, { ...s, isKey });
 
   // ── Course de la semaine (A ou B) ──────────────────────────────────────────
@@ -235,10 +236,10 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   const raceWd = raceInWeek ? weekday(raceInWeek.date) : undefined;
 
   // ── Séances clés ──────────────────────────────────────────────────────────
-  const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek;
+  const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek && !week.easyOnly;
   // Test à fond (3 km chrono) : réservé aux coureurs expérimentés. Un débutant garde ses zones estimées,
   // et peut calibrer plus tard depuis le Profil quand il a la base.
-  const needsTest = ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.phase !== 'demarrage' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
+  const needsTest = !week.easyOnly && ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.phase !== 'demarrage' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
   let qualityCount = Math.max(0, week.keySessions - (longIsKey ? 1 : 0) - (raceInWeek ? 1 : 0));
   if (needsTest) qualityCount = Math.max(qualityCount, 1);
   const maxByDays = Math.floor((runDays.length - 1) / 2);

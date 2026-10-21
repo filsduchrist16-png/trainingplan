@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { m, AnimatePresence } from 'motion/react';
 import {
-  GOALS, addDays, buildWeekSessions, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
+  GOALS, addDays, buildWeekSessions, screen, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
   isPlausibleVdot, zonesFromHrMax,
   type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type HealthProfile, type PlanRequest, type Weekday,
 } from '@/engine';
@@ -146,6 +146,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
         ...(s.continuousMin !== undefined ? { continuousMin: s.continuousMin } : {}),
         availability: s.availability,
         ...(validVdot ? { vdot: validVdot } : {}),
+        screening: screen(stampHealth(s.health, athlete.health, today), today),
       }
     : undefined;
   const preview = request && step === STEPS.length - 1 ? generatePlan(request) : undefined;

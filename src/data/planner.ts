@@ -1,5 +1,5 @@
 import {
-  addDays, buildWeekSessions, generatePlan, generateRecovery, mondayOf, weeklySummaries, GOALS,
+  addDays, buildWeekSessions, generatePlan, generateRecovery, mondayOf, screen, weeklySummaries, GOALS,
   type Athlete, type Block, type GoalKind, type ISODate, type PlannedSession, type PlanRequest, type Race, type Week, type WeekPlan,
 } from '@/engine';
 import type { SentierDB } from './db';
@@ -48,7 +48,8 @@ export async function createPlan(
   /** Planifier à partir de cette date (par défaut : aujourd'hui). La démo planifie aussi le passé. */
   planFrom: ISODate = today,
 ): Promise<{ blockId: string; ok: boolean; warnings: Block['warnings'] }> {
-  const req = input.request;
+  // Le questionnaire santé passe avant tout : s'il n'a pas été évalué par l'appelant, on le fait ici.
+  const req: PlanRequest = { ...input.request, screening: input.request.screening ?? screen(athlete.health, today) };
   const draft = generatePlan(req);
   if (!draft.ok) return { blockId: '', ok: false, warnings: draft.warnings };
 
@@ -111,6 +112,7 @@ export async function createPlan(
       ...(w.runWalk ? { runWalk: w.runWalk } : {}),
       ...(w.targetMinutes !== undefined ? { targetMinutes: w.targetMinutes } : {}),
       ...(w.longestRunKm !== undefined ? { longestRunKm: w.longestRunKm } : {}),
+      ...(w.easyOnly ? { easyOnly: true } : {}),
     });
     weeks.push(week);
     const bRace = req.bRaces?.find((b) => b.date === w.bRaceDate);

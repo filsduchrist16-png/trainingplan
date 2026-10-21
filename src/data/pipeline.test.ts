@@ -87,6 +87,17 @@ describe('import', () => {
 });
 
 describe('création de plan', () => {
+  it('applique le questionnaire santé de l’athlète : bloqué sans autorisation, prudent avec', async () => {
+    const answers = { q1: false, q2: true, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: true };
+    const sick = { ...athlete, health: { answers, answeredAt: '2026-10-01', conditions: [] } };
+    const blocked = await createPlan(db, sick, { request: request() }, '2026-10-21');
+    expect(blocked.ok).toBe(false);
+    expect(blocked.warnings![0]!.ruleId).toBe('health.clearance');
+    expect(await db.blocks.count()).toBe(0);
+    const ok = await createPlan(db, { ...sick, health: { ...sick.health, clearance: '2026-10-15' } }, { request: request() }, '2026-10-21');
+    expect(ok.ok).toBe(true);
+    expect((await db.weeks.toArray()).filter((w) => w.easyOnly)).toHaveLength(4);
+  });
   it('crée course, bloc, semaines et séances ; ne planifie pas avant aujourd’hui', async () => {
     const r = await createPlan(db, athlete, { request: request(), raceName: 'Trail de printemps', raceLocation: 'Québec' }, '2026-10-21');
     expect(r.ok).toBe(true);

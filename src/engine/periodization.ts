@@ -1,13 +1,14 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  BASE_WEEKS_AFTER_RUNWALK, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
+  BASE_WEEKS_AFTER_RUNWALK, HEALTH_PRUDENT_EASY_WEEKS, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
   PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
 } from './constants';
 import { addDays, diffDays, mondayOf } from './dates';
 import { explain } from './explain';
-import { startMode, type StartMode } from './startmode';
+import { firstStage, startMode, type StartMode } from './startmode';
+import type { Screening } from './screening';
 import { runWalk as runWalkSession } from './builders';
 import { JOURNEY_DONE, initialRunWalkState, projectStages, sessionsToReach, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
 import { journeyDays } from './scheduling';
@@ -47,6 +48,8 @@ export interface PlanRequest {
   availability: Availability;
   vdot?: number;
   bRaces?: { date: ISODate; distanceKm: number; name?: string }[];
+  /** Résultat du questionnaire santé (`screen`) : bloque le plan ou le rend prudent. */
+  screening?: Screening;
 }
 
 export interface WeekPlan {
@@ -67,6 +70,8 @@ export interface WeekPlan {
   targetMinutes?: number;
   /** Plus longue sortie déjà faite avant cette semaine (km) : en décharge et à l'affûtage, la longue peut remonter jusque-là. */
   longestRunKm?: number;
+  /** Plan prudent (dépistage santé) : rien au-dessus de Z2 cette semaine (ni clé, ni strides, ni test). */
+  easyOnly?: boolean;
 }
 
 export interface PlanDraft {
@@ -139,9 +144,20 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   const warnings: Explanation[] = [];
   const fail = (e: Explanation): PlanDraft => ({ goal: req.goal, family, weeks: [], targetPeakKm: 0, peakKm: 0, warnings: [e], ok: false });
 
+  // ── Santé : le dépistage passe avant tout ─────────────────────────────────
+  if (req.screening?.level === 'bloque') return { goal: req.goal, family, weeks: [], targetPeakKm: 0, peakKm: 0, warnings: req.screening.explanations, ok: false };
+  const prudent = req.screening?.level === 'prudent';
+  const difficulty = prudent ? 'prudent' : req.difficulty;
+  if (prudent) {
+    warnings.push(...req.screening!.explanations);
+    warnings.push(explain('plan.prudent', 'conseil', 'Plan prudent', `Selon ton questionnaire santé : difficulté « prudent », rien au-dessus de Z2 les ${HEALTH_PRUDENT_EASY_WEEKS} premières semaines (ni séance clé, ni strides), pas de test à fond${req.experience === 'jamais' || req.experience === 'debutant' ? ', et on commence en marche/course' : ''}.`, { semaines: HEALTH_PRUDENT_EASY_WEEKS }));
+  }
+
   // ── Point de départ ───────────────────────────────────────────────────────
   // « Courir de zéro » est toujours évalué comme un premier départ.
-  const start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
+  let start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
+  // Plan prudent : marche/course d'office pour qui n'a jamais couru ou débute (au plus haut palier que permet sa capacité).
+  if (prudent && !start.runWalk && (req.experience === 'jamais' || req.experience === 'debutant')) start = { ...start, runWalk: true, stage: firstStage(start.capacityMin) };
   const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
   // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
   const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
@@ -176,7 +192,7 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   const exp = experienceIndex(req.experience);
   if (family !== 'forme') warnings.unshift(start.explanation);
   const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
-  let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[req.difficulty]);
+  let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[difficulty]);
   const cap = timeCapKm(req.availability, req.vdot, trail);
   if (cap < targetPeak) {
     warnings.push(explain('peak.timecap', 'conseil', 'Le temps disponible limite le volume', `Avec ${req.availability.runDaysPerWeek} sorties et tes plages horaires, le volume plafonne autour de ${cap} km/sem (visé : ${targetPeak}). C'est correct : on mise sur la qualité.`, { cap, target: targetPeak }));
@@ -297,7 +313,8 @@ export function generatePlan(req: PlanRequest): PlanDraft {
       targetKm: km,
       targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR[phase]),
       // « Courir de zéro » : aucune séance clé, la régularité est l'objectif. Après un démarrage : 4 semaines de base sans clé.
-      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) ? 0 : keySessionsFor(phase, kind, i, req.experience, req.difficulty),
+      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) || (prudent && i < HEALTH_PRUDENT_EASY_WEEKS) ? 0 : keySessionsFor(phase, kind, i, req.experience, difficulty),
+      ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
       longRunKm,
       ...(before > 0 ? { longestRunKm: before } : {}),
       notes,
@@ -321,7 +338,8 @@ export function generatePlan(req: PlanRequest): PlanDraft {
         kind: isRaceWeek ? 'course' : 'taper',
         targetKm: km,
         targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR.taper),
-        keySessions: keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, req.experience, req.difficulty),
+        keySessions: prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? 0 : keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, req.experience, difficulty),
+        ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
         longRunKm: isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, km * LONG_RUN_SHARE_BY_PHASE.taper * 1.6)),
         ...(longest > 0 ? { longestRunKm: floorTenth(longest) } : {}),
         notes: [explain('week.taper', 'info', isRaceWeek ? 'Semaine de course' : 'Affûtage', `Volume à ${Math.round(ratio * 100)} % du pic, intensité maintenue (strides, efforts courts). La fatigue s'en va, la forme reste.`, { ratio })],
