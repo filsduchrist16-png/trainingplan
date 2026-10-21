@@ -327,7 +327,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
             <>
               <h1 className="text-3xl font-semibold">Ta semaine type</h1>
               <Field label="Sorties de course par semaine" group>
-                <Segmented label="Sorties par semaine" value={s.availability.runDaysPerWeek} onChange={(v) => set({ availability: { ...s.availability, runDaysPerWeek: v } })} options={[2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
+                <Segmented label="Sorties par semaine" value={s.availability.runDaysPerWeek} onChange={(v) => set({ availability: { ...s.availability, runDaysPerWeek: v } })} options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
               </Field>
               <Field label="Jours possibles" group>
                 <div className="flex flex-wrap gap-2">

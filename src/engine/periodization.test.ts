@@ -343,3 +343,34 @@ describe('débutant dont la plus longue sortie est courte (garde-fou de séance)
 function beginnerBase(): PlanRequest {
   return { goal: 'route_10k', startDate: '2026-10-19', race: { date: '2027-03-20', distanceKm: 10, elevationGainM: 0 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 40, availability: avail };
 }
+
+describe('T12 — disponibilité de 1 ou 2 jours', () => {
+  const one = { ...avail, runDaysPerWeek: 1, allowedDays: [6] as Availability['allowedDays'] };
+  const two = { ...avail, runDaysPerWeek: 2, allowedDays: [3, 6] as Availability['allowedDays'] };
+  it('1 jour : objectif course refusé, avec explication', () => {
+    const p = generatePlan(req({ goal: 'route_10k', availability: one }));
+    expect(p.ok).toBe(false);
+    expect(p.warnings[0]!.ruleId).toBe('plan.oneday');
+    expect(p.warnings[0]!.why).toMatch(/Garder la forme/);
+    expect(generatePlan(req({ goal: 'trail_court', availability: one })).ok).toBe(false);
+  });
+  it('1 jour : « Courir de zéro » et « Garder la forme » permis, message honnête sur la lenteur', () => {
+    const p = generatePlan({ goal: 'debuter', startDate: START, experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, availability: one });
+    expect(p.ok).toBe(true);
+    const w = p.warnings.find((x) => x.ruleId === 'plan.oneday.slow')!;
+    expect(w.why).toContain(`${p.weeks.length} semaines`);
+    expect(p.weeks[0]!.runWalk!.sessions).toHaveLength(1);
+    const f = generatePlan({ goal: 'forme', startDate: START, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 15, availability: one });
+    expect(f.ok).toBe(true);
+    expect(f.warnings.find((x) => x.ruleId === 'plan.oneday.slow')!.why).not.toMatch(/30 min d'affilée/);
+  });
+  it('2 jours : aucune séance clé tant que la longue fait moins de 30 min', () => {
+    const p = generatePlan(req({ goal: 'route_10k', availability: two, experience: 'regulier', currentWeeklyKm: 6, longestRecentRunKm: 3.2, vdot: 40, race: { date: addDays(START, 30 * 7 + 5), distanceKm: 10, elevationGainM: 0 } }));
+    const held = p.weeks.filter((w) => w.notes.some((n) => n.ruleId === 'week.twodays'));
+    expect(held.length).toBeGreaterThan(0);
+    expect(held.every((w) => w.keySessions === 0)).toBe(true);
+    expect(p.weeks.some((w) => w.keySessions > 0)).toBe(true);
+    const fit = generatePlan(req({ goal: 'route_10k', availability: two, currentWeeklyKm: 20, longestRecentRunKm: 10 }));
+    expect(fit.weeks.flatMap((w) => w.notes).some((n) => n.ruleId === 'week.twodays')).toBe(false);
+  });
+});

@@ -70,7 +70,7 @@ function ProfileFor({ athlete }: { athlete: Athlete }) {
       <Card className="space-y-4">
         <Eyebrow>Disponibilités</Eyebrow>
         <Field label="Sorties par semaine" group>
-          <Segmented label="Sorties par semaine" value={athlete.availability.runDaysPerWeek} onChange={(v) => void save({ availability: { ...athlete.availability, runDaysPerWeek: v } })} options={[2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
+          <Segmented label="Sorties par semaine" value={athlete.availability.runDaysPerWeek} onChange={(v) => void save({ availability: { ...athlete.availability, runDaysPerWeek: v } })} options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: n, label: String(n) }))} />
         </Field>
         <Field label="Jours possibles" group>
           <div className="flex flex-wrap gap-2">

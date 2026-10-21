@@ -90,6 +90,11 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 - **Démarrage** : sous 10 km/semaine, le plan commence par une phase de marche-course.
 - **Plafonds** : le pic est limité par le temps disponible. Si le pic visé est inatteignable en respectant les 10 %, le moteur **plafonne et le dit**.
 
+## Disponibilité réduite (1 ou 2 jours)
+
+- **1 sortie par semaine** : objectif course (route, trail) refusé (`plan.oneday`, sévérité `stop`) avec deux propositions, « Garder la forme » ou « Courir de zéro » ; pour ceux-ci, le plan est fait avec un message honnête sur la lenteur (`plan.oneday.slow`, avec la durée estimée du parcours).
+- **2 sorties par semaine** : la progression marche/course se fait séance par séance (elle règle le rythme) ; aucune séance clé tant que la sortie longue fait moins de `TWO_DAYS_KEY_MIN_CONTINUOUS` (30 min) de course continue (`week.twodays`).
+
 ## Semaine type (`buildWeekSessions`)
 
 - **Choix des jours** : le jour de la longue d'abord, puis les jours les plus espacés possible.

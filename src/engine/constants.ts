@@ -322,3 +322,7 @@ export const ZONE_RPE: Record<'z1' | 'z2' | 'z3' | 'z4' | 'z5', [number, number]
  * Source : Goom, Donnelly et Brockwell (2019), « Returning to running postnatal ». À VALIDER (physio périnéale).
  */
 export const POSTPARTUM_NO_RUN_DAYS = 91;
+
+// ─── Disponibilité réduite ────────────────────────────────────────────────────
+/** 2 sorties par semaine : aucune séance clé tant que la sortie longue (course continue) fait moins de 30 min. */
+export const TWO_DAYS_KEY_MIN_CONTINUOUS = 30;

@@ -51,7 +51,7 @@ export interface InjuryRecord {
 }
 
 export interface Availability {
-  runDaysPerWeek: number; // 2-7
+  runDaysPerWeek: number; // 1-7 (1 : pas de plan de course)
   allowedDays: Weekday[];
   longRunDay: Weekday;
   maxWeekdayMinutes: number;
