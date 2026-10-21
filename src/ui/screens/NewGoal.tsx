@@ -63,9 +63,12 @@ interface State {
   body: BodyStats;
 }
 
-/** « 22:30 » → 22,5 min ; « 1:45:00 » → 105 min. */
+/** « 52:30 », « 1:05:00 », mais aussi « 52.30 », « 52m30 », « 1h05 » ou « 52 » (minutes) : tolérant, le clavier mobile n'a pas toujours « : ». */
 export function timeToMinutes(s: string): number | null {
-  const parts = s.trim().split(':').map(Number);
+  const t = s.trim().toLowerCase().replace(/\s+/g, '');
+  const hm = t.match(/^(\d+)h(\d{1,2})?(?:m(?:in)?)?$/);
+  const normalized = hm ? `${hm[1]}:${hm[2] ?? '0'}:0` : t.replace(/m(?:in)?(\d{1,2})s?$/, ':$1').replace(/[.,;](\d{1,2})$/, ':$1').replace(/^(\d+)$/, '$1:0');
+  const parts = normalized.split(':').map(Number);
   if (parts.length < 2 || parts.length > 3 || parts.some((p) => !Number.isFinite(p) || p < 0)) return null;
   const [h, mi, se] = parts.length === 3 ? parts : [0, ...parts];
   const total = h! * 60 + mi! + se! / 60;
@@ -312,8 +315,8 @@ function Wizard({ athlete }: { athlete: Athlete }) {
               {s.fitnessMode === 'temps' && (
                 <div className="space-y-3">
                   <Segmented label="Distance de référence" value={s.refKm} onChange={(v) => set({ refKm: v })} options={REF_DISTANCES.map((r) => ({ value: r.km, label: r.label }))} />
-                  <Field label="Ton temps récent" hint="Format mm:ss ou h:mm:ss, sur une course des 3 derniers mois.">
-                    <TextInput inputMode="numeric" placeholder="ex. 52:30" value={s.refTime} onChange={(e) => set({ refTime: e.target.value })} />
+                  <Field label="Ton temps récent" hint="Format mm:ss ou h:mm:ss (ex. 52:30 ou 1h05), sur une course des 3 derniers mois.">
+                    <TextInput inputMode="text" autoComplete="off" placeholder="ex. 52:30" value={s.refTime} onChange={(e) => set({ refTime: e.target.value })} />
                   </Field>
                 </div>
               )}

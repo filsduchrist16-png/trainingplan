@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/ui/lib/cn';
 
@@ -76,6 +77,14 @@ export function Stepper({ label, value, onChange, step = 1, min = 0, max = 999, 
   unit?: string;
 }) {
   const set = (v: number) => onChange(Math.min(max, Math.max(min, Math.round(v / step) * step)));
+  // Texte en cours de frappe : on ne force le min/max qu'à la fin (sinon « 14 » devient « 8 » dès le « 1 »).
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft === null) return;
+    const n = Number(draft.replace(',', '.'));
+    if (draft.trim() !== '' && Number.isFinite(n)) onChange(Math.min(max, Math.max(min, n)));
+    setDraft(null);
+  };
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3">
       <span className="text-sm text-muted">{label}</span>
@@ -85,11 +94,18 @@ export function Stepper({ label, value, onChange, step = 1, min = 0, max = 999, 
           aria-label={label}
           inputMode="decimal"
           className="num w-16 bg-transparent text-center text-xl font-semibold outline-none"
-          value={value}
+          value={draft ?? value}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => {
-            const n = Number(e.target.value.replace(',', '.'));
-            if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, n)));
+            const text = e.target.value;
+            if (!/^\d*[.,]?\d*$/.test(text)) return;
+            setDraft(text);
+            const n = Number(text.replace(',', '.'));
+            // Valeur valide dans les bornes : on la propage tout de suite ; sinon on attend la fin de la saisie.
+            if (text.trim() !== '' && Number.isFinite(n) && n >= min && n <= max) onChange(n);
           }}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); }}
         />
         <button type="button" aria-label={`${label} : plus`} onClick={() => set(value + step)} className="h-10 w-10 rounded-full bg-surface-2 text-xl hover:bg-line">+</button>
         {unit && <span className="w-12 text-sm text-muted">{unit}</span>}

@@ -229,3 +229,17 @@ test('jamais couru, marathon : objectif irréaliste, objectif intermédiaire pro
   await page.getByRole('button', { name: /Viser un 5 km à cette date/ }).click();
   await expect(page.getByText('Objectif trop ambitieux pour cette date.')).toBeHidden();
 });
+
+test('saisie des nombres : taper « 14 » pour la VMA ne saute pas au minimum', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^10 km/ }).click();
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radio', { name: 'Ma VMA' }).click();
+  const vma = page.getByRole('textbox', { name: 'VMA' });
+  await vma.fill('');
+  await vma.pressSequentially('16');
+  await expect(vma).toHaveValue('16');
+  await vma.blur();
+  await expect(vma).toHaveValue('16');
+});
