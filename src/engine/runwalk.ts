@@ -91,6 +91,8 @@ export interface RunWalkOptions {
   healthBlocked?: boolean;
   /** Point d'entrée recalculé (startMode) pour une reprise après 28 jours ou plus ; palier 1 par défaut. */
   entryStage?: number;
+  /** Palier plafond (règle santé : grossesse, post-partum → marche seulement = 0). */
+  maxStage?: number;
 }
 
 const WALK_STEPS_EARLY = Math.ceil((WALK_FIRST_TARGET_MIN - WALK_FIRST_START_MIN) / WALK_FIRST_STEP_MIN);
@@ -111,16 +113,20 @@ export function sessionsToReach(state: Pick<RunWalkState, 'stage' | 'validatedAt
 }
 
 /** Palier de chaque séance à venir, si chacune est validée (projection du plan). */
-export function projectStages(state: RunWalkState, count: number, slow = false): { stage: number; validatedAtStage: number }[] {
+export function projectStages(state: RunWalkState, count: number, slow = false, maxStage = JOURNEY_DONE): { stage: number; validatedAtStage: number }[] {
   const out: { stage: number; validatedAtStage: number }[] = [];
   let { stage, validatedAtStage } = state;
   for (let i = 0; i < count; i++) {
     out.push({ stage, validatedAtStage });
     if (stage >= JOURNEY_DONE) continue;
+    const required = validationsRequired(stage, slow);
     validatedAtStage++;
-    if (validatedAtStage >= validationsRequired(stage, slow)) {
-      stage++;
-      validatedAtStage = 0;
+    if (validatedAtStage >= required) {
+      if (stage >= maxStage) validatedAtStage = required - 1; // plafond : on reste au palier, au maximum de ce palier
+      else {
+        stage++;
+        validatedAtStage = 0;
+      }
     }
   }
   return out;
@@ -224,6 +230,12 @@ function evaluate(st: RunWalkState, s: RunWalkSession, painLogs: { date: ISODate
   }
   const validated = st.validatedAtStage + 1;
   const required = validationsRequired(st.stage, opts.slow);
+  if (validated >= required && st.stage >= (opts.maxStage ?? JOURNEY_DONE)) {
+    return {
+      state: { ...st, validatedAtStage: required - 1, failsAtStage: 0 },
+      explanation: explain('runwalk.hold', 'info', 'Séance validée, on reste à ce palier', 'Bien fait! Une règle santé (grossesse ou reprise post-partum) garde ton plan à la marche pour l’instant.', { palier: st.stage }),
+    };
+  }
   if (validated >= required) {
     const stage = st.stage + 1;
     return {

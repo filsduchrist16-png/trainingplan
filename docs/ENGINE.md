@@ -130,6 +130,14 @@ Questionnaire à l'inscription (étape de l'assistant et écran « Questionnaire
 | Blessure récente | dormante depuis < 12 sem. | Expérience rétrogradée d'un niveau, marche/course si capacité < 20 min (`profile.injury.recent`) |
 | Mineur | < 18 ans | Marathon, trail moyen et ultra refusés (`profile.goal.forbidden`), difficulté au plus « équilibré » |
 
+**Grossesse et post-partum** (Q8 + `health.pregnancy`) :
+
+- **Grossesse** : seul « Garder la forme » est permis (`profile.goal.pregnancy` sinon) ; tout le plan `easyOnly` (RPE 5-6 au plus, aucune séance clé), le volume ne monte pas ; qui ne courait pas avant (`jamais`) : marche seulement ; note « signaux d'arrêt » sur chaque sortie ; validation par le suivi de grossesse (`profile.pregnancy`).
+- **Post-partum** : pas de course avant `POSTPARTUM_NO_RUN_DAYS` (≈ 13 semaines) → marche seulement (`profile.postpartum.early`). Ensuite, **test de reprise** (liste à cocher, `POSTPARTUM_RETURN_TEST`) : pas fait ou incomplet → marche (`profile.postpartum.test`) ; un symptôme (`POSTPARTUM_SYMPTOMS`) → marche + physio périnéale (`profile.postpartum.physio`) ; réussi → marche/course au palier 1 quelle que soit l'expérience d'avant (`profile.postpartum.ready`).
+- **Marche seulement** : l'échelle est plafonnée au palier 0 (`maxStage`, dans la projection et dans le journal : `runwalk.hold`) ; un objectif course est refusé (`profile.walk_only.goal`) ; « Courir de zéro » et « Garder la forme » deviennent des plans de marche rapide (20 → 30 min).
+
+**« Garder la forme »** suit la même règle d'entrée que les autres objectifs (décision 4) : sous le seuil de capacité continue, le plan commence par le parcours de démarrage, puis passe en maintien.
+
 Les notes de profil sont ajoutées aux séances (`SessionDraft.notes`) et affichées dans le détail de la séance (« Pour toi »).
 
 ## Garde-fous santé (`evaluateHealth`)

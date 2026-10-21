@@ -317,3 +317,8 @@ export const PROFILE_MASTERS_MAX_KEY_NOVICE = 1;
 export const PROFILE_DIABETES_NOTE_MIN = 45;
 /** Effort perçu (RPE) par zone, pour les zones sans cardio (FC non fiable). */
 export const ZONE_RPE: Record<'z1' | 'z2' | 'z3' | 'z4' | 'z5', [number, number]> = { z1: [1, 2], z2: [3, 4], z3: [5, 6], z4: [7, 8], z5: [9, 10] };
+/**
+ * Post-partum : pas de course avant 3 mois (≈ 13 semaines), puis test de reprise.
+ * Source : Goom, Donnelly et Brockwell (2019), « Returning to running postnatal ». À VALIDER (physio périnéale).
+ */
+export const POSTPARTUM_NO_RUN_DAYS = 91;

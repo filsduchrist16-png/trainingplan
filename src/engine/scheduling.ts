@@ -448,9 +448,10 @@ export function rescheduleJourney(
   slots: JourneySlot[],
   ctx: Pick<WeekContext, 'goal' | 'family' | 'vdot' | 'availability'>,
   slow = false,
+  maxStage?: number,
 ): { id: string; stage: number; session: SessionDraft }[] {
   const sorted = [...slots].sort((a, b) => a.date.localeCompare(b.date));
-  const stages = projectStages(state, sorted.length, slow);
+  const stages = projectStages(state, sorted.length, slow, maxStage);
   const b: BuildContext = { goal: ctx.goal, trail: ctx.family === 'trail', vdot: ctx.vdot, phaseWeek: 0 };
   return sorted.map((slot, i) => {
     const p = stages[i]!;

@@ -181,3 +181,18 @@ test('questionnaire santé : un oui à la douleur thoracique demande un avis mé
   await expect(page.getByText('Plan prudent.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Créer mon plan' })).toBeEnabled();
 });
+
+test('post-partum à 8 semaines : pas d’objectif de course, test de reprise proposé', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^10 km/ }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.getByRole('radiogroup', { name: /Es-tu enceinte/ }).getByRole('radio', { name: 'Oui' }).click();
+  await page.getByRole('radio', { name: "J'ai accouché" }).click();
+  const birth = new Date(Date.now() - 56 * 864e5).toISOString().slice(0, 10);
+  await page.getByLabel("Date de l'accouchement").fill(birth);
+  await expect(page.getByRole('button', { name: 'Marcher 30 min' })).toBeVisible();
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByRole('heading', { name: 'Pas encore d’objectif de course' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Créer mon plan' })).toBeDisabled();
+});

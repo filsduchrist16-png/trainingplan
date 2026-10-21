@@ -1,5 +1,6 @@
-import { HEALTH_QUESTIONS, screen, type ChronicCondition, type HealthProfile, type HealthQuestion, type ISODate } from '@/engine';
+import { HEALTH_QUESTIONS, POSTPARTUM_RETURN_TEST, POSTPARTUM_SYMPTOMS, screen, type ChronicCondition, type HealthProfile, type HealthQuestion, type ISODate } from '@/engine';
 import { cn } from '@/ui/lib/cn';
+import { useState } from 'react';
 import { Chip, Field, Segmented, TextInput } from './forms';
 
 export const EMPTY_ANSWERS: Record<HealthQuestion, boolean> = { q1: false, q2: false, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: true };
@@ -68,6 +69,7 @@ export function HealthForm({ health, onChange, body, onBodyChange, today }: {
               <Field label={health.pregnancy?.status === 'post_partum' ? "Date de l'accouchement" : 'Date prévue'}>
                 <TextInput type="date" value={health.pregnancy?.dueOrBirthDate ?? today} onChange={(e) => onChange({ ...health, pregnancy: { status: health.pregnancy?.status ?? 'enceinte', dueOrBirthDate: e.target.value } })} />
               </Field>
+              {health.pregnancy?.status === 'post_partum' && <ReturnTest health={health} onChange={onChange} today={today} />}
             </div>
           )}
         </div>
@@ -81,6 +83,35 @@ export function HealthForm({ health, onChange, body, onBodyChange, today }: {
         </div>
       ))}
       <p className="text-xs text-muted">Tes réponses restent sur ton appareil. Ce questionnaire ne remplace pas un avis médical.</p>
+    </div>
+  );
+}
+
+/** Test de reprise post-partum : liste à cocher (exercices faits, symptômes ressentis). Le moteur décide. */
+function ReturnTest({ health, onChange, today }: { health: HealthProfile; onChange: (h: HealthProfile) => void; today: ISODate }) {
+  const preg = health.pregnancy!;
+  const saved = preg.returnTest;
+  const [done, setDone] = useState<string[]>(saved?.allDone ? POSTPARTUM_RETURN_TEST : []);
+  const [symptoms, setSymptoms] = useState<string[]>([]);
+  const record = (d: string[], s: string[]) => {
+    setDone(d);
+    setSymptoms(s);
+    onChange({ ...health, pregnancy: { ...preg, returnTest: { date: today, allDone: d.length === POSTPARTUM_RETURN_TEST.length, symptoms: s.length > 0 } } });
+  };
+  const toggle = (list: string[], x: string) => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
+  return (
+    <div className="space-y-2 rounded-xl border border-line p-3">
+      <p className="text-sm font-medium">Test de reprise (avant la 1re course)</p>
+      <Field label="J'ai pu faire" group>
+        <div className="flex flex-wrap gap-2">
+          {POSTPARTUM_RETURN_TEST.map((t) => <Chip key={t} selected={done.includes(t)} onToggle={() => record(toggle(done, t), symptoms)}>{t}</Chip>)}
+        </div>
+      </Field>
+      <Field label="Pendant le test, j'ai ressenti" group>
+        <div className="flex flex-wrap gap-2">
+          {POSTPARTUM_SYMPTOMS.map((t) => <Chip key={t} selected={symptoms.includes(t)} onToggle={() => record(done, toggle(symptoms, t))}>{t}</Chip>)}
+        </div>
+      </Field>
     </div>
   );
 }

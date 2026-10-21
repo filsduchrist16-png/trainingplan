@@ -159,3 +159,62 @@ describe('profils (T10)', () => {
     expect(plan('route_10k', p, { difficulty: 'prudent' }).draft.targetPeakKm).toBeLessThan(eq.targetPeakKm);
   });
 });
+
+describe('grossesse et post-partum (T11)', () => {
+  const pp = (birth: string, returnTest?: { allDone: boolean; symptoms: boolean }) => health({ q8: true }, { pregnancy: { status: 'post_partum', dueOrBirthDate: birth, ...(returnTest ? { returnTest: { date: TODAY, ...returnTest } } : {}) } });
+  const runs = (sessions: { type: string; title: string }[]) => sessions.filter((s) => isRunType(s.type as never) && s.type !== 'repos' && !/^Marche rapide/.test(s.title));
+
+  it('post-partum à 8 semaines : aucune séance de course, objectif course refusé', () => {
+    const p = profile({ health: pp(addDays(TODAY, -8 * 7)) });
+    expect(p.walkOnly).toBe(true);
+    expect(ids(p)).toEqual(['profile.postpartum.early']);
+    const { draft, weeks } = plan('debuter', p, { durationWeeks: 8, availability: { ...avail, runDaysPerWeek: 3 } });
+    expect(draft.ok).toBe(true);
+    expect(weeks.every((w) => w.week.runWalk!.sessions.every((s) => s.stage === 0))).toBe(true);
+    expect(runs(weeks.flatMap((w) => w.sessions))).toEqual([]);
+    expect(draft.warnings.map((w) => w.ruleId)).not.toContain('plan.debuter.short');
+    expect(plan('route_10k', p).draft.warnings[0]!.ruleId).toBe('profile.walk_only.goal');
+  });
+
+  it('post-partum à 14 semaines sans symptôme : marche/course au palier 1, quelle que soit l’expérience', () => {
+    const p = profile({ health: pp(addDays(TODAY, -14 * 7), { allDone: true, symptoms: false }) });
+    expect(p).toMatchObject({ walkOnly: false, forceStage: 1 });
+    const { draft } = plan('route_10k', p, { currentWeeklyKm: 30, continuousMin: 60 });
+    expect(draft.ok).toBe(true);
+    expect(draft.weeks[0]!.phase).toBe('demarrage');
+    expect(draft.weeks[0]!.runWalk!.sessions[0]!.stage).toBe(1);
+  });
+
+  it('post-partum à 14 semaines : sans test ou avec symptôme, marche seulement (+ physio périnéale)', () => {
+    expect(ids(profile({ health: pp(addDays(TODAY, -14 * 7)) }))).toEqual(['profile.postpartum.test']);
+    expect(profile({ health: pp(addDays(TODAY, -14 * 7), { allDone: false, symptoms: false }) }).walkOnly).toBe(true);
+    const sym = profile({ health: pp(addDays(TODAY, -14 * 7), { allDone: true, symptoms: true }) });
+    expect(sym.walkOnly).toBe(true);
+    expect(sym.explanations[0]!.ruleId).toBe('profile.postpartum.physio');
+    expect(sym.explanations[0]!.why).toMatch(/périnéale/);
+  });
+
+  it('grossesse : « garder la forme » seulement, rien au-dessus de Z2, signaux d’arrêt', () => {
+    const p = profile({ health: health({ q8: true }, { pregnancy: { status: 'enceinte', dueOrBirthDate: '2026-09-01' } }) });
+    expect(p).toMatchObject({ allowedGoals: ['forme'], easyOnly: true, walkOnly: false });
+    expect(plan('route_5k', p).draft.warnings[0]!.ruleId).toBe('profile.goal.pregnancy');
+    const { draft, weeks } = plan('forme', p, { currentWeeklyKm: 25 });
+    expect(draft.ok).toBe(true);
+    expect(draft.weeks.every((w) => w.easyOnly && w.keySessions === 0)).toBe(true);
+    expect(Math.max(...draft.weeks.map((w) => w.targetKm))).toBe(25); // le volume ne monte pas
+    const run = weeks[0]!.sessions.find((s) => isRunType(s.type) && s.type !== 'repos')!;
+    expect(run.notes!.join(' ')).toMatch(/saignement/);
+    expect(weeks.flatMap((w) => w.sessions).some((s) => s.type === 'strides' || s.isKey)).toBe(false);
+  });
+
+  it('grossesse sans course avant : marche seulement', () => {
+    const p = profile({ experience: 'jamais', health: health({ q8: true }, { pregnancy: { status: 'enceinte', dueOrBirthDate: '2026-09-01' } }) });
+    expect(p.walkOnly).toBe(true);
+    const { weeks } = plan('forme', p, { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3 } });
+    expect(runs(weeks.flatMap((w) => w.sessions))).toEqual([]);
+  });
+
+  it('Q8 sans précision : pas de règle de grossesse', () => {
+    expect(profile({ health: health({ q8: true }) })).toMatchObject({ walkOnly: false, easyOnly: false });
+  });
+});

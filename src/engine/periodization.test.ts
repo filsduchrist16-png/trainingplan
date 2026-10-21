@@ -244,10 +244,17 @@ describe('autres objectifs', () => {
     expect(p.weeks.some((w) => w.kind === 'decharge')).toBe(true);
     expect(p.warnings).toEqual([]);
   });
-  it('garder la forme depuis zéro : volume minimal, durée par défaut', () => {
+  it('garder la forme depuis zéro : même règle d’entrée, marche/course d’abord (décision 4)', () => {
     const p = generatePlan({ goal: 'forme', startDate: START, experience: 'debutant', difficulty: 'equilibre', currentWeeklyKm: 0, availability: avail });
     expect(p.weeks).toHaveLength(8);
-    expect(p.weeks[0]!.targetKm).toBe(6);
+    expect(p.weeks[0]!.phase).toBe('demarrage');
+    expect(p.weeks[0]!.runWalk!.sessions[0]!.stage).toBe(1);
+    expect(p.warnings[0]!.ruleId).toBe(p.start!.explanation.ruleId);
+  });
+  it('garder la forme quand on court déjà 30 min : maintien, sans démarrage', () => {
+    const p = generatePlan({ goal: 'forme', startDate: START, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 20, availability: avail });
+    expect(p.weeks.every((w) => w.phase === 'maintien')).toBe(true);
+    expect(p.weeks[0]!.targetKm).toBe(20);
   });
   it('5 km route sans taper long, course marquée', () => {
     const p = generatePlan(req({ goal: 'route_5k', race: { date: addDays(START, 9 * 7 + 5), distanceKm: 5, elevationGainM: 0 } }));

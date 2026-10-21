@@ -85,7 +85,12 @@ export interface HealthProfile {
   /** Q4 : maladies chroniques déclarées. */
   conditions: ChronicCondition[];
   /** Q8 : grossesse en cours (date prévue) ou post-partum (date d'accouchement). */
-  pregnancy?: { status: 'enceinte' | 'post_partum'; dueOrBirthDate: ISODate };
+  pregnancy?: {
+    status: 'enceinte' | 'post_partum';
+    dueOrBirthDate: ISODate;
+    /** Post-partum : test de reprise (liste à cocher). `allDone` = tous les exercices faits ; `symptoms` = fuites, lourdeur, douleur. */
+    returnTest?: { date: ISODate; allDone: boolean; symptoms: boolean };
+  };
 }
 
 export interface Athlete extends Entity {

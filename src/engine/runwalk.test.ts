@@ -197,3 +197,14 @@ describe('T2 — projection et fin de parcours', () => {
     expect(run([ok(0), ok(2)], { stage: 18, validatedAtStage: 1, failsAtStage: 0 }).explanations[0]!.title).toMatch(/30 min/);
   });
 });
+
+describe('plafond de palier (marche seulement)', () => {
+  it('séances validées : on reste à la marche, 30 min', () => {
+    const sessions = ['2026-04-21', '2026-04-23', '2026-04-25', '2026-04-28', '2026-04-30'].map((date) => ({ date, completed: true, rpe: 3 }));
+    const r = nextRunWalkState(initialRunWalkState(0), sessions, [], '2026-05-01', { maxStage: 0 });
+    expect(r.state.stage).toBe(0);
+    expect(r.explanations.at(-1)!.ruleId).toBe('runwalk.hold');
+    expect(walkFirstMinutes(r.state.validatedAtStage)).toBe(30);
+    expect(projectStages(initialRunWalkState(0), 8, false, 0).every((p) => p.stage === 0)).toBe(true);
+  });
+});

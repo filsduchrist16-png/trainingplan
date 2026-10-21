@@ -156,7 +156,13 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   const prof = req.profile;
   if (prof?.injuryActive) return fail(prof.explanations.find((e) => e.ruleId === 'profile.injury.active')!);
   if (prof?.forbiddenGoals.includes(req.goal)) return fail(explain('profile.goal.forbidden', 'stop', `${profile.label} : pas avant 18 ans`, "Le squelette grandit encore : on vise un objectif plus court (5 km, 10 km, semi ou trail court) d'ici là.", { objectif: req.goal }));
+  if (prof?.allowedGoals && !prof.allowedGoals.includes(req.goal)) return fail(explain('profile.goal.pregnancy', 'stop', 'Pendant la grossesse : garder la forme', "Pas d'objectif de course ni de plan qui fait monter le volume pendant la grossesse. Choisis « Garder la forme » : on bouge au ressenti, en sécurité.", { objectif: req.goal }));
+  if (prof?.walkOnly && (family === 'route' || family === 'trail')) return fail(explain('profile.walk_only.goal', 'stop', 'Pas encore d’objectif de course', "Pour l'instant, ta santé demande de marcher seulement. Choisis « Courir de zéro » ou « Garder la forme » : le plan sera en marche, et la course viendra au feu vert.", { objectif: req.goal }));
+  const walkOnly = Boolean(prof?.walkOnly);
+  const maxStage = walkOnly ? STAGE_WALK : JOURNEY_DONE;
   const prudent = req.screening?.level === 'prudent';
+  // Semaines sans rien au-dessus de Z2 : grossesse (tout le plan), plan prudent (4 premières semaines).
+  const easyWeek = (i: number) => Boolean(prof?.easyOnly) || (prudent && i < HEALTH_PRUDENT_EASY_WEEKS);
   const RANK: Difficulty[] = ['prudent', 'equilibre', 'ambitieux'];
   const capped = prof?.maxDifficulty && RANK.indexOf(req.difficulty) > RANK.indexOf(prof.maxDifficulty) ? prof.maxDifficulty : req.difficulty;
   const difficulty: Difficulty = prudent ? 'prudent' : capped;
@@ -177,12 +183,16 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   // Profils 65+ et blessure récente : marche/course sous 20 min de capacité continue. Niveau 0 : marche d'abord.
   const forceRunWalk = (prudent && (experience === 'jamais' || experience === 'debutant')) || (prof?.runWalkMinCapacity !== undefined && start.capacityMin < prof.runWalkMinCapacity);
   if (!start.runWalk && forceRunWalk) start = { ...start, runWalk: true, stage: firstStage(start.capacityMin) };
-  if (prof?.walkFirst) start = { ...start, runWalk: true, stage: STAGE_WALK };
-  const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
+  // Reprise post-partum : marche/course au palier 1 quelle que soit l'expérience d'avant.
+  if (prof?.forceStage !== undefined) start = { ...start, runWalk: true, stage: prof.forceStage };
+  if (prof?.walkFirst || walkOnly) start = { ...start, runWalk: true, stage: STAGE_WALK };
+  // Même règle d'entrée pour tous les objectifs, « garder la forme » compris (décision 4).
+  const needsDemarrage = family === 'debuter' || start.runWalk;
   // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
   const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
   const spw = Math.max(1, journeyDays(req.availability).length);
-  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE, slow) / spw) : 0;
+  // Marche seulement : le parcours ne se termine pas dans ce plan (il dure tout le plan).
+  const journeyWeeksNeeded = !journeyState ? 0 : walkOnly ? MAX_PLAN_WEEKS : Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE, slow) / spw);
 
   // ── Calendrier ────────────────────────────────────────────────────────────
   let startMonday = mondayOf(req.startDate);
@@ -201,7 +211,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     if (totalWeeks < profile.minWeeks) {
       warnings.push(explain('plan.short', 'attention', 'Délai court', `${totalWeeks} semaine(s) pour un ${profile.label}, c'est serré (minimum conseillé : ${profile.minWeeks}). On fait au mieux sans sauter la règle des 10 % : l'objectif devient de finir en santé.`, { weeks: totalWeeks, min: profile.minWeeks }));
     }
-  } else if (family === 'debuter' && req.durationWeeks === undefined && journeyWeeksNeeded > 0) {
+  } else if (family === 'debuter' && req.durationWeeks === undefined && journeyWeeksNeeded > 0 && !walkOnly) {
     // « Courir de zéro » : durée calculée depuis le palier d'entrée, pas fixée.
     totalWeeks = Math.min(MAX_PLAN_WEEKS, journeyWeeksNeeded);
   } else {
@@ -210,7 +220,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
 
   // ── Volumes cible ─────────────────────────────────────────────────────────
   const exp = experienceIndex(experience);
-  if (family !== 'forme') warnings.unshift(start.explanation);
+  if (family !== 'forme' || start.runWalk) warnings.unshift(start.explanation);
   const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
   let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[difficulty]);
   const cap = timeCapKm(req.availability, req.vdot, trail);
@@ -236,16 +246,16 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   // Après le démarrage : au moins 4 semaines de base sans séance clé, puis les phases de l'objectif.
   const baseAfter = journeyState && family !== 'debuter' ? Math.min(BASE_WEEKS_AFTER_RUNWALK, buildWeeks - dem) : 0;
   let phases: Phase[];
-  if (family === 'forme') phases = Array<Phase>(buildWeeks).fill('maintien');
+  if (family === 'forme') phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(buildWeeks - dem).fill('maintien')];
   else if (family === 'debuter') phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(buildWeeks - dem).fill('base')];
   else phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(baseAfter).fill('base'), ...allocatePhases(buildWeeks - dem - baseAfter)];
 
   // ── Parcours de démarrage : paliers projetés, séance par séance ───────────
-  const projected = journeyState ? projectStages(journeyState, dem * spw, slow) : [];
+  const projected = journeyState ? projectStages(journeyState, dem * spw, slow, maxStage) : [];
   // « Courir de zéro » plus court que le parcours : on n'accélère JAMAIS l'échelle, on dit où le plan finira (F5).
   const journeyDone = dem >= journeyWeeksNeeded;
   const endStage = projected.at(-1)?.stage ?? JOURNEY_DONE;
-  if (family === 'debuter' && !journeyDone) {
+  if (family === 'debuter' && !journeyDone && !walkOnly) {
     warnings.push(explain('plan.debuter.short', 'attention', `Ton plan finira au ${stageLabel(endStage).toLowerCase()}`, `Il faut environ ${journeyWeeksNeeded} semaines pour courir 30 min d'affilée en validant chaque séance ; en ${totalWeeks}, tu finiras au ${stageLabel(endStage).toLowerCase()}. On n'accélère pas l'échelle pour autant : c'est elle qui protège tes tendons. Tu pourras enchaîner avec un nouveau plan, qui repartira de là.`, { semaines: totalWeeks, estimation: journeyWeeksNeeded, palier: endStage }));
   }
   const buildCtx = { goal: req.goal, trail, vdot: req.vdot, phaseWeek: 0 };
@@ -333,8 +343,8 @@ export function generatePlan(input: PlanRequest): PlanDraft {
       targetKm: km,
       targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR[phase]),
       // « Courir de zéro » : aucune séance clé, la régularité est l'objectif. Après un démarrage : 4 semaines de base sans clé.
-      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) || (prudent && i < HEALTH_PRUDENT_EASY_WEEKS) ? 0 : capKeys(keySessionsFor(phase, kind, i, experience, difficulty)),
-      ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
+      keySessions: family === 'debuter' || (journeyState && i < dem + baseAfter) || easyWeek(i) ? 0 : capKeys(keySessionsFor(phase, kind, i, experience, difficulty)),
+      ...(easyWeek(i) ? { easyOnly: true } : {}),
       longRunKm,
       ...(before > 0 ? { longestRunKm: before } : {}),
       notes,
@@ -358,8 +368,8 @@ export function generatePlan(input: PlanRequest): PlanDraft {
         kind: isRaceWeek ? 'course' : 'taper',
         targetKm: km,
         targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR.taper),
-        keySessions: prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? 0 : capKeys(keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, experience, difficulty)),
-        ...(prudent && i < HEALTH_PRUDENT_EASY_WEEKS ? { easyOnly: true } : {}),
+        keySessions: easyWeek(i) ? 0 : capKeys(keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, experience, difficulty)),
+        ...(easyWeek(i) ? { easyOnly: true } : {}),
         longRunKm: isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, km * LONG_RUN_SHARE_BY_PHASE.taper * 1.6)),
         ...(longest > 0 ? { longestRunKm: floorTenth(longest) } : {}),
         notes: [explain('week.taper', 'info', isRaceWeek ? 'Semaine de course' : 'Affûtage', `Volume à ${Math.round(ratio * 100)} % du pic, intensité maintenue (strides, efforts courts). La fatigue s'en va, la forme reste.`, { ratio })],
@@ -390,7 +400,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   }
 
   // ── Bilan ─────────────────────────────────────────────────────────────────
-  if (family === 'debuter') {
+  if (family === 'debuter' && !walkOnly) {
     const end = journeyDone
       ? explain('plan.debuter.end', 'info', 'À la fin : tu cours 30 min', "Si chaque séance est validée, à la fin de ce plan tu cours 30 min sans t'arrêter. Prochaine étape : un objectif 5 km, ou « Garder la forme » pour courir régulièrement sans course.", { palier: JOURNEY_DONE })
       : explain('plan.debuter.end', 'info', `À la fin : ${stageLabel(endStage).toLowerCase()}`, `À la fin de ce plan, tu seras au ${stageLabel(endStage).toLowerCase()}. Pour aller jusqu'à 30 min continues, enchaîne avec un nouveau plan « Courir de zéro » : il repartira de ton palier.`, { palier: endStage });

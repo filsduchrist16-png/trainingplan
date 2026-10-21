@@ -1,6 +1,6 @@
 import {
   PROFILE_BMI_SLOW, PROFILE_BUILD_WEEKS_BEFORE_DELOAD, PROFILE_DIABETES_NOTE_MIN, PROFILE_MASTERS_AGE, PROFILE_MASTERS_MAX_KEY_NOVICE,
-  PROFILE_MINOR_AGE, PROFILE_RECENT_INJURY_DAYS, PROFILE_RUNWALK_MIN_CAPACITY, PROFILE_SENIOR_AGE, PROFILE_SLOW_AGE,
+  POSTPARTUM_NO_RUN_DAYS, PROFILE_MINOR_AGE, PROFILE_RECENT_INJURY_DAYS, PROFILE_RUNWALK_MIN_CAPACITY, PROFILE_SENIOR_AGE, PROFILE_SLOW_AGE,
 } from './constants';
 import { diffDays } from './dates';
 import { explain } from './explain';
@@ -50,6 +50,14 @@ export interface ProfileAdjustments {
   injuryActive: boolean;
   maxDifficulty?: Difficulty;
   forbiddenGoals: GoalKind[];
+  /** Seuls ces objectifs sont permis (grossesse : « garder la forme »). */
+  allowedGoals?: GoalKind[];
+  /** Marche seulement (grossesse sans course avant, post-partum avant le feu vert) : échelle plafonnée au palier 0. */
+  walkOnly: boolean;
+  /** Tout le plan sous Z2 (grossesse : RPE ≤ 5-6). */
+  easyOnly: boolean;
+  /** Reprise en marche/course à ce palier au plus, quelle que soit l'expérience (post-partum). */
+  forceStage?: number;
   sessionNotes: SessionNote[];
   explanations: Explanation[];
 }
@@ -74,7 +82,7 @@ export function deriveProfile(input: ProfileInput): ProfileAdjustments {
   const walkFirst = a?.q9 === false;
   const out: ProfileAdjustments = {
     slow: false, walkFirst, hrUnreliable: Boolean(a?.q5 && h?.hrUnreliable), noVo2: false, noConsecutiveDays: false,
-    experience: input.experience, injuryActive, forbiddenGoals: [], sessionNotes: [], explanations: [],
+    experience: input.experience, injuryActive, forbiddenGoals: [], walkOnly: false, easyOnly: false, sessionNotes: [], explanations: [],
   };
   const why: string[] = [];
 
@@ -128,8 +136,43 @@ export function deriveProfile(input: ProfileInput): ProfileAdjustments {
     out.maxDifficulty = 'equilibre';
     out.explanations.push(explain('profile.minor', 'conseil', 'Moins de 18 ans', 'Pas de marathon, de trail moyen ni d’ultra avant 18 ans : le squelette grandit encore. Difficulté au plus « équilibré ».', { age }));
   }
+  const preg = a?.q8 ? h?.pregnancy : undefined;
+  if (preg?.status === 'enceinte') {
+    out.allowedGoals = ['forme'];
+    out.easyOnly = true;
+    out.walkOnly = input.experience === 'jamais';
+    out.sessionNotes.push({ ruleId: 'profile.pregnancy.stop', appliesTo: 'course', text: 'Arrête et consulte si : saignement, perte de liquide, contractions, douleur au mollet, vertige, essoufflement avant l’effort, douleur à la poitrine.' });
+    out.explanations.push(explain('profile.pregnancy', 'attention', 'Grossesse : garder la forme', `Pas d'objectif de course ni de volume qui monte : on garde la forme, au ressenti (RPE 5-6 au plus, tu peux parler)${out.walkOnly ? ', en marchant puisque tu ne courais pas avant' : ''}. Fais valider ton plan par ton suivi de grossesse.`));
+  } else if (preg?.status === 'post_partum') {
+    const days = diffDays(preg.dueOrBirthDate, input.today);
+    const test = preg.returnTest;
+    if (days < POSTPARTUM_NO_RUN_DAYS) {
+      out.walkOnly = true;
+      out.explanations.push(explain('profile.postpartum.early', 'attention', 'Post-partum : marche d’abord', `${Math.floor(days / 7)} semaines après l'accouchement : pas de course avant 3 mois, le temps que le plancher pelvien et les abdominaux récupèrent. On marche, et on refait le point à ${Math.round(POSTPARTUM_NO_RUN_DAYS / 7)} semaines avec le test de reprise.`, { semaines: Math.floor(days / 7) }));
+    } else if (!test || !test.allDone || test.symptoms) {
+      out.walkOnly = true;
+      out.explanations.push(test?.symptoms
+        ? explain('profile.postpartum.physio', 'attention', 'Symptôme au test de reprise : physio périnéale', 'Fuites, lourdeur ou douleur pendant le test : on reste à la marche, et on te conseille une physiothérapeute en rééducation périnéale avant de courir. Ce n’est pas un échec, c’est l’étape qui protège la suite.')
+        : explain('profile.postpartum.test', 'conseil', 'Test de reprise avant de courir', 'Avant la 1re course : marche 30 min, équilibre sur une jambe 10 s, 10 squats sur une jambe, 1 min de jogging sur place, 10 sauts sur chaque jambe… sans fuite, lourdeur ni douleur. En attendant, on marche.'));
+    } else {
+      out.forceStage = 1;
+      out.explanations.push(explain('profile.postpartum.ready', 'info', 'Reprise post-partum : marche/course', 'Test de reprise réussi sans symptôme : on reprend en marche/course au palier 1, quelle que soit ton expérience d’avant. Ton corps a changé, la progression se fait séance par séance.'));
+    }
+  }
   return out;
 }
+
+/** Test de reprise post-partum (Goom, Donnelly et Brockwell, 2019) : tout doit se faire sans symptôme. */
+export const POSTPARTUM_RETURN_TEST: string[] = [
+  'Marcher 30 min',
+  'Tenir sur une jambe 10 s, de chaque côté',
+  '10 squats sur une jambe, de chaque côté',
+  '1 min de jogging sur place',
+  '10 bonds vers l’avant',
+  '10 sauts sur place sur chaque jambe',
+  '10 « running man » sur une jambe (genou opposé monté, bras opposé), de chaque côté',
+];
+export const POSTPARTUM_SYMPTOMS: string[] = ['Fuites urinaires', 'Lourdeur ou pression pelvienne', 'Douleur (bassin, ventre, cicatrice)'];
 
 /** Notes de profil qui s'appliquent à une séance. */
 export function notesFor(notes: SessionNote[], session: { type: SessionType; durationMin: number }, isRun: boolean): string[] {
