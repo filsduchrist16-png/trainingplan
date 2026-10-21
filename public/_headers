@@ -1,4 +1,4 @@
-# En-têtes Cloudflare Pages.
+# En-têtes HTTP (appliqués par les assets statiques Cloudflare Workers).
 # connect-src 'self' : l'app ne PEUT techniquement envoyer aucune donnée ailleurs que vers son propre domaine.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
