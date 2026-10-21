@@ -62,6 +62,8 @@ Ce n'est **pas** le volume hebdo qui décide (3 × 4 km est de la course continu
    Si la course tombe avant « démarrage + 4 semaines de base » : avertissement `plan.runwalk.short` et 2 options (`course_en_marche_course`, `decaler`). Si le démarrage ne finit pas avant l'affûtage, il n'y a pas d'affûtage : la course se fait en marche/course au palier courant.
 8. Strides et sprints en côte : seulement quand la sortie longue fait au moins 30 min, pour tout le monde.
 9. « Courir de zéro » est toujours évalué comme un premier départ.
+10. **Durée de « Courir de zéro »** : calculée, pas fixée. Sans durée choisie, le plan dure le temps du parcours depuis le palier d'entrée (séances à valider ÷ séances par semaine : 12 semaines depuis le palier 1 à 3 séances/sem, 18 à 2 séances/sem). Si la personne choisit une durée plus courte, l'échelle n'est **jamais accélérée** : avertissement `plan.debuter.short` (attention) avec le palier de fin prévu (F5). Plus longue : des semaines de base suivent le parcours. Si la personne court déjà 30 min, durée par défaut de l'objectif.
+11. **Bilan de fin** (`plan.debuter.end`, sur la dernière semaine et dans l'aperçu) : « tu cours 30 min », puis proposition d'un objectif 5 km ou « Garder la forme » ; sinon le palier atteint et l'invitation à enchaîner un nouveau plan, qui repart de ce palier.
 
 ## Protection des débutants (longueur de chaque sortie)
 

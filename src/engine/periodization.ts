@@ -9,7 +9,7 @@ import { addDays, diffDays, mondayOf } from './dates';
 import { explain } from './explain';
 import { startMode, type StartMode } from './startmode';
 import { runWalk as runWalkSession } from './builders';
-import { JOURNEY_DONE, initialRunWalkState, projectStages, sessionsToReach, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
+import { JOURNEY_DONE, initialRunWalkState, projectStages, sessionsToReach, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
 import { journeyDays } from './scheduling';
 import { DIFFICULTY_FACTOR, GOALS, experienceIndex, type GoalFamily } from './goals';
 import { easyMinutes } from './paces';
@@ -29,7 +29,10 @@ export interface PlanRequest {
   goal: GoalKind;
   startDate: ISODate;
   race?: { date: ISODate; distanceKm: number; elevationGainM: number };
-  /** Objectifs sans course (« courir de zéro », « garder la forme ») : durée en semaines. */
+  /**
+   * Objectifs sans course : durée en semaines. « Courir de zéro » sans durée : calculée depuis le palier d'entrée
+   * (le temps qu'il faut pour courir 30 min d'affilée si chaque séance est validée).
+   */
   durationWeeks?: number;
   experience: Experience;
   difficulty: Difficulty;
@@ -134,6 +137,15 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   const warnings: Explanation[] = [];
   const fail = (e: Explanation): PlanDraft => ({ goal: req.goal, family, weeks: [], targetPeakKm: 0, peakKm: 0, warnings: [e], ok: false });
 
+  // ── Point de départ ───────────────────────────────────────────────────────
+  // « Courir de zéro » est toujours évalué comme un premier départ.
+  const start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
+  const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
+  // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
+  const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
+  const spw = Math.max(1, journeyDays(req.availability).length);
+  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE) / spw) : 0;
+
   // ── Calendrier ────────────────────────────────────────────────────────────
   let startMonday = mondayOf(req.startDate);
   let totalWeeks: number;
@@ -151,15 +163,15 @@ export function generatePlan(req: PlanRequest): PlanDraft {
     if (totalWeeks < profile.minWeeks) {
       warnings.push(explain('plan.short', 'attention', 'Délai court', `${totalWeeks} semaine(s) pour un ${profile.label}, c'est serré (minimum conseillé : ${profile.minWeeks}). On fait au mieux sans sauter la règle des 10 % : l'objectif devient de finir en santé.`, { weeks: totalWeeks, min: profile.minWeeks }));
     }
+  } else if (family === 'debuter' && req.durationWeeks === undefined && journeyWeeksNeeded > 0) {
+    // « Courir de zéro » : durée calculée depuis le palier d'entrée, pas fixée.
+    totalWeeks = Math.min(MAX_PLAN_WEEKS, journeyWeeksNeeded);
   } else {
     totalWeeks = Math.min(MAX_PLAN_WEEKS, Math.max(1, req.durationWeeks ?? profile.idealWeeks));
   }
 
   // ── Volumes cible ─────────────────────────────────────────────────────────
   const exp = experienceIndex(req.experience);
-  // « Courir de zéro » est toujours évalué comme un premier départ.
-  const start = startMode({ experience: family === 'debuter' ? 'jamais' : req.experience, weeklyKm: req.currentWeeklyKm, longestRunKm: req.longestRecentRunKm, continuousMin: req.continuousMin, vdot: req.vdot });
-  const needsDemarrage = family !== 'forme' && (family === 'debuter' || start.runWalk);
   if (family !== 'forme') warnings.unshift(start.explanation);
   const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
   let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[req.difficulty]);
@@ -172,10 +184,6 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   if (family === 'forme') targetPeak = startKm;
 
   // ── Phases ────────────────────────────────────────────────────────────────
-  // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
-  const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
-  const spw = Math.max(1, journeyDays(req.availability).length);
-  const journeyWeeksNeeded = journeyState ? Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE) / spw) : 0;
   let options: PlanDraft['options'];
   let taperWeeks = req.race ? Math.min(profile.taperWeeks, totalWeeks) : 0;
   if (req.race && journeyWeeksNeeded > 0 && journeyWeeksNeeded + BASE_WEEKS_AFTER_RUNWALK > totalWeeks - taperWeeks) {
@@ -196,6 +204,12 @@ export function generatePlan(req: PlanRequest): PlanDraft {
 
   // ── Parcours de démarrage : paliers projetés, séance par séance ───────────
   const projected = journeyState ? projectStages(journeyState, dem * spw) : [];
+  // « Courir de zéro » plus court que le parcours : on n'accélère JAMAIS l'échelle, on dit où le plan finira (F5).
+  const journeyDone = dem >= journeyWeeksNeeded;
+  const endStage = projected.at(-1)?.stage ?? JOURNEY_DONE;
+  if (family === 'debuter' && !journeyDone) {
+    warnings.push(explain('plan.debuter.short', 'attention', `Ton plan finira au ${stageLabel(endStage).toLowerCase()}`, `Il faut environ ${journeyWeeksNeeded} semaines pour courir 30 min d'affilée en validant chaque séance ; en ${totalWeeks}, tu finiras au ${stageLabel(endStage).toLowerCase()}. On n'accélère pas l'échelle pour autant : c'est elle qui protège tes tendons. Tu pourras enchaîner avec un nouveau plan, qui repartira de là.`, { semaines: totalWeeks, estimation: journeyWeeksNeeded, palier: endStage }));
+  }
   const buildCtx = { goal: req.goal, trail, vdot: req.vdot, phaseWeek: 0 };
 
   // ── Construction semaine par semaine ──────────────────────────────────────
@@ -336,6 +350,13 @@ export function generatePlan(req: PlanRequest): PlanDraft {
   }
 
   // ── Bilan ─────────────────────────────────────────────────────────────────
+  if (family === 'debuter') {
+    const end = journeyDone
+      ? explain('plan.debuter.end', 'info', 'À la fin : tu cours 30 min', "Si chaque séance est validée, à la fin de ce plan tu cours 30 min sans t'arrêter. Prochaine étape : un objectif 5 km, ou « Garder la forme » pour courir régulièrement sans course.", { palier: JOURNEY_DONE })
+      : explain('plan.debuter.end', 'info', `À la fin : ${stageLabel(endStage).toLowerCase()}`, `À la fin de ce plan, tu seras au ${stageLabel(endStage).toLowerCase()}. Pour aller jusqu'à 30 min continues, enchaîne avec un nouveau plan « Courir de zéro » : il repartira de ton palier.`, { palier: endStage });
+    warnings.push(end);
+    weeks.at(-1)!.notes.push(end);
+  }
   if (family !== 'forme' && peakKm < targetPeak * 0.95) {
     warnings.push(explain('peak.unreachable', 'conseil', 'Pic plafonné', `Pic visé ${targetPeak} km/sem, atteignable ${peakKm} km d'ici la course en respectant +10 %/sem et les décharges. Pas grave : on arrive en santé, c'est ce qui compte.`, { target: targetPeak, reached: peakKm }));
   }

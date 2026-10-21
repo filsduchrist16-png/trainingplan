@@ -37,6 +37,8 @@ interface State {
   raceKm: number;
   raceGain: number;
   durationWeeks: number;
+  /** « Courir de zéro » : durée calculée par le moteur (sinon `durationWeeks`). */
+  autoDuration: boolean;
   experience: Experience;
   currentKm: number;
   longestKm: number;
@@ -86,6 +88,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
     raceKm: 10,
     raceGain: 0,
     durationWeeks: 10,
+    autoDuration: true,
     experience: athlete.experience,
     currentKm: 0,
     longestKm: 0,
@@ -130,7 +133,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
     ? {
         goal: s.goal,
         startDate: today,
-        ...(raceGoal && s.hasRace ? { race: { date: s.raceDate, distanceKm: s.raceKm, elevationGainM: profile!.family === 'trail' ? s.raceGain : 0 } } : { durationWeeks: s.durationWeeks }),
+        ...(raceGoal && s.hasRace ? { race: { date: s.raceDate, distanceKm: s.raceKm, elevationGainM: profile!.family === 'trail' ? s.raceGain : 0 } } : s.goal === 'debuter' && s.autoDuration ? {} : { durationWeeks: s.durationWeeks }),
         experience: s.experience,
         difficulty: s.difficulty,
         currentWeeklyKm: s.currentKm,
@@ -241,7 +244,16 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                   {profile!.family === 'trail' && <Stepper label="Dénivelé positif" value={s.raceGain} onChange={(v) => set({ raceGain: v })} step={50} max={15000} unit="m D+" />}
                 </div>
               ) : (
-                <Stepper label="Durée du plan" value={s.durationWeeks} onChange={(v) => set({ durationWeeks: v })} min={4} max={24} unit="sem." />
+                <>
+                  {s.goal === 'debuter' && (
+                    <Segmented label="Durée" value={s.autoDuration ? 'auto' : 'choix'} onChange={(v) => set({ autoDuration: v === 'auto' })} options={[{ value: 'auto', label: 'Calculée (recommandé)' }, { value: 'choix', label: 'Je choisis' }]} />
+                  )}
+                  {s.goal === 'debuter' && s.autoDuration ? (
+                    <p className="rounded-xl bg-surface-2 p-3 text-sm">Le plan dure le temps qu'il faut pour courir 30 min d'affilée, à partir de ce que tu cours aujourd'hui. Tu verras la durée exacte à l'aperçu.</p>
+                  ) : (
+                    <Stepper label="Durée du plan" value={s.durationWeeks} onChange={(v) => set({ durationWeeks: v })} min={4} max={24} unit="sem." />
+                  )}
+                </>
               )}
             </>
           )}

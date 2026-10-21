@@ -96,3 +96,20 @@ test('l’assistant décide de la marche-course selon ce que tu cours d’une tr
   await expect(page.getByText('On commence en marche-course')).toBeVisible();
   await expect(page.getByText(/1 min 30 course/).first()).toBeVisible(); // < 5 min d'affilée → palier 4
 });
+
+test('courir de zéro : durée calculée par défaut, avertissement si on la raccourcit', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /Courir de zéro/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText(/le temps qu'il faut pour courir 30 min/)).toBeVisible();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('À la fin : tu cours 30 min.')).toBeVisible();
+  await expect(page.getByText(/Ton plan finira au palier/)).toHaveCount(0);
+  // Retour à la durée : on choisit 6 semaines.
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: /Retour/ }).click();
+  await page.getByRole('radio', { name: 'Je choisis' }).click();
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Durée du plan : moins' }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText(/Ton plan finira au palier \d+ sur 13\./)).toBeVisible();
+});
