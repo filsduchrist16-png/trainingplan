@@ -63,3 +63,20 @@ test('déclarer une douleur tibiale change immédiatement le plan', async ({ pag
   await expect(page.getByText('STOP course').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: /Vélo Z2/ })).toBeVisible();
 });
+
+test('profil : zones manuelles et FC max', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /^Profil/ }).click();
+  await expect(page.getByRole('heading', { name: 'Profil' })).toBeVisible();
+  await expect(page.getByText('123–143 bpm')).toBeVisible();
+  await page.getByRole('radio', { name: 'Manuelles' }).click();
+  const z2 = page.getByRole('spinbutton', { name: 'Z2 endurance : limite haute' });
+  await z2.fill('140');
+  await z2.blur();
+  await expect(page.getByRole('spinbutton', { name: 'Z2 endurance : limite haute' })).toHaveValue('140');
+  await page.getByRole('radio', { name: 'Automatiques' }).click();
+  await expect(page.getByText('123–143 bpm')).toBeVisible();
+});
