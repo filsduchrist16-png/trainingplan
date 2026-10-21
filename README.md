@@ -32,10 +32,11 @@ src/
 
 Règle d'or : **aucune règle de coaching dans l'UI**. L'UI affiche ce que le moteur décide, avec son explication.
 
-## Déploiement (Cloudflare Pages)
+## Déploiement (Cloudflare Workers)
 
-- Commande de build : `pnpm build`, dossier de sortie : `dist`.
-- `public/_redirects` gère le routage SPA ; `public/_headers` pose une CSP stricte (`connect-src 'self'`) qui empêche techniquement l'app d'envoyer des données ailleurs.
+- Déployé par **Workers Builds** à chaque push (Worker `trainingplan`, config `wrangler.jsonc`). Réglages et vérifications : [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md).
+- Commande de build : `pnpm build`, dossier servi : `dist`.
+- Le routage SPA est géré par `not_found_handling` dans `wrangler.jsonc` ; `public/_headers` pose une CSP stricte (`connect-src 'self'`) qui empêche techniquement l'app d'envoyer des données ailleurs.
 
 ## Avertissement
 

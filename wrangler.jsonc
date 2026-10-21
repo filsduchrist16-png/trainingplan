@@ -1,0 +1,12 @@
+// Cloudflare Workers (assets statiques) — déployé par Workers Builds à chaque push.
+// Site 100 % statique : aucun code serveur, les données restent dans IndexedDB.
+// Le nom doit correspondre au Worker « trainingplan » du tableau de bord Cloudflare.
+{
+  "name": "trainingplan",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Routage SPA : toute URL inconnue renvoie index.html (remplace l'ancien _redirects).
+    "not_found_handling": "single-page-application"
+  }
+}
