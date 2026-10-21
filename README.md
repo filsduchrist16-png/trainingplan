@@ -52,3 +52,7 @@ Règle d'or : **aucune règle de coaching dans l'UI**. L'UI affiche ce que le mo
 ## Avertissement
 
 Sentier n'est pas un avis médical. Une douleur qui persiste, ça se fait voir par un pro.
+
+## Répertoire des courses du Québec
+
+L'assistant « Nouvel objectif » propose de chercher une course dans `src/data/races/quebec.json` (hors ligne, chargé à la demande). Le fichier est généré par `pnpm races` (`scripts/import-races.mjs`) à partir des calendriers publics Running.life et GoTrail (données structurées schema.org, 1,5 s entre deux requêtes, `robots.txt` respecté). On ne garde que des faits (nom, date, lieu, distances citées) et le lien vers la page source ; l'app invite à vérifier sur le site de l'organisateur. À relancer régulièrement (les courses passées sont ignorées à l'affichage). Avant une publication large, vérifier les conditions d'utilisation de ces sites ou obtenir leur accord.

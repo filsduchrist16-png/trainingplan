@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "races": "node scripts/import-races.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

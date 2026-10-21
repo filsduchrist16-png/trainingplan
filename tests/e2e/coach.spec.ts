@@ -243,3 +243,17 @@ test('saisie des nombres : taper « 14 » pour la VMA ne saute pas au minimum', 
   await vma.blur();
   await expect(vma).toHaveValue('16');
 });
+
+test('répertoire des courses du Québec : choisir une course pré-remplit nom, date et distance', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Commencer' }).click();
+  await page.getByRole('radio', { name: /^10 km/ }).click();
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page.getByText('Trouver une course au Québec')).toBeVisible();
+  await page.getByRole('searchbox', { name: 'Rechercher une course' }).fill('saint-hyacinthe');
+  const first = page.getByRole('region', { name: 'Répertoire des courses du Québec' }).getByRole('button').first();
+  await expect(first).toBeVisible();
+  const title = (await first.locator('span').first().innerText()).trim();
+  await first.click();
+  await expect(page.getByRole('textbox', { name: /Nom/ })).toHaveValue(title);
+});

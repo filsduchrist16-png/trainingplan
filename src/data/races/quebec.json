@@ -1,0 +1,2725 @@
+{
+ "generatedAt": "2026-10-21",
+ "sources": [
+  {
+   "id": "running.life",
+   "url": "https://running.life/calendrier-course-a-pied/canada/quebec"
+  },
+  {
+   "id": "gotrail.run",
+   "url": "https://gotrail.run/calendrier-trails/canada/quebec"
+  }
+ ],
+ "races": [
+  {
+   "id": "bougebouge-gatineau-halloween-special-2026-10-24",
+   "name": "BougeBouge Gatineau – Halloween special",
+   "date": "2026-10-24",
+   "city": "District de Limbour",
+   "lat": 45.4987,
+   "lng": -75.7513,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    2,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/bougebouge-gatineau-halloween-special",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/bougebouge-gatineau-halloween-special",
+    "gotrail.run": "https://gotrail.run/fr/evenement/bougebouge-gatineau-halloween-special"
+   }
+  },
+  {
+   "id": "coupe-skinouk-course-en-sentier-2026-10-24",
+   "name": "Coupe Skinouk - Course en Sentier",
+   "date": "2026-10-24",
+   "city": "District de Limbour",
+   "lat": 45.4987,
+   "lng": -75.7513,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/skinouk-trail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/skinouk-trail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/skinouk-trail"
+   }
+  },
+  {
+   "id": "course-des-recoltes-de-saint-joseph-2026-10-24",
+   "name": "Course des Récoltes de Saint-Joseph",
+   "date": "2026-10-24",
+   "city": "Saint-Hyacinthe",
+   "lat": 45.6307,
+   "lng": -72.9563,
+   "kind": "route",
+   "distancesKm": [
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/course-des-recoltes-de-saint-joseph",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-du-portageur-2026-10-24",
+   "name": "Course du Portageur",
+   "date": "2026-10-24",
+   "city": "Notre-Dame-du-Portage",
+   "lat": 47.763,
+   "lng": -69.6096,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/course-du-portageur",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "festival-des-sentiers-saint-hippolyte-2026-10-24",
+   "name": "Festival des Sentiers - Saint-Hippolyte",
+   "date": "2026-10-24",
+   "city": "Saint-Hippolyte",
+   "lat": 45.931,
+   "lng": -74.0248,
+   "kind": "trail",
+   "distancesKm": [
+    10
+   ],
+   "url": "https://running.life/fr/evenement/festival-des-sentiers-saint-hippolyte",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/festival-des-sentiers-saint-hippolyte",
+    "gotrail.run": "https://gotrail.run/fr/evenement/festival-des-sentiers-saint-hippolyte"
+   }
+  },
+  {
+   "id": "le-trail-du-college-bourget-2026-10-24",
+   "name": "Le Trail du Collège Bourget",
+   "date": "2026-10-24",
+   "city": "Vaudreuil-Soulanges Regional County Municipality",
+   "lat": 45.4792,
+   "lng": -74.3004,
+   "kind": "trail",
+   "distancesKm": [
+    1.2,
+    30.6
+   ],
+   "url": "https://running.life/fr/evenement/le-trail-du-college-bourget",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/le-trail-du-college-bourget",
+    "gotrail.run": "https://gotrail.run/fr/evenement/le-trail-du-college-bourget"
+   }
+  },
+  {
+   "id": "marathon-duchesnay-quebec-2026-10-24",
+   "name": "Marathon Duchesnay-Québec",
+   "date": "2026-10-24",
+   "endDate": "2026-10-25",
+   "city": "Fossambault-sur-le-Lac",
+   "lat": 46.8879,
+   "lng": -71.6054,
+   "kind": "trail",
+   "distancesKm": [
+    2.5,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-duchesnay-quebec",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/marathon-duchesnay-quebec",
+    "gotrail.run": "https://gotrail.run/fr/evenement/marathon-duchesnay-quebec"
+   }
+  },
+  {
+   "id": "marathon-gaspesia-2026-10-24",
+   "name": "Marathon Gaspesia",
+   "date": "2026-10-24",
+   "city": "Percé",
+   "lat": 48.5244,
+   "lng": -64.2127,
+   "kind": "route",
+   "distancesKm": [
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-gaspesia",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "moose-challenge-ranch-dupont-2026-10-24",
+   "name": "Moose Challenge - Ranch Dupont",
+   "date": "2026-10-24",
+   "city": "Sainte-Flore",
+   "lat": 46.6182,
+   "lng": -72.7316,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/moose-challenge-ranch-dupont/2026-10-24",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/moose-challenge-ranch-dupont/2026-10-24",
+    "gotrail.run": "https://gotrail.run/fr/evenement/moose-challenge-ranch-dupont/2026-10-24"
+   }
+  },
+  {
+   "id": "stronger-together-longueuil-2026-10-24",
+   "name": "Stronger Together - Longueuil",
+   "date": "2026-10-24",
+   "city": "Longueuil",
+   "lat": 45.5135,
+   "lng": -73.4329,
+   "kind": "route",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/stronger-together-longueuil",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "trail-du-grand-duc-2026-10-24",
+   "name": "Trail du Grand-Duc",
+   "date": "2026-10-24",
+   "endDate": "2026-10-25",
+   "city": "Stoneham-et-Tewkesbury",
+   "lat": 47.121,
+   "lng": -71.4091,
+   "kind": "trail",
+   "distancesKm": [
+    2.5,
+    40
+   ],
+   "url": "https://running.life/fr/evenement/trail-du-grand-duc",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-du-grand-duc",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-du-grand-duc"
+   }
+  },
+  {
+   "id": "vanier-5-km-sunset-run-2026-10-24",
+   "name": "Vanier 5 KM Sunset Run",
+   "date": "2026-10-24",
+   "city": "Mount Royal",
+   "lat": 45.5142,
+   "lng": -73.6443,
+   "kind": "route",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/vanier-5-km-sunset-run",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "au-rythme-de-nos-foulees-2026-10-25",
+   "name": "Au Rythme de Nos Foulées",
+   "date": "2026-10-25",
+   "city": "Châteauguay",
+   "lat": 45.3602,
+   "lng": -73.7494,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/au-rythme-de-nos-foulees",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/au-rythme-de-nos-foulees",
+    "gotrail.run": "https://gotrail.run/fr/evenement/au-rythme-de-nos-foulees"
+   }
+  },
+  {
+   "id": "bougebouge-riviere-des-prairies-pointe-aux-trembles-special-halloween-2026-10-25",
+   "name": "BougeBouge Rivière-des-Prairies Pointe-aux-Trembles – Special Halloween",
+   "date": "2026-10-25",
+   "city": "Montréal-Est",
+   "lat": 45.632,
+   "lng": -73.5067,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/bougebouge-riviere-des-prairies-pointe-aux-trembles-special-halloween",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "cours-ton-saint-francois-2026-10-25",
+   "name": "Cours ton Saint-François",
+   "date": "2026-10-25",
+   "city": "Saint-François-Xavier-de-Brompton",
+   "lat": 45.5338,
+   "lng": -72.0488,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/cours-ton-saint-francois",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-en-sentier-smh-2026-10-25",
+   "name": "Course en Sentier SMH",
+   "date": "2026-10-25",
+   "city": "Morin-Heights",
+   "lat": 45.9038,
+   "lng": -74.2457,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/course-en-sentier-smh",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/course-en-sentier-smh",
+    "gotrail.run": "https://gotrail.run/fr/evenement/course-en-sentier-smh"
+   }
+  },
+  {
+   "id": "demi-marathon-au-parc-jean-drapeau-2026-10-25",
+   "name": "Demi-Marathon au parc Jean-Drapeau",
+   "date": "2026-10-25",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-au-parc-jean-drapeau",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "grande-foulee-au-jardin-2026-10-25",
+   "name": "Grande Foulée au Jardin",
+   "date": "2026-10-25",
+   "city": "Kingsey Falls",
+   "lat": 45.8607,
+   "lng": -72.0713,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/grande-foulee-au-jardin",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "orienteering-ottawa-lac-beauchamp-2026-10-25",
+   "name": "Orienteering Ottawa - Lac Beauchamp",
+   "date": "2026-10-25",
+   "city": "Gatineau",
+   "lat": 45.4765,
+   "lng": -75.7013,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/orienteering-ottawa-lac-beauchamp",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/orienteering-ottawa-lac-beauchamp",
+    "gotrail.run": "https://gotrail.run/fr/evenement/orienteering-ottawa-lac-beauchamp"
+   }
+  },
+  {
+   "id": "salon-de-la-course-en-sentier-de-montreal-2026-10-25",
+   "name": "Salon de la Course en Sentier de Montréal",
+   "date": "2026-10-25",
+   "city": "Downtown Montreal",
+   "lat": 45.5035,
+   "lng": -73.5685,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/salon-de-la-course-en-sentier-de-montreal",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/salon-de-la-course-en-sentier-de-montreal",
+    "gotrail.run": "https://gotrail.run/fr/evenement/salon-de-la-course-en-sentier-de-montreal"
+   }
+  },
+  {
+   "id": "traversee-de-la-batiscan-2026-10-25",
+   "name": "Traversée de la Batiscan",
+   "date": "2026-10-25",
+   "city": "Les Chenaux",
+   "lat": 46.5637,
+   "lng": -72.4708,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/traversee-de-la-batiscan",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/traversee-de-la-batiscan",
+    "gotrail.run": "https://gotrail.run/fr/evenement/traversee-de-la-batiscan"
+   }
+  },
+  {
+   "id": "mont-royal-summit-quest-2026-10-30",
+   "name": "Mont-Royal Summit Quest",
+   "date": "2026-10-30",
+   "endDate": "2026-10-31",
+   "city": "Downtown Montreal",
+   "lat": 45.5035,
+   "lng": -73.5685,
+   "kind": "trail",
+   "distancesKm": [
+    100
+   ],
+   "url": "https://running.life/fr/evenement/mont-royal-summit-quest",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-d-halloween-en-sentier-val-d-or-2026-10-31",
+   "name": "Course d'Halloween en Sentier - Val-d'Or",
+   "date": "2026-10-31",
+   "city": "Val-d'Or",
+   "lat": 48.0987,
+   "lng": -77.7968,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    50
+   ],
+   "url": "https://running.life/fr/evenement/course-dhalloween-en-sentier-val-dor",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/course-dhalloween-en-sentier-val-dor",
+    "gotrail.run": "https://gotrail.run/fr/evenement/course-dhalloween-en-sentier-val-dor"
+   }
+  },
+  {
+   "id": "bougebouge-mont-royal-marathon-2026-11-01",
+   "name": "BougeBouge Mont-Royal Marathon",
+   "date": "2026-11-01",
+   "city": "Mount Royal",
+   "lat": 45.5142,
+   "lng": -73.6443,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/bougebouge-mont-royal-marathon",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "trail-du-mont-ham-2026-11-01",
+   "name": "Trail du Mont Ham",
+   "date": "2026-11-01",
+   "city": "Saint-Rémi-de-Tingwick",
+   "lat": 45.8639,
+   "lng": -71.8221,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    30
+   ],
+   "url": "https://running.life/fr/evenement/trail-du-mont-ham",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-du-mont-ham",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-du-mont-ham"
+   }
+  },
+  {
+   "id": "la-sarcourse-2026-11-04",
+   "name": "La Sarcourse",
+   "date": "2026-11-04",
+   "city": "Sherbrooke",
+   "lat": 45.4043,
+   "lng": -71.8937,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/la-sarcourse",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "beaver-s-ultra-24h-2026-11-07",
+   "name": "Beaver's Ultra 24H",
+   "date": "2026-11-07",
+   "endDate": "2026-11-08",
+   "city": "Saint-Georges",
+   "lat": 46.1229,
+   "lng": -70.6704,
+   "kind": "trail",
+   "distancesKm": [
+    6.7
+   ],
+   "url": "https://running.life/fr/evenement/beavers-ultra-24h",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/beavers-ultra-24h",
+    "gotrail.run": "https://gotrail.run/fr/evenement/beavers-ultra-24h"
+   }
+  },
+  {
+   "id": "boreal-x-country-2026-11-07",
+   "name": "Boréal X-Country",
+   "date": "2026-11-07",
+   "city": "Pierrefonds",
+   "lat": 45.4688,
+   "lng": -73.8756,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/boreal-x-country",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/boreal-x-country",
+    "gotrail.run": "https://gotrail.run/fr/evenement/boreal-x-country"
+   }
+  },
+  {
+   "id": "defi-olivier-leveille-2026-11-07",
+   "name": "Défi Olivier Léveillé",
+   "date": "2026-11-07",
+   "city": "Sherbrooke",
+   "lat": 45.4043,
+   "lng": -71.8937,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    3,
+    6
+   ],
+   "url": "https://running.life/fr/evenement/defi-olivier-leveille",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defi-olivier-leveille",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defi-olivier-leveille"
+   }
+  },
+  {
+   "id": "ramblers-morgan-arboretum-2026-11-07",
+   "name": "Ramblers - Morgan Arboretum",
+   "date": "2026-11-07",
+   "city": "Baie-D'Urfe",
+   "lat": 45.4147,
+   "lng": -73.9163,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/ramblers-morgan-arboretum",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ramblers-morgan-arboretum",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ramblers-morgan-arboretum"
+   }
+  },
+  {
+   "id": "classique-jacques-cartier-2026-11-08",
+   "name": "Classique Jacques-Cartier",
+   "date": "2026-11-08",
+   "city": "Bassin Louise",
+   "lat": 46.8189,
+   "lng": -71.2069,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/classique-jacques-cartier",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-sur-route-du-mont-megantic-2026-11-08",
+   "name": "Course sur route du Mont-Mégantic",
+   "date": "2026-11-08",
+   "city": "Notre-Dame-des-Bois",
+   "lat": 45.3946,
+   "lng": -71.0731,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/course-sur-route-du-mont-megantic",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "movemb-runch-2026-11-08",
+   "name": "Movemb'runch",
+   "date": "2026-11-08",
+   "city": "Downtown Montreal",
+   "lat": 45.5035,
+   "lng": -73.5685,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/movembrunch",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/movembrunch",
+    "gotrail.run": "https://gotrail.run/fr/evenement/movembrunch"
+   }
+  },
+  {
+   "id": "sun-life-au-pied-du-mont-saint-hilaire-15-km-2026-11-08",
+   "name": "Sun Life au pied du Mont Saint-Hilaire 15 km",
+   "date": "2026-11-08",
+   "city": "Mont-Saint-Hilaire",
+   "lat": 45.564,
+   "lng": -73.179,
+   "kind": "route",
+   "distancesKm": [
+    1
+   ],
+   "url": "https://running.life/fr/evenement/sun-life-au-pied-du-mont-saint-hilaire-15-km",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "opti-fest-2026-11-21",
+   "name": "Opti-Fest",
+   "date": "2026-11-21",
+   "city": "Le Haut-Richelieu Regional County Municipality",
+   "lat": 45.3384,
+   "lng": -73.1626,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    3,
+    5
+   ],
+   "url": "https://running.life/fr/evenement/opti-fest",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "marathon-de-l-ouest-de-l-ile-de-montreal-2026-11-22",
+   "name": "Marathon de l'Ouest de l'Île de Montréal",
+   "date": "2026-11-22",
+   "city": "Cap-Saint-Jacques",
+   "lat": 45.4617,
+   "lng": -73.9185,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-de-louest-de-lile-de-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "canadian-cross-country-championships-2026-11-28",
+   "name": "Canadian Cross Country Championships",
+   "date": "2026-11-28",
+   "endDate": "2026-11-29",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/canadian-cross-country-championships",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/canadian-cross-country-championships",
+    "gotrail.run": "https://gotrail.run/fr/evenement/canadian-cross-country-championships"
+   }
+  },
+  {
+   "id": "santa-shuffle-fun-run-elf-walk-montreal-2026-12-05",
+   "name": "Santa Shuffle Fun Run & Elf Walk - Montreal",
+   "date": "2026-12-05",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5
+   ],
+   "url": "https://running.life/fr/evenement/santa-shuffle-fun-run-elf-walk-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "la-course-des-lutins-de-val-morin-2026-12-06",
+   "name": "La Course des Lutins de Val-Morin",
+   "date": "2026-12-06",
+   "city": "Val-Morin",
+   "lat": 46.0059,
+   "lng": -74.1871,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/la-course-des-lutins-de-val-morin",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "24h-tremblant-2026-12-11",
+   "name": "24h Tremblant",
+   "date": "2026-12-11",
+   "endDate": "2026-12-13",
+   "city": "Lac-Tremblant-Nord",
+   "lat": 46.2247,
+   "lng": -74.6269,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/24h-tremblant",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/24h-tremblant",
+    "gotrail.run": "https://gotrail.run/fr/evenement/24h-tremblant"
+   }
+  },
+  {
+   "id": "course-des-peres-noel-quebec-2026-12-12",
+   "name": "Course des Pères Noël - Québec",
+   "date": "2026-12-12",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    1.2,
+    6.5
+   ],
+   "url": "https://running.life/fr/evenement/course-des-peres-noel-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-des-lutins-eastman-2026-12-13",
+   "name": "Course des Lutins - Eastman",
+   "date": "2026-12-13",
+   "city": "Eastman",
+   "lat": 45.3013,
+   "lng": -72.315,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/course-des-lutins-eastman",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "the-snowshoe-david-mccaw-memorial-2027-01-02",
+   "name": "The Snowshoe David McCaw Memorial",
+   "date": "2027-01-02",
+   "city": "Brennan's Hill",
+   "lat": 45.7848,
+   "lng": -75.9501,
+   "kind": "trail",
+   "distancesKm": [
+    3,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/the-snowshoe-david-mccaw-memorial",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/the-snowshoe-david-mccaw-memorial",
+    "gotrail.run": "https://gotrail.run/fr/evenement/the-snowshoe-david-mccaw-memorial"
+   }
+  },
+  {
+   "id": "bushtukah-night-race-2027-01-23",
+   "name": "Bushtukah Night Race",
+   "date": "2027-01-23",
+   "city": "Brennan's Hill",
+   "lat": 45.7848,
+   "lng": -75.9501,
+   "kind": "trail",
+   "distancesKm": [
+    1
+   ],
+   "url": "https://running.life/fr/evenement/bushtukah-night-race",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/bushtukah-night-race",
+    "gotrail.run": "https://gotrail.run/fr/evenement/bushtukah-night-race"
+   }
+  },
+  {
+   "id": "5km-bougebouge-quebec-2027-01-24",
+   "name": "5Km BougeBouge Quebec",
+   "date": "2027-01-24",
+   "city": "L'Ancienne-Lorette",
+   "lat": 46.8063,
+   "lng": -71.357,
+   "kind": "route",
+   "distancesKm": [
+    2.5,
+    5
+   ],
+   "url": "https://running.life/fr/evenement/5km-bougebouge-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "big-wolf-s-backyard-arctic-levis-2027-01-30",
+   "name": "Big Wolf's Backyard Arctic - Lévis",
+   "date": "2027-01-30",
+   "city": "St-Romuald",
+   "lat": 46.7581,
+   "lng": -71.2405,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/big-wolfs-backyard-arctic-levis",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/big-wolfs-backyard-arctic-levis",
+    "gotrail.run": "https://gotrail.run/fr/evenement/big-wolfs-backyard-arctic-levis"
+   }
+  },
+  {
+   "id": "snownergie-2027-02-05",
+   "name": "Snownergie",
+   "date": "2027-02-05",
+   "endDate": "2027-02-06",
+   "city": "Boischatel",
+   "lat": 46.8966,
+   "lng": -71.1354,
+   "kind": "trail",
+   "distancesKm": [
+    10
+   ],
+   "url": "https://running.life/fr/evenement/snownergie",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/snownergie",
+    "gotrail.run": "https://gotrail.run/fr/evenement/snownergie"
+   }
+  },
+  {
+   "id": "polar-bear-ultra-12h-2027-02-06",
+   "name": "Polar Bear Ultra 12H",
+   "date": "2027-02-06",
+   "city": "Beaumont",
+   "lat": 46.8296,
+   "lng": -71.0281,
+   "kind": "trail",
+   "distancesKm": [
+    6.2
+   ],
+   "url": "https://running.life/fr/evenement/polar-bear-ultra-12h",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/polar-bear-ultra-12h",
+    "gotrail.run": "https://gotrail.run/fr/evenement/polar-bear-ultra-12h"
+   }
+  },
+  {
+   "id": "pentathlon-des-neiges-2027-02-13",
+   "name": "Pentathlon des neiges",
+   "date": "2027-02-13",
+   "endDate": "2027-02-21",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/pentathlon-des-neiges",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "5km-bougebouge-montreal-underground-2027-02-14",
+   "name": "5KM BougeBouge Montreal underground",
+   "date": "2027-02-14",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "trail",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/5km-bougebouge-montreal-underground",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/5km-bougebouge-montreal-underground",
+    "gotrail.run": "https://gotrail.run/fr/evenement/5km-bougebouge-montreal-underground"
+   }
+  },
+  {
+   "id": "gatineau-loppet-2027-02-19",
+   "name": "Gatineau Loppet",
+   "date": "2027-02-19",
+   "city": "District de Limbour",
+   "lat": 45.4987,
+   "lng": -75.7513,
+   "kind": "trail",
+   "distancesKm": [
+    2,
+    50
+   ],
+   "url": "https://running.life/fr/evenement/gatineau-loppet",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/gatineau-loppet",
+    "gotrail.run": "https://gotrail.run/fr/evenement/gatineau-loppet"
+   }
+  },
+  {
+   "id": "ultra-trail-jack-rabbit-2027-02-19",
+   "name": "Ultra-Trail Jack Rabbit",
+   "date": "2027-02-19",
+   "city": "Val-Morin",
+   "lat": 46.0059,
+   "lng": -74.1871,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/ultra-trail-jack-rabbit",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-jack-rabbit",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-jack-rabbit"
+   }
+  },
+  {
+   "id": "defi-hivernal-de-trois-rivieres-2027-02-20",
+   "name": "Défi Hivernal de Trois-Rivières",
+   "date": "2027-02-20",
+   "city": "Trois-Rivières",
+   "lat": 46.343,
+   "lng": -72.5421,
+   "kind": "route",
+   "distancesKm": [
+    5,
+    10,
+    15
+   ],
+   "url": "https://running.life/fr/evenement/defi-hivernal-de-trois-rivieres",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "les-courses-cryo-2027-02-20",
+   "name": "Les Courses CRYO",
+   "date": "2027-02-20",
+   "city": "Chambord",
+   "lat": 48.4291,
+   "lng": -72.0622,
+   "kind": "trail",
+   "distancesKm": [
+    12,
+    24
+   ],
+   "url": "https://running.life/fr/evenement/les-courses-cryo",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/les-courses-cryo",
+    "gotrail.run": "https://gotrail.run/fr/evenement/les-courses-cryo"
+   }
+  },
+  {
+   "id": "the-season-finale-denholm-2027-02-20",
+   "name": "The Season Finale - Denholm",
+   "date": "2027-02-20",
+   "city": "Brennan's Hill",
+   "lat": 45.7848,
+   "lng": -75.9501,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    2
+   ],
+   "url": "https://running.life/fr/evenement/the-season-finale-denholm",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/the-season-finale-denholm",
+    "gotrail.run": "https://gotrail.run/fr/evenement/the-season-finale-denholm"
+   }
+  },
+  {
+   "id": "mad-trapper-backyard-ultra-2027-02-27",
+   "name": "Mad Trapper Backyard Ultra",
+   "date": "2027-02-27",
+   "city": "Brennan's Hill",
+   "lat": 45.7848,
+   "lng": -75.9501,
+   "kind": "trail",
+   "distancesKm": [
+    5.5
+   ],
+   "url": "https://running.life/fr/evenement/mad-trapper-backyard-ultra",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/mad-trapper-backyard-ultra",
+    "gotrail.run": "https://gotrail.run/fr/evenement/mad-trapper-backyard-ultra"
+   }
+  },
+  {
+   "id": "trail-polaire-du-mont-comi-2027-02-27",
+   "name": "Trail Polaire du Mont-Comi",
+   "date": "2027-02-27",
+   "city": "Sainte-Luce",
+   "lat": 48.5289,
+   "lng": -68.3466,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/trail-polaire-du-mont-comi",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-polaire-du-mont-comi",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-polaire-du-mont-comi"
+   }
+  },
+  {
+   "id": "l-assomption-en-foulees-2027-04-10",
+   "name": "L'Assomption en Foulées",
+   "date": "2027-04-10",
+   "city": "L'Assomption",
+   "lat": 45.852,
+   "lng": -73.4124,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/lassomption-en-foulees",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "classique-fondation-quebec-2027-04-11",
+   "name": "Classique Fondation - Québec",
+   "date": "2027-04-11",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/classique-fondation-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "21k-de-montreal-2027-04-17",
+   "name": "21K de Montréal",
+   "date": "2027-04-17",
+   "endDate": "2027-04-18",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [
+    21.1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/banque-scotia-21k-de-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-daniel-lequin-2027-04-25",
+   "name": "Défi Daniel Lequin",
+   "date": "2027-04-25",
+   "city": "Sorel-Tracy",
+   "lat": 46.0428,
+   "lng": -73.1123,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/defi-daniel-lequin",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "demi-marathon-levis-2027-05-01",
+   "name": "Demi Marathon Lévis",
+   "date": "2027-05-01",
+   "endDate": "2027-05-02",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "trail",
+   "distancesKm": [
+    2,
+    5,
+    10,
+    21.1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/duchesnay-trail-race",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/duchesnay-trail-race",
+    "gotrail.run": "https://gotrail.run/fr/evenement/duchesnay-trail-race"
+   }
+  },
+  {
+   "id": "demi-marathon-de-levis-2027-05-01",
+   "name": "Demi-Marathon de Lévis",
+   "date": "2027-05-01",
+   "endDate": "2027-05-02",
+   "city": "Levis",
+   "lat": 46.7583,
+   "lng": -71.2397,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/demi-marathon-de-levis",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "les-courses-des-collines-2027-05-01",
+   "name": "Les Courses des Collines",
+   "date": "2027-05-01",
+   "endDate": "2027-05-02",
+   "city": "Wakefield",
+   "lat": 45.6411,
+   "lng": -75.9285,
+   "kind": "trail",
+   "distancesKm": [
+    5,
+    80
+   ],
+   "url": "https://running.life/fr/evenement/les-courses-des-collines",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/les-courses-des-collines",
+    "gotrail.run": "https://gotrail.run/fr/evenement/les-courses-des-collines"
+   }
+  },
+  {
+   "id": "course-et-marche-de-sainte-therese-2027-05-02",
+   "name": "Course et marche de Sainte-Thérèse",
+   "date": "2027-05-02",
+   "city": "Sainte-Thérèse",
+   "lat": 45.6397,
+   "lng": -73.8439,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/course-et-marche-de-sainte-therese",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ile-perrot-marathon-2027-05-02",
+   "name": "Ile Perrot Marathon",
+   "date": "2027-05-02",
+   "city": "Pincourt",
+   "lat": 45.3664,
+   "lng": -73.9846,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/ile-perrot-marathon",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-physio-extra-2027-05-08",
+   "name": "Défi Physio Extra",
+   "date": "2027-05-08",
+   "city": "Terrebonne",
+   "lat": 45.693,
+   "lng": -73.6331,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    21
+   ],
+   "url": "https://running.life/fr/evenement/defi-physio-extra",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-gerard-cote-2027-05-09",
+   "name": "Défi Gérard-Côté",
+   "date": "2027-05-09",
+   "city": "Saint-Hyacinthe",
+   "lat": 45.6307,
+   "lng": -72.9563,
+   "kind": "route",
+   "distancesKm": [
+    15
+   ],
+   "url": "https://running.life/fr/evenement/defi-gerard-cote",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "trail-run-bougebouge-outaouais-festival-2027-05-09",
+   "name": "Trail Run & BougeBouge Outaouais Festival",
+   "date": "2027-05-09",
+   "city": "Gatineau",
+   "lat": 45.4765,
+   "lng": -75.7013,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/bougebouge-outaouais-festival",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/bougebouge-outaouais-festival",
+    "gotrail.run": "https://gotrail.run/fr/evenement/bougebouge-outaouais-festival"
+   }
+  },
+  {
+   "id": "wings-for-life-sherbrooke-2027-05-09",
+   "name": "Wings for Life - Sherbrooke",
+   "date": "2027-05-09",
+   "city": "Sherbrooke",
+   "lat": 45.4043,
+   "lng": -71.8937,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/wings-for-life-sherbrooke",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "5-km-route-lcdc-2027-05-15",
+   "name": "5 km Route LCDC",
+   "date": "2027-05-15",
+   "city": "La Jacques-Cartier Regional County Municipality",
+   "lat": 47.0402,
+   "lng": -71.3296,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    4
+   ],
+   "url": "https://running.life/fr/evenement/5-km-route-lcdc",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "bonjour-printemps-2027-05-15",
+   "name": "Bonjour Printemps",
+   "date": "2027-05-15",
+   "city": "Victoriaville",
+   "lat": 46.0557,
+   "lng": -71.959,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/bonjour-printemps",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-actif-du-port-de-quebec-2027-05-15",
+   "name": "Défi Actif du Port de Québec",
+   "date": "2027-05-15",
+   "city": "Bassin Louise",
+   "lat": 46.8189,
+   "lng": -71.2069,
+   "kind": "route",
+   "distancesKm": [
+    10
+   ],
+   "url": "https://running.life/fr/evenement/defi-actif-du-port-de-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "eagle-s-backyard-ultra-victoriaville-2027-05-15",
+   "name": "Eagle's Backyard Ultra - Victoriaville",
+   "date": "2027-05-15",
+   "endDate": "2027-05-18",
+   "city": "Victoriaville",
+   "lat": 46.0557,
+   "lng": -71.959,
+   "kind": "trail",
+   "distancesKm": [
+    6.7
+   ],
+   "url": "https://running.life/fr/evenement/eagles-backyard-ultra-victoriaville",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/eagles-backyard-ultra-victoriaville",
+    "gotrail.run": "https://gotrail.run/fr/evenement/eagles-backyard-ultra-victoriaville"
+   }
+  },
+  {
+   "id": "big-wolf-s-backyard-ultra-levis-2027-05-22",
+   "name": "Big Wolf's Backyard Ultra - Lévis",
+   "date": "2027-05-22",
+   "city": "Levis",
+   "lat": 46.7583,
+   "lng": -71.2397,
+   "kind": "trail",
+   "distancesKm": [
+    6.7
+   ],
+   "url": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-levis",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-levis",
+    "gotrail.run": "https://gotrail.run/fr/evenement/big-wolfs-backyard-ultra-levis"
+   }
+  },
+  {
+   "id": "demi-marathon-champlain-2027-05-22",
+   "name": "Demi-Marathon Champlain",
+   "date": "2027-05-22",
+   "endDate": "2027-05-23",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-champlain",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "bougebouge-frederic-back-2027-05-23",
+   "name": "BougeBouge Frederic-Back",
+   "date": "2027-05-23",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/bougebouge-frederic-back",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/bougebouge-frederic-back",
+    "gotrail.run": "https://gotrail.run/fr/evenement/bougebouge-frederic-back"
+   }
+  },
+  {
+   "id": "demi-marathon-des-bleuets-desjardins-2027-05-23",
+   "name": "Demi-marathon des bleuets Desjardins",
+   "date": "2027-05-23",
+   "city": "Sainte-Jeanne-d'Arc",
+   "lat": 48.8649,
+   "lng": -72.0805,
+   "kind": "route",
+   "distancesKm": [
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-des-bleuets-desjardins",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "des-chenes-toi-bourret-2027-05-23",
+   "name": "Des Chênes Toi Bourret",
+   "date": "2027-05-23",
+   "city": "Drummondville",
+   "lat": 45.8803,
+   "lng": -72.4843,
+   "kind": "route",
+   "distancesKm": [
+    10,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/des-chenes-toi-bourret",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "trail-du-coureur-des-bois-de-duchesnay-2027-05-23",
+   "name": "Trail du Coureur des Bois de Duchesnay",
+   "date": "2027-05-23",
+   "endDate": "2027-05-24",
+   "city": "Sainte-Catherine-de-la-Jacques-Cartier",
+   "lat": 46.8445,
+   "lng": -71.6152,
+   "kind": "trail",
+   "distancesKm": [
+    1.5,
+    48
+   ],
+   "url": "https://running.life/fr/evenement/trail-du-coureur-des-bois-de-duchesnay",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-du-coureur-des-bois-de-duchesnay",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-du-coureur-des-bois-de-duchesnay"
+   }
+  },
+  {
+   "id": "tour-du-cap-tourmente-2027-05-28",
+   "name": "Tour du Cap Tourmente",
+   "date": "2027-05-28",
+   "city": "La Côte-de-Beaupré Regional County Municipality",
+   "lat": 47.0446,
+   "lng": -70.8948,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/tour-du-cap-tourmente",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "run-for-women-montreal-2027-05-29",
+   "name": "Run for Women - Montreal",
+   "date": "2027-05-29",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/run-for-women-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-des-pompiers-de-laval-2027-05-30",
+   "name": "Course des pompiers de Laval",
+   "date": "2027-05-30",
+   "city": "Laval",
+   "lat": 45.6066,
+   "lng": -73.7124,
+   "kind": "route",
+   "distancesKm": [
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/course-des-pompiers-de-laval",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "trail-des-appalaches-2027-05-30",
+   "name": "Trail des Appalaches",
+   "date": "2027-05-30",
+   "city": "Sainte-Praxède",
+   "lat": 45.9062,
+   "lng": -71.2311,
+   "kind": "trail",
+   "distancesKm": [
+    60
+   ],
+   "url": "https://running.life/fr/evenement/trail-des-appalaches",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-des-appalaches",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-des-appalaches"
+   }
+  },
+  {
+   "id": "trail-la-clinique-du-coureur-2027-06-05",
+   "name": "Trail La Clinique Du Coureur",
+   "date": "2027-06-05",
+   "city": "La Jacques-Cartier Regional County Municipality",
+   "lat": 47.0402,
+   "lng": -71.3296,
+   "kind": "trail",
+   "distancesKm": [
+    50
+   ],
+   "url": "https://running.life/fr/evenement/trail-la-clinique-du-coureur",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-la-clinique-du-coureur",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-la-clinique-du-coureur"
+   }
+  },
+  {
+   "id": "defi-entreprises-quebec-2027-06-06",
+   "name": "Défi Entreprises - Québec",
+   "date": "2027-06-06",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/defi-entreprises-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "l-echappee-de-l-isle-aux-coudres-2027-06-11",
+   "name": "L'Échappée de l'Isle-aux-Coudres",
+   "date": "2027-06-11",
+   "endDate": "2027-06-13",
+   "city": "La Baleine",
+   "lat": 47.4024,
+   "lng": -70.3511,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/lechappee-de-lisle-aux-coudres",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "course-sport-etudes-kinecible-2027-06-12",
+   "name": "Course Sport-Études KinéCible",
+   "date": "2027-06-12",
+   "city": "Contrecoeur",
+   "lat": 45.8654,
+   "lng": -73.2413,
+   "kind": "route",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/course-sport-etudes-kinecible",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "notos-ultra-trail-2027-06-12",
+   "name": "Notos Ultra-Trail",
+   "date": "2027-06-12",
+   "city": "Victoriaville",
+   "lat": 46.0557,
+   "lng": -71.959,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/notos-ultra-trail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/notos-ultra-trail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/notos-ultra-trail"
+   }
+  },
+  {
+   "id": "run-for-women-quebec-city-2027-06-12",
+   "name": "Run for Women - Quebec City",
+   "date": "2027-06-12",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/run-for-women-quebec-city",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "tremblant-spartan-trifecta-weekend-2027-06-12",
+   "name": "Tremblant Spartan Trifecta Weekend",
+   "date": "2027-06-12",
+   "endDate": "2027-06-13",
+   "city": "Mont-Tremblant",
+   "lat": 46.1185,
+   "lng": -74.5962,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/tremblant-spartan-trifecta-weekend",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/tremblant-spartan-trifecta-weekend",
+    "gotrail.run": "https://gotrail.run/fr/evenement/tremblant-spartan-trifecta-weekend"
+   }
+  },
+  {
+   "id": "marathon-du-mont-megantic-2027-06-13",
+   "name": "Marathon du Mont-Mégantic",
+   "date": "2027-06-13",
+   "city": "Le Coin",
+   "lat": 45.4868,
+   "lng": -70.9258,
+   "kind": "trail",
+   "distancesKm": [
+    42,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-du-mont-megantic",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/marathon-du-mont-megantic",
+    "gotrail.run": "https://gotrail.run/fr/evenement/marathon-du-mont-megantic"
+   }
+  },
+  {
+   "id": "big-wolf-s-backyard-ultra-cacouna-2027-06-15",
+   "name": "Big Wolf's Backyard Ultra - Cacouna",
+   "date": "2027-06-15",
+   "city": "Cacouna",
+   "lat": 47.9164,
+   "lng": -69.501,
+   "kind": "trail",
+   "distancesKm": [
+    6.706
+   ],
+   "url": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-cacouna",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-cacouna",
+    "gotrail.run": "https://gotrail.run/fr/evenement/big-wolfs-backyard-ultra-cacouna"
+   }
+  },
+  {
+   "id": "ultra-trail-gaspesia-100-2027-06-18",
+   "name": "Ultra Trail Gaspesia 100",
+   "date": "2027-06-18",
+   "endDate": "2027-06-20",
+   "city": "Percé",
+   "lat": 48.5244,
+   "lng": -64.2127,
+   "kind": "trail",
+   "distancesKm": [
+    55
+   ],
+   "url": "https://running.life/fr/evenement/ultra-trail-gaspesia-100",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-gaspesia-100",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-gaspesia-100"
+   }
+  },
+  {
+   "id": "defi-des-escaliers-2027-06-19",
+   "name": "Défi des Escaliers",
+   "date": "2027-06-19",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "trail",
+   "distancesKm": [
+    2,
+    19
+   ],
+   "url": "https://running.life/fr/evenement/defi-des-escaliers",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defi-des-escaliers",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defi-des-escaliers"
+   }
+  },
+  {
+   "id": "ironman-5150-mont-tremblant-2027-06-19",
+   "name": "Ironman 5150 Mont Tremblant",
+   "date": "2027-06-19",
+   "city": "Mont-Tremblant",
+   "lat": 46.1185,
+   "lng": -74.5962,
+   "kind": "route",
+   "distancesKm": [
+    1.5,
+    10,
+    40
+   ],
+   "url": "https://running.life/fr/evenement/ironman-5150-mont-tremblant",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ultra-obscura-2027-06-19",
+   "name": "Ultra Obscura",
+   "date": "2027-06-19",
+   "endDate": "2027-06-20",
+   "city": "Sutton",
+   "lat": 45.1059,
+   "lng": -72.6167,
+   "kind": "trail",
+   "distancesKm": [
+    84
+   ],
+   "url": "https://running.life/fr/evenement/ultra-obscura",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-obscura",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-obscura"
+   }
+  },
+  {
+   "id": "defi-pointe-claire-cours-avec-moi-2027-06-20",
+   "name": "Défi Pointe-Claire - Cours avec moi",
+   "date": "2027-06-20",
+   "city": "Pointe-Claire",
+   "lat": 45.472,
+   "lng": -73.799,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    10,
+    21.1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/defi-pointe-claire-cours-avec-moi",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ironman-70-3-mont-tremblant-2027-06-20",
+   "name": "IRONMAN 70.3 Mont-Tremblant",
+   "date": "2027-06-20",
+   "city": "Mont-Tremblant",
+   "lat": 46.1185,
+   "lng": -74.5962,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/ironman-703-mont-tremblant",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "basebootcamp-parcours-des-super-heros-2027-06-26",
+   "name": "Basebootcamp – Parcours des Super Héros",
+   "date": "2027-06-26",
+   "city": "Eustis",
+   "lat": 45.3099,
+   "lng": -71.9164,
+   "kind": "trail",
+   "distancesKm": [
+    4
+   ],
+   "url": "https://running.life/fr/evenement/basebootcamp-parcours-des-super-heros",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/basebootcamp-parcours-des-super-heros",
+    "gotrail.run": "https://gotrail.run/fr/evenement/basebootcamp-parcours-des-super-heros"
+   }
+  },
+  {
+   "id": "demi-marathon-de-sherbrooke-2027-06-27",
+   "name": "Demi-Marathon de Sherbrooke",
+   "date": "2027-06-27",
+   "city": "Sherbrooke",
+   "lat": 45.4043,
+   "lng": -71.8937,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    10,
+    21.1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-de-sherbrooke",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "quebec-mega-trail-2027-07-02",
+   "name": "Québec Mega Trail",
+   "date": "2027-07-02",
+   "city": "Beaupré",
+   "lat": 47.0487,
+   "lng": -70.8876,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/quebec-mega-trail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/quebec-mega-trail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/quebec-mega-trail"
+   }
+  },
+  {
+   "id": "cool-dad-race-2027-07-03",
+   "name": "Cool Dad Race",
+   "date": "2027-07-03",
+   "city": "Saint-Calixte",
+   "lat": 45.9498,
+   "lng": -73.8496,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/cool-dad-race/2027-07-03",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/cool-dad-race/2027-07-03",
+    "gotrail.run": "https://gotrail.run/fr/evenement/cool-dad-race/2027-07-03"
+   }
+  },
+  {
+   "id": "mudgirl-montreal-south-shore-2027-07-03",
+   "name": "Mudgirl - Montreal South Shore",
+   "date": "2027-07-03",
+   "endDate": "2027-07-04",
+   "city": "Downtown Montreal",
+   "lat": 45.5035,
+   "lng": -73.5685,
+   "kind": "trail",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/mudgirl-montreal-south-shore",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/mudgirl-montreal-south-shore",
+    "gotrail.run": "https://gotrail.run/fr/evenement/mudgirl-montreal-south-shore"
+   }
+  },
+  {
+   "id": "meech-lake-triathlon-2027-07-10",
+   "name": "Meech Lake Triathlon",
+   "date": "2027-07-10",
+   "city": "Chelsea",
+   "lat": 45.5402,
+   "lng": -75.8675,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/meech-lake-triathlon",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "xterra-quebec-2027-07-10",
+   "name": "XTERRA Quebec",
+   "date": "2027-07-10",
+   "endDate": "2027-07-11",
+   "city": "Lac-Delage",
+   "lat": 46.9645,
+   "lng": -71.3961,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/xterra-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "bougebouge-beaconsfield-2027-07-11",
+   "name": "BougeBouge Beaconsfield",
+   "date": "2027-07-11",
+   "city": "Beaconsfield",
+   "lat": 45.4309,
+   "lng": -73.8683,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    2,
+    5
+   ],
+   "url": "https://running.life/fr/evenement/bougebouge-beaconsfield",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/bougebouge-beaconsfield",
+    "gotrail.run": "https://gotrail.run/fr/evenement/bougebouge-beaconsfield"
+   }
+  },
+  {
+   "id": "course-extreme-2027-07-11",
+   "name": "Course Extrême",
+   "date": "2027-07-11",
+   "city": "Saint-Calixte",
+   "lat": 45.9498,
+   "lng": -73.8496,
+   "kind": "trail",
+   "distancesKm": [
+    3,
+    6,
+    9
+   ],
+   "url": "https://running.life/fr/evenement/course-extreme/2027-07-11",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/course-extreme/2027-07-11",
+    "gotrail.run": "https://gotrail.run/fr/evenement/course-extreme/2027-07-11"
+   }
+  },
+  {
+   "id": "le-sentier-de-l-espoir-rigaud-2027-07-17",
+   "name": "Le Sentier de l'Espoir - Rigaud",
+   "date": "2027-07-17",
+   "city": "Vaudreuil-Soulanges Regional County Municipality",
+   "lat": 45.4792,
+   "lng": -74.3004,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    30
+   ],
+   "url": "https://running.life/fr/evenement/le-sentier-de-lespoir-rigaud",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/le-sentier-de-lespoir-rigaud",
+    "gotrail.run": "https://gotrail.run/fr/evenement/le-sentier-de-lespoir-rigaud"
+   }
+  },
+  {
+   "id": "ultra-trail-du-mont-gosford-2027-07-17",
+   "name": "Ultra Trail du Mont Gosford",
+   "date": "2027-07-17",
+   "city": "Le Granit Regional County Municipality",
+   "lat": 45.3846,
+   "lng": -70.863,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/ultra-trail-du-mont-gosford",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-du-mont-gosford",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-du-mont-gosford"
+   }
+  },
+  {
+   "id": "challenge-quebec-2027-07-23",
+   "name": "Challenge Québec",
+   "date": "2027-07-23",
+   "endDate": "2027-07-25",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/challenge-cap-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "marathon-nightlight-de-sherbrooke-2027-07-31",
+   "name": "Marathon Nightlight de Sherbrooke",
+   "date": "2027-07-31",
+   "city": "Sherbrooke",
+   "lat": 45.4043,
+   "lng": -71.8937,
+   "kind": "route",
+   "distancesKm": [
+    3.5,
+    42
+   ],
+   "url": "https://running.life/fr/evenement/marathon-nightlight-de-sherbrooke",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ultra-trail-du-fjord-du-saguenay-2027-08-06",
+   "name": "Ultra-Trail du Fjord du Saguenay",
+   "date": "2027-08-06",
+   "endDate": "2027-08-08",
+   "city": "L'Anse-Saint-Jean",
+   "lat": 48.197,
+   "lng": -70.2457,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/ultra-trail-du-fjord-du-saguenay",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-du-fjord-du-saguenay",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-du-fjord-du-saguenay"
+   }
+  },
+  {
+   "id": "cool-dad-race-2027-08-07",
+   "name": "Cool Dad Race",
+   "date": "2027-08-07",
+   "city": "Saint-Calixte",
+   "lat": 45.9498,
+   "lng": -73.8496,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/cool-dad-race/2027-08-07",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/cool-dad-race/2027-08-07",
+    "gotrail.run": "https://gotrail.run/fr/evenement/cool-dad-race/2027-08-07"
+   }
+  },
+  {
+   "id": "demi-marathon-mont-tremblant-2027-08-08",
+   "name": "Demi-Marathon Mont-Tremblant",
+   "date": "2027-08-08",
+   "city": "Mont-Tremblant",
+   "lat": 46.1185,
+   "lng": -74.5962,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    5,
+    10,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-mont-tremblant",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ultra-trail-des-chic-chocs-2027-08-20",
+   "name": "Ultra-Trail des Chic-Chocs",
+   "date": "2027-08-20",
+   "endDate": "2027-08-23",
+   "city": "Sainte-Anne-des-Monts",
+   "lat": 49.1246,
+   "lng": -66.4893,
+   "kind": "trail",
+   "distancesKm": [
+    4,
+    170
+   ],
+   "url": "https://running.life/fr/evenement/ultra-trail-des-chic-chocs",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-des-chic-chocs",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-des-chic-chocs"
+   }
+  },
+  {
+   "id": "triathlon-international-de-piopolis-carrabassett-valley-2027-08-21",
+   "name": "Triathlon International de Piopolis - Carrabassett Valley",
+   "date": "2027-08-21",
+   "endDate": "2027-08-22",
+   "city": "Piopolis",
+   "lat": 45.4866,
+   "lng": -70.9038,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/triathlon-international-de-piopolis-carrabassett-valley",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "demi-marathon-de-la-voie-verte-2027-08-22",
+   "name": "Demi-Marathon de la Voie Verte",
+   "date": "2027-08-22",
+   "city": "Chelsea",
+   "lat": 45.5402,
+   "lng": -75.8675,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    5,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-de-la-voie-verte",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/demi-marathon-de-la-voie-verte",
+    "gotrail.run": "https://gotrail.run/fr/evenement/demi-marathon-de-la-voie-verte"
+   }
+  },
+  {
+   "id": "triathlon-au-coeur-de-la-monteregie-2027-08-22",
+   "name": "Triathlon au Coeur de la Montérégie",
+   "date": "2027-08-22",
+   "city": "Saint-Césaire",
+   "lat": 45.4104,
+   "lng": -73.0022,
+   "kind": "route",
+   "distancesKm": [
+    2.5
+   ],
+   "url": "https://running.life/fr/evenement/triathlon-au-coeur-de-la-monteregie",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-de-la-tortue-2027-08-28",
+   "name": "Défi de la Tortue",
+   "date": "2027-08-28",
+   "city": "Shawinigan",
+   "lat": 46.5628,
+   "lng": -72.7422,
+   "kind": "trail",
+   "distancesKm": [
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/defi-de-la-tortue",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defi-de-la-tortue",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defi-de-la-tortue"
+   }
+  },
+  {
+   "id": "mudgirl-quebec-2027-08-28",
+   "name": "Mudgirl Québec",
+   "date": "2027-08-28",
+   "endDate": "2027-08-29",
+   "city": "Saint-Marc-des-Carrières",
+   "lat": 46.6817,
+   "lng": -72.0501,
+   "kind": "trail",
+   "distancesKm": [
+    5
+   ],
+   "url": "https://running.life/fr/evenement/mudgirl-quebec",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/mudgirl-quebec",
+    "gotrail.run": "https://gotrail.run/fr/evenement/mudgirl-quebec"
+   }
+  },
+  {
+   "id": "trail-des-sommets-stoneham-2027-09-05",
+   "name": "Trail des Sommets - Stoneham",
+   "date": "2027-09-05",
+   "city": "Stoneham-et-Tewkesbury",
+   "lat": 47.121,
+   "lng": -71.4091,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    30
+   ],
+   "url": "https://running.life/fr/evenement/trail-des-sommets-stoneham",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/trail-des-sommets-stoneham",
+    "gotrail.run": "https://gotrail.run/fr/evenement/trail-des-sommets-stoneham"
+   }
+  },
+  {
+   "id": "challenge-esprit-montreal-2027-09-10",
+   "name": "Challenge Esprit Montreal",
+   "date": "2027-09-10",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/challenge-esprit-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defis-du-parc-2027-09-10",
+   "name": "Défis du Parc",
+   "date": "2027-09-10",
+   "endDate": "2027-09-12",
+   "city": "Shawinigan",
+   "lat": 46.5628,
+   "lng": -72.7422,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/defis-du-parc",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defis-du-parc",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defis-du-parc"
+   }
+  },
+  {
+   "id": "ultra-trail-harricana-2027-09-10",
+   "name": "Ultra-Trail Harricana",
+   "date": "2027-09-10",
+   "endDate": "2027-09-12",
+   "city": "La Galette",
+   "lat": 47.7294,
+   "lng": -70.7235,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    124.1
+   ],
+   "url": "https://running.life/fr/evenement/ultra-trail-harricana",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-harricana",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-harricana"
+   }
+  },
+  {
+   "id": "course-de-la-cite-limoilou-2027-09-11",
+   "name": "Course de la Cité-Limoilou",
+   "date": "2027-09-11",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    10
+   ],
+   "url": "https://running.life/fr/evenement/course-de-la-cite-limoilou",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "bougebouge-marathon-and-verdun-festival-2027-09-12",
+   "name": "BougeBouge Marathon and Verdun Festival",
+   "date": "2027-09-12",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/bougebouge-marathon-and-verdun-festival",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "demi-marathon-de-blainville-2027-09-12",
+   "name": "Demi-Marathon de Blainville",
+   "date": "2027-09-12",
+   "city": "Blainville",
+   "lat": 45.6689,
+   "lng": -73.8729,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    21.1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-de-blainville",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/demi-marathon-de-blainville",
+    "gotrail.run": "https://gotrail.run/fr/evenement/demi-marathon-de-blainville"
+   }
+  },
+  {
+   "id": "ultranza-trail-2027-09-12",
+   "name": "Ultranza Trail",
+   "date": "2027-09-12",
+   "city": "Val-Morin",
+   "lat": 46.0059,
+   "lng": -74.1871,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    50
+   ],
+   "url": "https://running.life/fr/evenement/ultranza-trail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultranza-trail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultranza-trail"
+   }
+  },
+  {
+   "id": "marathon-de-montreal-2027-09-17",
+   "name": "Marathon de Montréal",
+   "date": "2027-09-17",
+   "city": "Montreal",
+   "lat": 45.5019,
+   "lng": -73.5674,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-beneva-de-montreal",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ultra-trail-forillon-2027-09-17",
+   "name": "Ultra Trail Forillon",
+   "date": "2027-09-17",
+   "endDate": "2027-09-19",
+   "city": "Gaspé",
+   "lat": 48.8316,
+   "lng": -64.4869,
+   "kind": "trail",
+   "distancesKm": [
+    160
+   ],
+   "url": "https://running.life/fr/evenement/ultra-trail-forillon",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ultra-trail-forillon",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ultra-trail-forillon"
+   }
+  },
+  {
+   "id": "beluga-ultra-trail-2027-09-18",
+   "name": "Béluga Ultra Trail",
+   "date": "2027-09-18",
+   "city": "Tadoussac",
+   "lat": 48.146,
+   "lng": -69.7128,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/beluga-ultra-trail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/beluga-ultra-trail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/beluga-ultra-trail"
+   }
+  },
+  {
+   "id": "demi-marathon-de-saint-sauveur-2027-09-18",
+   "name": "Demi-Marathon de Saint-Sauveur",
+   "date": "2027-09-18",
+   "city": "Saint-Sauveur",
+   "lat": 45.8957,
+   "lng": -74.1565,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-de-saint-sauveur",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "ascension-du-mont-belair-2027-09-19",
+   "name": "Ascension du Mont-Bélair",
+   "date": "2027-09-19",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "trail",
+   "distancesKm": [
+    9.2
+   ],
+   "url": "https://running.life/fr/evenement/ascension-du-mont-belair",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/ascension-du-mont-belair",
+    "gotrail.run": "https://gotrail.run/fr/evenement/ascension-du-mont-belair"
+   }
+  },
+  {
+   "id": "big-wolf-s-backyard-ultra-outaouais-2027-09-19",
+   "name": "Big Wolf's Backyard Ultra - Outaouais",
+   "date": "2027-09-19",
+   "city": "District de Limbour",
+   "lat": 45.4987,
+   "lng": -75.7513,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-outaouais",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/big-wolfs-backyard-ultra-outaouais",
+    "gotrail.run": "https://gotrail.run/fr/evenement/big-wolfs-backyard-ultra-outaouais"
+   }
+  },
+  {
+   "id": "universite-laval-10k-2027-09-19",
+   "name": "Université Laval 10K",
+   "date": "2027-09-19",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    10
+   ],
+   "url": "https://running.life/fr/evenement/universite-laval-10k",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "courons-gatineau-2027-09-25",
+   "name": "Courons Gatineau",
+   "date": "2027-09-25",
+   "city": "Gatineau",
+   "lat": 45.4765,
+   "lng": -75.7013,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    15
+   ],
+   "url": "https://running.life/fr/evenement/courons-gatineau",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-des-4-versants-2027-09-25",
+   "name": "Défi des 4 Versants",
+   "date": "2027-09-25",
+   "city": "Saint-Elzéar",
+   "lat": 46.4065,
+   "lng": -71.0604,
+   "kind": "trail",
+   "distancesKm": [
+    5.7
+   ],
+   "url": "https://running.life/fr/evenement/defi-des-4-versants",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defi-des-4-versants",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defi-des-4-versants"
+   }
+  },
+  {
+   "id": "demi-marathon-opti-jeunesse-de-farnham-2027-09-25",
+   "name": "Demi-Marathon Opti-jeunesse de Farnham",
+   "date": "2027-09-25",
+   "city": "Farnham",
+   "lat": 45.2831,
+   "lng": -72.9748,
+   "kind": "trail",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/demi-marathon-opti-jeunesse-de-farnham",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/demi-marathon-opti-jeunesse-de-farnham",
+    "gotrail.run": "https://gotrail.run/fr/evenement/demi-marathon-opti-jeunesse-de-farnham"
+   }
+  },
+  {
+   "id": "jackatrail-2027-09-25",
+   "name": "Jackatrail",
+   "date": "2027-09-25",
+   "city": "Antoine-Labelle Regional County Municipality",
+   "lat": 46.701,
+   "lng": -75.4526,
+   "kind": "trail",
+   "distancesKm": [
+    20
+   ],
+   "url": "https://running.life/fr/evenement/le-jackatrail",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/le-jackatrail",
+    "gotrail.run": "https://gotrail.run/fr/evenement/le-jackatrail"
+   }
+  },
+  {
+   "id": "mascours-2027-09-25",
+   "name": "Mascours",
+   "date": "2027-09-25",
+   "endDate": "2027-09-26",
+   "city": "Mascouche",
+   "lat": 45.7773,
+   "lng": -73.6324,
+   "kind": "trail",
+   "distancesKm": [
+    10
+   ],
+   "url": "https://running.life/fr/evenement/mascours",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/mascours",
+    "gotrail.run": "https://gotrail.run/fr/evenement/mascours"
+   }
+  },
+  {
+   "id": "marathon-de-quebec-2027-10-01",
+   "name": "Marathon de Québec",
+   "date": "2027-10-01",
+   "city": "Québec City",
+   "lat": 46.8131,
+   "lng": -71.2075,
+   "kind": "route",
+   "distancesKm": [
+    42.2
+   ],
+   "url": "https://running.life/fr/evenement/marathon-beneva-de-quebec",
+   "sources": [
+    "running.life"
+   ]
+  },
+  {
+   "id": "defi-des-couleurs-simard-2027-10-08",
+   "name": "Défi des Couleurs Simard",
+   "date": "2027-10-08",
+   "city": "Beaupré",
+   "lat": 47.0487,
+   "lng": -70.8876,
+   "kind": "trail",
+   "distancesKm": [],
+   "url": "https://running.life/fr/evenement/defi-des-couleurs-simard",
+   "sources": [
+    "running.life",
+    "gotrail.run"
+   ],
+   "urls": {
+    "running.life": "https://running.life/fr/evenement/defi-des-couleurs-simard",
+    "gotrail.run": "https://gotrail.run/fr/evenement/defi-des-couleurs-simard"
+   }
+  },
+  {
+   "id": "tour-du-lac-beauport-2027-10-17",
+   "name": "Tour du Lac-Beauport",
+   "date": "2027-10-17",
+   "city": "La Jacques-Cartier Regional County Municipality",
+   "lat": 47.0402,
+   "lng": -71.3296,
+   "kind": "route",
+   "distancesKm": [
+    1,
+    21.1
+   ],
+   "url": "https://running.life/fr/evenement/tour-du-lac-beauport",
+   "sources": [
+    "running.life"
+   ]
+  }
+ ]
+}

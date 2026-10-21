@@ -7,6 +7,7 @@ import {
   type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type HealthProfile, type PlanRequest, type Weekday,
 } from '@/engine';
 import { db } from '@/data/db';
+import { closestDistance } from '@/data/races';
 import { updateAthlete } from '@/data/athlete';
 import { createPlan, phaseWeekIndex, startingPoint } from '@/data/planner';
 import { stamp } from '@/data/ids';
@@ -15,6 +16,7 @@ import { Card, Eyebrow } from '@/ui/components/Card';
 import { ChoiceCard, ChoiceGroup, Chip, Field, Segmented, Stepper, TextInput } from '@/ui/components/forms';
 import { HealthForm, emptyHealth, stampHealth, type BodyStats } from '@/ui/components/HealthForm';
 import { PlanTimeline } from '@/ui/components/PlanTimeline';
+import { RacePicker } from '@/ui/components/RacePicker';
 import { Why } from '@/ui/components/Why';
 import { useActiveAthlete } from '@/ui/hooks/useAthlete';
 import { cn } from '@/ui/lib/cn';
@@ -256,6 +258,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
               )}
               {raceGoal && s.hasRace ? (
                 <div className="space-y-4">
+                  <RacePicker today={today} kind={profile!.family === 'trail' ? 'trail' : 'route'} onPick={(r) => set({ raceName: r.name, raceDate: r.date, raceKm: closestDistance(r, s.raceKm) ?? s.raceKm })} />
                   <Field label="Nom (optionnel)"><TextInput value={s.raceName} onChange={(e) => set({ raceName: e.target.value })} placeholder="Ex. Trail du Grand-Duc" /></Field>
                   <Field label="Date" hint={s.raceDate <= today ? 'La date doit être dans le futur.' : undefined}><TextInput type="date" value={s.raceDate} min={addDays(today, 1)} onChange={(e) => set({ raceDate: e.target.value })} /></Field>
                   <Stepper label="Distance" value={s.raceKm} onChange={(v) => set({ raceKm: v })} step={profile!.family === 'trail' ? 1 : 0.1} min={1} max={250} unit="km" />
