@@ -212,6 +212,8 @@ export const WALK_PACE_MIN_PER_KM = 11;
 export const WALK_FIRST_START_MIN = 20;
 export const WALK_FIRST_STEP_MIN = 5;
 export const WALK_FIRST_TARGET_MIN = 30;
+/** Après le démarrage : au moins 4 semaines de base, sans séance clé, avant les phases de l'objectif. */
+export const BASE_WEEKS_AFTER_RUNWALK = 4;
 /** Strides et sprints en côte seulement quand on court au moins 30 min d'affilée (sortie longue ≥ 30 min). */
 export const STRIDES_MIN_CONTINUOUS_MIN = 30;
 /** Démarrage : au plus 3 séances par semaine, jamais deux jours de suite. */

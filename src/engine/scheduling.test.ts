@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffDays, weekday } from './dates';
+import { addDays, diffDays, weekday } from './dates';
 import { GOALS } from './goals';
 import { generatePlan, type PlanRequest } from './periodization';
 import { buildWeekSessions, pickKeyDays, pickRunDays, qualityTypes, validateMove, type SessionDraft, type WeekContext } from './scheduling';
@@ -389,5 +389,46 @@ describe('semaine sans sortie longue prévue', () => {
     const week = { index: 3, startDate: '2026-11-02', phase: 'base' as const, kind: 'build' as const, targetKm: 12, targetElevationM: 0, keySessions: 0, longRunKm: 0, notes: [] };
     const { sessions } = buildWeekSessions(week, { goal: 'route_10k', family: 'route', availability: avail, experience: 'regulier', hrMaxEstimated: false, hasPoles: false, planWeek: 3, phaseWeek: 3 });
     expect(sessions.some((s) => s.type.startsWith('longue'))).toBe(false);
+  });
+});
+
+describe('T4 — démarrage jamais tronqué, objectif course adapté', () => {
+  const three = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] };
+  const isContinuousRun = (s: SessionDraft) => isRunType(s.type) && !['marche_course', 'course', 'repos'].includes(s.type);
+
+  it('débutant qui court 4 min, 10 km dans 12 semaines : avertissement et aucune course continue avant le palier 13 (F2)', () => {
+    const { plan, weeks } = fullPlan('route_10k', { experience: 'debutant', currentWeeklyKm: 0, continuousMin: 4, vdot: undefined, availability: three, race: { date: addDays(START, 11 * 7 + 5), distanceKm: 10, elevationGainM: 0 } });
+    expect(plan.warnings.map((w) => w.ruleId)).toContain('plan.runwalk.short');
+    expect(plan.options).toEqual(['course_en_marche_course', 'decaler']);
+    let reached13 = false;
+    for (const { week, sessions } of weeks) {
+      if (!reached13) for (const s of sessions) expect(isContinuousRun(s), `${s.date} ${s.title}`).toBe(false);
+      if (week.runWalk?.sessions.some((x) => x.stage >= 13) || !week.runWalk) reached13 = true;
+    }
+  });
+  it('course pendant le démarrage : pas d’affûtage, course en marche/course, pas d’« allure course » (F10)', () => {
+    const { plan, weeks } = fullPlan('route_5k', { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: three, race: { date: addDays(START, 9 * 7 + 5), distanceKm: 5, elevationGainM: 0 } });
+    expect(plan.weeks.every((w) => w.phase === 'demarrage')).toBe(true);
+    const last = weeks.at(-1)!;
+    expect(last.week.kind).toBe('course');
+    const race = last.sessions.find((s) => s.type === 'course')!;
+    expect(race.title).toMatch(/en marche\/course/);
+    expect(weeks.flatMap((w) => w.sessions).some((s) => s.type === 'tempo')).toBe(false);
+  });
+  it('assez de temps : démarrage, puis 4 semaines de base SANS séance clé, puis les phases de l’objectif', () => {
+    const { plan, weeks } = fullPlan('route_5k', { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: three, race: { date: addDays(START, 29 * 7 + 5), distanceKm: 5, elevationGainM: 0 } });
+    expect(plan.warnings.map((w) => w.ruleId)).not.toContain('plan.runwalk.short');
+    const dem = plan.weeks.filter((w) => w.phase === 'demarrage').length;
+    expect(dem).toBe(12); // 36 séances ÷ 3 par semaine
+    expect(plan.weeks.slice(dem, dem + 4).every((w) => w.phase === 'base' && w.keySessions === 0)).toBe(true);
+    expect(weeks.slice(dem, dem + 4).flatMap((w) => w.sessions).some((s) => s.isKey)).toBe(false);
+    expect(plan.weeks.slice(dem + 4).some((w) => w.keySessions > 0)).toBe(true);
+    expect(plan.weeks.slice(0, dem + 4).some((w) => ['spec1', 'spec2', 'precomp'].includes(w.phase))).toBe(false);
+  });
+  it('2 jours par semaine : le démarrage dure plus longtemps (on compte en séances)', () => {
+    const two = { ...avail, runDaysPerWeek: 2, allowedDays: [2, 6] as Availability['allowedDays'] };
+    const d = (av: Availability) => fullPlan('route_5k', { experience: 'jamais', currentWeeklyKm: 0, vdot: undefined, availability: av, race: { date: addDays(START, 40 * 7 + 5), distanceKm: 5, elevationGainM: 0 } }).plan.weeks.filter((w) => w.phase === 'demarrage').length;
+    expect(d(two)).toBe(18); // 36 séances ÷ 2
+    expect(d(three)).toBe(12);
   });
 });

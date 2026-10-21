@@ -114,6 +114,10 @@ describe('dans le plan', () => {
     const p = generatePlan({ goal: 'debuter', startDate: '2026-10-19', experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, continuousMin: 40, availability: av });
     expect(p.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(0);
   });
+  it('« courir de zéro » avec une course et déjà 40 min continues : la course est notée sur la dernière semaine', () => {
+    const p = generatePlan({ goal: 'debuter', startDate: '2026-10-19', race: { date: '2026-12-26', distanceKm: 5, elevationGainM: 0 }, experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, continuousMin: 40, availability: av });
+    expect(p.weeks.at(-1)).toMatchObject({ raceDate: '2026-12-26', kind: 'build' });
+  });
   it('« garder la forme » : pas de verdict de marche-course', () => {
     const p = generatePlan({ goal: 'forme', startDate: '2026-10-19', durationWeeks: 6, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 20, availability: av });
     expect(p.warnings.map((w) => w.ruleId)).not.toContain('start.continuous');

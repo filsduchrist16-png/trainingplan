@@ -376,7 +376,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
             </>
           )}
 
-          {step === 8 && request && preview && <Preview request={request} preview={preview} athlete={athlete} />}
+          {step === 8 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} />}
         </m.section>
       </AnimatePresence>
 
@@ -417,7 +417,7 @@ function formatTime(min: number): string {
   return h ? `${h}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`;
 }
 
-function Preview({ request, preview, athlete }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete }) {
+function Preview({ request, preview, athlete, onPostpone }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete; onPostpone: () => void }) {
   const first = preview.weeks[0];
   const firstWeek = first
     ? buildWeekSessions(first, {
@@ -450,6 +450,16 @@ function Preview({ request, preview, athlete }: { request: PlanRequest; preview:
           <strong>{w.title}.</strong> <span className="text-muted">{w.why}</span>
         </div>
       ))}
+      {preview.options && (
+        <Card className="space-y-3">
+          <Eyebrow>Deux bonnes options</Eyebrow>
+          <p className="text-sm text-muted">Le plan ci-dessus te fait courir l'épreuve en marche/course : c'est une vraie stratégie, et la plus sûre. Tu peux aussi choisir une date plus lointaine.</p>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-accent/15 px-3 py-2 text-sm text-text">✓ Courir en marche/course</span>
+            <Button variant="outline" size="sm" onClick={onPostpone}>Décaler l'objectif</Button>
+          </div>
+        </Card>
+      )}
       <Card>
         <Eyebrow>Ta première semaine</Eyebrow>
         <ul className="mt-3 space-y-2">
