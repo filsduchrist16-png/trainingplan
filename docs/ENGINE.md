@@ -1,0 +1,89 @@
+# Comment le moteur de Sentier décide
+
+Le moteur (`src/engine/`) est de la logique pure, sans UI, stockage ni réseau, et couverte à 100 % par les tests.
+Toute décision renvoie une **`Explanation`** (`ruleId`, gravité, titre, pourquoi, valeurs). C'est ce qui alimente les « Pourquoi? » de l'interface.
+
+Les seuils sont dans [`constants.ts`](../src/engine/constants.ts). Chaque constante est nommée et commentée. Celles marquées **À VALIDER** sont des ordres de grandeur issus de la pratique courante : elles n'ont pas de consensus scientifique net, et on peut les ajuster sans toucher à la logique.
+
+## Ordre de priorité
+
+1. **Santé** (`guards.ts`) : douleur, red flags. Elle l'emporte toujours.
+2. **État du jour** (`readiness.ts`) : 🟢 🟡 🔴, nuit courte, sommeil.
+3. **Progression et charge** (`progression.ts`, `load.ts`) : 10 %, ACWR.
+4. **Plan** (`periodization.ts`, `scheduling.ts`).
+
+Quand le moteur doit choisir, il choisit la santé et le dit.
+
+## Zones et allures
+
+- **Zones cardiaques** en % de la FCmax : bornes 64,7 / 75,3 / 85,3 / 92,6 %. Pour une FCmax de 190, on obtient Z1 < 123, Z2 123-143, Z3 143-162, Z4 162-176, Z5 au-delà. Une variante Karvonen (réserve cardiaque) existe aussi.
+- **FCmax** : estimée par l'âge (Tanaka, 208 − 0,7 × âge). Le moteur la marque « estimée » et planifie un test de 3 km en semaine 2. La FCmax retenue est la plus haute FC **soutenue** pendant le test, pas un pic d'artefact du capteur.
+- **Niveau de forme (VDOT)** : calculé avec les équations publiées de Daniels et Gilbert à partir d'un temps de course ou d'une VMA. Il fixe toutes les allures (E, M, T, I, R). Comme dans Runna, un seul niveau gouverne tout.
+- **Ajustement du niveau** : il faut **3 séances qualité concordantes** (toutes plus rapides que la cible sans être à bloc, ou toutes plus lentes). Une bonne journée isolée ne change rien.
+
+## Charge et ACWR
+
+- **Charge Sentier** = Σ minutes × poids de zone (1 à 5, type TRIMP d'Edwards) + 12 par 100 m de D+. Si les données manquent, le moteur se rabat sur la FC moyenne, puis sur le RPE, puis sur la durée (hypothèse « facile »). Le moteur n'utilise qu'**une** méthode par fenêtre : mélanger le Training Load de Garmin et la charge Sentier fausserait le ratio.
+- **ACWR** = charge des 7 derniers jours ÷ moyenne hebdomadaire des 28 derniers jours. La zone verte va de 0,8 à 1,3. Sa valeur prédictive pour les blessures est **débattue** ; l'app la présente comme une tendance, jamais comme une prédiction.
+- **Avant 28 jours de données**, le statut est « calibration ». Le moteur ne prétend rien.
+
+## Progression
+
+- **Volume** : au plus +10 % par semaine, mesuré contre le **maximum des 4 dernières semaines**. Comparer à la semaine précédente pénaliserait à tort la remontée après une décharge.
+- **Un seul nouveau stress à la fois** : volume OU intensité. À l'entrée d'une phase plus intense, le volume est tenu.
+
+## Périodisation (`generatePlan`)
+
+- **Objectifs** : 5 km, 10 km, semi, marathon, trail court, trail moyen, ultra, « courir de zéro », « garder la forme ».
+- **Phases** : base → spécifique 1 → spécifique 2 (pic) → pré-compétition → taper. Pour 25 semaines hors taper, la répartition est 9 / 7 / 6 / 3. Un bloc court comprime d'abord la base, et le taper n'est jamais coupé.
+- **Décharge** : à 65 % du volume courant, après 3 semaines de développement (cycle 3:1).
+- **Taper** : 2 semaines à 60 % puis 40 % du pic (1 semaine pour 5 km, 10 km et trail court ; 3 pour l'ultra). L'intensité est maintenue.
+- **Course B** : la semaine de course est ramenée à 75 % (mini-taper) et la semaine suivante à 80 %, avec une seule séance clé.
+- **Après une course A** : 1 à 3 semaines de récupération selon la distance, puis un nouveau cycle.
+- **Démarrage** : sous 10 km/semaine, le plan commence par une phase de marche-course.
+- **Plafonds** : le pic est limité par le temps disponible. Si le pic visé est inatteignable en respectant les 10 %, le moteur **plafonne et le dit**.
+
+## Semaine type (`buildWeekSessions`)
+
+- **Choix des jours** : le jour de la longue d'abord, puis les jours les plus espacés possible.
+- **Séances clés** : au plus 2 (3 en phase pic pour un coureur avancé et ambitieux), espacées de 48 h, jamais la veille de la longue. En trail, la longue spécifique compte comme séance clé dès la phase spécifique.
+- **Contenu** :
+  - **Base pyramidale** : Z2, strides, sprints en côte, un seuil léger à partir de la semaine 3.
+  - **Spécifique** : seuil, côtes longues, VO2max (au plus une fois par semaine, pas avant 4 semaines de base), descentes (trail, pas la veille d'une séance dure), back-to-back (trail moyen et ultra, en phase pic).
+  - **Pré-compétition** : allure ou effort de course, plyométrie.
+- **Muscu** : greffée aux jours durs (« jours durs durs, jours faciles faciles »), jamais la veille de la longue ni d'une course.
+- **Volume restant** : il va aux sorties faciles, avec un plafond horaire par jour. Si le temps manque, le moteur laisse du volume de côté plutôt que d'allonger tout, et le dit.
+
+## Garde-fous santé (`evaluateHealth`)
+
+| Signal | Effet |
+|---|---|
+| Douleur tibia ou soléaire ≥ 1 | Avertissement, aucune hausse de volume, aucune séance dure |
+| Douleur tibiale ≥ 3, ou 2 jours de suite | **STOP course** : vélo ou natation à la place |
+| Reprise après douleur | Z1/Z2 seulement jusqu'à 3 jours sans douleur |
+| 5 jours de douleur ou plus sur 2 semaines | Suggestion de voir un physio |
+| Douleur au tendon d'Achille > 48 h ou ≥ 3 | Red flag, STOP course |
+| Body Battery < 20 plusieurs matins, VFC basse > 3 jours, FC repos ≥ base + 5, fatigue persistante | Red flags |
+| Malade | Aucune qualité |
+| 1 flag | Journée légère |
+| 2 flags ou plus | Journée off |
+| Flag + symptôme | Décharge anticipée |
+| 4 nuits courtes sur 7 | Semaine maintien suggérée (65 % du volume, zéro qualité) |
+
+## État du jour (`adjustToday`)
+
+- **Santé** : une course bloquée est remplacée par de l'entraînement croisé (ou du repos s'il n'y en a pas). Un signal santé transforme une séance dure en Z2 court.
+- **🔴** : repos.
+- **Nuit courte** : la qualité est déplacée plus tard dans la semaine (`findMoveTarget` respecte les 48 h) et le moteur propose un Z2 de 30 min. Sous 4 h de sommeil, c'est repos.
+- **🟡** : environ une répétition de moins, ou 20 % plus court.
+- **🟢** : on fait la séance prévue.
+
+## Debrief (`debrief`)
+
+- **Facile trop dur** : plus de 15 % du temps au-dessus de Z2. Le moteur propose un plafond de FC.
+- **Zone grise** : plus de 20 % du temps entre 76 et 82 % de la FCmax (environ 145-155 bpm pour 190).
+- **Dérive cardiaque** : découplage FC/allure entre les deux moitiés, échauffement exclu. Sous 5 %, c'est bon. Elle n'est calculée que sur terrain roulant et au-delà de 40 min.
+- **Dérive Z2 → Z3 en fin de longue** : le dernier quart est comparé à la première moitié.
+- **Cadence** : comparée à la cible, avec un conseil de progression graduelle (+2-3 pas/min).
+- **Durée** : plus court que prévu, aucun reproche. Plus long, le moteur conseille une séance facile ensuite.
+- **Sans FC** : le moteur le dit et n'invente rien.
