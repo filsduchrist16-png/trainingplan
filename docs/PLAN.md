@@ -9,7 +9,7 @@ Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités vien
 **Livré :** moteur complet et testé à 100 % (zones, allures VDOT, charge/ACWR, progression, périodisation route/trail/débuter/forme, planification hebdo, garde-fous santé, état du jour, debrief), assistant « Nouvel objectif », Aujourd'hui, Plan (glisser-déposer), fiche de séance, import Garmin + debrief, Corps minimal (douleurs + état santé), Progrès minimal (volume/D+), démo, backup, PWA.
 
 **Reporté (backlog, par ordre de valeur) :**
-1. Progrès complet : FC vs allure en Z2, découvertes (« ton Z2 est 18 s/km plus rapide »), distribution par zones vs 80/10/10, VO2max lissée, cadence, VFC et FC repos.
+1. ~~Progrès complet~~ : fait (efficacité aérobie à FC égale et découvertes, distribution par zones vs 80/10/10, cadence, VO2max lissée, FC repos, VFC).
 2. ~~Profil / zones~~ : fait (zones auto ou manuelles, FC max par test, niveau de forme, dispos). Le plan en cours se refait avec les nouvelles dispos (bouton dans Profil, `replanActive`).
 3. ~~Muscu~~ : fait (programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo guidé, double progression). Reste : bibliothèque d'exercices éditable, historique de charges en graphique.
 4. Nutrition : planificateur de gut training, log de tolérance, plan de course, carbo-loading.

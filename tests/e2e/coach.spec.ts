@@ -277,7 +277,8 @@ test('muscu : logger une série, le repos démarre, la séance est enregistrée'
   await page.goto('/');
   await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
   await expect(page.getByText('Séance du jour')).toBeVisible();
-  await page.goto('/muscu');
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: 'Séance de muscu libre' }).click();
   await expect(page.getByRole('heading', { name: /Muscu générale/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Squat gobelet' })).toBeVisible();
   await expect(page.getByText('Première fois.').first()).toBeVisible();
@@ -288,6 +289,19 @@ test('muscu : logger une série, le repos démarre, la séance est enregistrée'
   await page.getByRole('button', { name: /Enregistrer la séance \(1 série\)/ }).click();
   await expect(page).toHaveURL(/\/$/);
   // La séance suivante part de ce qui a été fait (double progression).
-  await page.goto('/muscu');
-  await expect(page.getByText('Première fois.')).toHaveCount(4);
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: 'Séance de muscu libre' }).click();
+  await expect(page.getByText('+1 rep.')).toBeVisible();
+});
+
+test('progrès : tendances calculées par le moteur à partir de l’historique de démo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Progrès' }).click();
+  await expect(page.getByRole('heading', { name: 'Progrès' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Distribution des zones' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Répartition : Z1/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Efficacité aérobie' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'VO2max estimée' })).toBeVisible();
 });

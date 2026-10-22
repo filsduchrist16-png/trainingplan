@@ -162,6 +162,15 @@ Les notes de profil sont ajoutées aux séances (`SessionDraft.notes`) et affich
 - **Double progression** (`nextTarget`) : les reps montent jusqu'au haut de la fourchette, puis la charge (+`STRENGTH_LOAD_STEP_KG`, 2,5 kg) ; pas de montée si un RPE dépasse `STRENGTH_PROGRESS_MAX_RPE` (8) ; une série sous le bas de la fourchette → même charge ; au poids du corps, on propose une charge ou une variante. Chaque décision a son Explanation (`strength.*`).
 - **Données** : `strengthSessions` (séries : exercice, reps, charge, RPE, tempo), lues par exercice pour calculer la prochaine cible. L'écran `/muscu` affiche le programme, la technique, le tempo guidé et le minuteur de repos ; il coche la séance prévue.
 
+## Progrès (`progress.ts`)
+
+Tendances calculées par règles ; chaque « découverte » est une Explanation (`progress.*`). Seuils `PROGRESS_*`, À VALIDER.
+
+- **Efficacité aérobie** (`aerobicEfficiency`) : sorties **faciles** seulement (≥ 70 % du temps en Z1-Z2, ≤ 25 m D+/km, avec FC). Efficacité = vitesse ÷ FC, ramenée à une **allure à FC de référence** (milieu de Z2) ; semaine après semaine. Les 4 dernières semaines sont comparées aux 4 d'avant (3 sorties minimum de chaque côté) : « Ton Z2 est 18 s/km plus rapide » (`progress.efficiency.up`), ou plus lent (`.down`, ton prudent : fatigue, chaleur, sommeil). Écart < 5 s/km : du bruit, aucune découverte. Désactivée si la FC n'est pas fiable (médicament).
+- **Distribution des zones** (`zoneDistribution`, 4 dernières semaines) vs 80/10/10, tolérance 10 points : trop de soutenu (`.hard`, la zone grise), que du facile (`.easy`, > 95 %), ou bonne répartition (`.ok`).
+- **Cadence** hebdomadaire pondérée par la durée, avec la zone cible ; **VO2max** lissée sur 3 mesures ; **FC repos** : moyenne 7 jours contre la base des 28 jours d'avant (+5 bpm → `.restinghr.up`, attention ; −5 bpm → `.down`) ; **VFC** : jours déséquilibrés sur 7 jours.
+- L'écran Progrès affiche les courbes (Sparkline) et la phrase du moteur ; il ne contient aucune règle.
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |

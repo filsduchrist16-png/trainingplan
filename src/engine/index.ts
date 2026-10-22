@@ -21,6 +21,7 @@ export {
   stageDurationMinutes, stageKind, stageLabel, stageRunMinutes, validationsRequired, walkFirstMinutes,
   type RunWalkOptions, type RunWalkSession, type RunWalkState,
 } from './runwalk';
+export { aerobicEfficiency, cadenceByWeek, easyActivities, hrvDays, restingHrTrend, vo2maxSeries, zoneDistribution, type CadencePoint, type Efficiency, type EfficiencyPoint, type ProgressActivity, type RestingHr, type Vo2Point, type ZoneDistribution } from './progress';
 export { EXERCISES, strengthProgram, nextTarget, tempoSteps, type ExerciseInfo, type NextTarget, type ProgramInput, type ProgramRow, type SetResult, type StrengthKind, type StrengthProgram } from './strength';
 export { deriveProfile, bmi, notesFor, POSTPARTUM_RETURN_TEST, POSTPARTUM_SYMPTOMS, type ProfileAdjustments, type ProfileInput, type SessionNote } from './profiles';
 export { screen, HEALTH_QUESTIONS, type Screening, type ScreeningLevel } from './screening';

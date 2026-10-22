@@ -341,3 +341,24 @@ export const STRENGTH_PROGRESS_MAX_RPE = 8;
 export const STRENGTH_NOVICE_MAX_SETS = 3;
 /** Repos par défaut entre deux séries (s), selon l'objectif de la phase. */
 export const STRENGTH_REST_SEC = { fondation: 60, force: 120, maintien: 90 } as const;
+
+// ─── Progrès (tendances et découvertes) ── seuils À VALIDER (pratique courante) ──
+/** Sortie « facile » pour l'efficacité aérobie : au moins cette part du temps en Z1-Z2, sur terrain plutôt roulant. */
+export const PROGRESS_EASY_MIN_SHARE = 0.7;
+/** Terrain roulant : au plus ce D+ par km (m/km). */
+export const PROGRESS_EASY_MAX_GAIN_PER_KM = 25;
+/** Sorties minimum de chaque côté de la comparaison (récent vs précédent) pour parler de tendance. */
+export const PROGRESS_MIN_ACTIVITIES = 3;
+/** Fenêtre de comparaison (semaines) : les N dernières semaines contre les N d'avant. */
+export const PROGRESS_COMPARE_WEEKS = 4;
+/** Écart d'efficacité (s/km à FC égale) en dessous duquel on ne parle pas de progrès : c'est du bruit. */
+export const PROGRESS_MIN_PACE_GAIN_SEC = 5;
+/** Répartition visée de l'intensité (80/10/10), tolérance (points de pourcentage) avant de la signaler. */
+export const PROGRESS_TARGET_LOW_SHARE = 0.8;
+export const PROGRESS_DISTRIBUTION_TOLERANCE = 0.1;
+/** Fenêtre de la distribution par zones (semaines). */
+export const PROGRESS_DISTRIBUTION_WEEKS = 4;
+/** FC repos : moyenne des 7 derniers jours contre la base des 28 jours d'avant ; écart (bpm) qui mérite d'être signalé. */
+export const PROGRESS_RESTING_HR_ALERT = 5;
+/** Lissage de la VO2max estimée (points de la moyenne glissante). */
+export const PROGRESS_VO2_SMOOTHING = 3;

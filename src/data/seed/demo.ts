@@ -143,6 +143,8 @@ export function buildDemo(today: Date = new Date()) {
           hrAvg,
           hrMax: hrAvg + Math.round(15 + rand() * 12),
           cadenceAvg: Math.round(jitter(169 + (DEMO_WEEKS - w) * 0.3, 0.01)),
+          // Répartition des zones plausible : facile quand la FC moyenne reste en Z2, plus de soutenu sinon.
+          timeInZonesSec: ((easy) => (easy ? [0.1, 0.78, 0.09, 0.03, 0] : [0.05, 0.4, 0.25, 0.25, 0.05]).map((x) => Math.round(x * durationSec * 0.97)) as [number, number, number, number, number])(hrAvg <= athlete.zones.bounds[1]),
           terrain: t.sport === 'trail' ? ('sentier' as const) : ('route' as const),
           shoeId: t.sport === 'trail' ? shoes[0]!.id : shoes[1]!.id,
           load: activityLoad({ durationSec, elevationGainM: dplus, hrAvg }, athlete.zones.bounds).load,
