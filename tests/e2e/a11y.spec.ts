@@ -20,6 +20,7 @@ for (const theme of ['dark', 'light'] as const) {
     await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
     await expect(page.getByText('Séance du jour')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    await page.waitForTimeout(1000); // les cartes apparaissent en fondu : on mesure le contraste une fois l'animation finie
     const found: string[] = [];
     for (const [name, path] of SCREENS) {
       if (path !== '/') {
