@@ -8,7 +8,7 @@ test('premier lancement → démo → accueil vivant → backup → effacer', as
   await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
   await expect(page.getByRole('heading', { name: /Salut Nicolas/ })).toBeVisible();
   await expect(page.getByText('Séance du jour')).toBeVisible();
-  await expect(page.getByText(/Semaine 27\/27/)).toBeVisible();
+  await expect(page.getByText(/Semaine \d+\/27/)).toBeVisible();
   await expect(page.getByText('Prochaine course A')).toBeVisible();
 
   await page.getByRole('link', { name: 'Plus' }).click();

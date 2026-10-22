@@ -7,6 +7,11 @@ export interface CatalogRace {
   date: ISODate;
   endDate?: ISODate;
   city: string;
+  region?: string;
+  /** Site de l'organisateur, quand le calendrier source le donne. */
+  website?: string;
+  /** `false` : date estimée (pas encore confirmée par l'organisateur). */
+  dateConfirmed?: false;
   lat?: number;
   lng?: number;
   kind: 'route' | 'trail';
