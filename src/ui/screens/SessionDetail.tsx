@@ -55,7 +55,7 @@ export function SessionDetail() {
         </section>
       )}
       {session.type.startsWith('muscu') || session.type === 'plyo' ? (
-        <Card><p className="text-sm">{info.prescription}</p><Link to="/muscu" className="mt-3 inline-block text-sm underline underline-offset-4">Ouvrir le logger de muscu</Link></Card>
+        <Card><p className="text-sm">{info.prescription}</p><Link to={`/muscu?seance=${session.id}`} className="mt-3 inline-block text-sm underline underline-offset-4">Ouvrir le logger de muscu</Link></Card>
       ) : null}
 
       <Card className="space-y-4">

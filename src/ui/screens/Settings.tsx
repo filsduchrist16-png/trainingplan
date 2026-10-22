@@ -58,6 +58,7 @@ export function Settings() {
       <Card className="space-y-2">
         <Eyebrow>Raccourcis</Eyebrow>
         <Link to="/profil" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Profil : zones, FC max, dispos, calibration</Link>
+        <Link to="/muscu" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Séance de muscu libre</Link>
         <Link to="/sante" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Questionnaire santé</Link>
         <Link to="/importer" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Importer des activités Garmin (FIT, GPX, TCX, CSV)</Link>
         <Link to="/objectif" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Nouvel objectif</Link>

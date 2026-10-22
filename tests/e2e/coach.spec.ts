@@ -272,3 +272,22 @@ test('profil : refaire le plan avec de nouvelles dispos', async ({ page }) => {
   await replan.click({ force: true });
   await expect(page.getByText(/Plan refait avec tes nouvelles dispos|Le plan n'a pas changé/)).toBeVisible();
 });
+
+test('muscu : logger une série, le repos démarre, la séance est enregistrée', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.goto('/muscu');
+  await expect(page.getByRole('heading', { name: /Muscu générale/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Squat gobelet' })).toBeVisible();
+  await expect(page.getByText('Première fois.').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Série 1 faite' }).first().click();
+  await expect(page.getByRole('timer', { name: 'Repos' })).toBeVisible();
+  await page.getByRole('button', { name: 'Passer' }).click();
+  await expect(page.getByRole('timer', { name: 'Repos' })).toBeHidden();
+  await page.getByRole('button', { name: /Enregistrer la séance \(1 série\)/ }).click();
+  await expect(page).toHaveURL(/\/$/);
+  // La séance suivante part de ce qui a été fait (double progression).
+  await page.goto('/muscu');
+  await expect(page.getByText('Première fois.')).toHaveCount(4);
+});

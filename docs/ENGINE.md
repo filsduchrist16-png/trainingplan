@@ -155,6 +155,13 @@ Questionnaire à l'inscription (étape de l'assistant et écran « Questionnaire
 
 Les notes de profil sont ajoutées aux séances (`SessionDraft.notes`) et affichées dans le détail de la séance (« Pour toi »).
 
+## Muscu (`strength.ts`)
+
+- **Programme** (`strengthProgram`) selon le type de séance, la phase et le niveau. Phases de **fondation** (démarrage, base, maintien, récup) : 8-12 reps, tempo 3-1-1, repos 60 s ; phases de **force** (spécifique 1 et 2) : 5-8 reps, repos 120 s, RPE 8 ; phases de **maintien** (pré-compétition, affûtage) : 2 séries, RPE 6. Un débutant (`jamais`, `debutant`) garde les fourchettes hautes et au plus `STRENGTH_NOVICE_MAX_SETS` (3) séries. Trail : descentes de banc excentriques (4-1-1) ; 65 ans et plus : équilibre sur une jambe ; grossesse : bird-dog à la place de la planche. Mollets 2×/sem dans tous les programmes.
+- **Pliométrie** : seulement pour qui a de la base (ni `jamais`, ni `debutant`) et jamais pendant la grossesse (`strength.plyo.skip`).
+- **Double progression** (`nextTarget`) : les reps montent jusqu'au haut de la fourchette, puis la charge (+`STRENGTH_LOAD_STEP_KG`, 2,5 kg) ; pas de montée si un RPE dépasse `STRENGTH_PROGRESS_MAX_RPE` (8) ; une série sous le bas de la fourchette → même charge ; au poids du corps, on propose une charge ou une variante. Chaque décision a son Explanation (`strength.*`).
+- **Données** : `strengthSessions` (séries : exercice, reps, charge, RPE, tempo), lues par exercice pour calculer la prochaine cible. L'écran `/muscu` affiche le programme, la technique, le tempo guidé et le minuteur de repos ; il coche la séance prévue.
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |
