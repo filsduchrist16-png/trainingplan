@@ -76,7 +76,7 @@ function BodyFor({ athlete }: { athlete: Athlete }) {
               <li key={it.routine.id} className="space-y-1.5 rounded-xl bg-surface-2 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium">{it.routine.title}{it.targeted && <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent">ciblée</span>}</p>
+                    <p className="font-medium">{it.routine.title}{it.targeted && <span className="ml-2 rounded-full border border-accent/60 px-2 py-0.5 text-xs text-text">ciblée</span>}</p>
                     <p className="num text-xs text-muted">{it.done}/{it.routine.perWeek} cette semaine · {it.routine.minutes} min</p>
                   </div>
                   <Chip selected={doneToday} onToggle={() => void (doneToday ? uncheckRoutine(db, athlete.id, it.routine.id, today) : checkRoutine(db, athlete.id, it.routine.id, today))}>{`${it.routine.title} fait aujourd'hui`}</Chip>

@@ -37,7 +37,6 @@ export function Import() {
       <div
         role="button"
         tabIndex={0}
-        aria-label="Déposer des fichiers ou choisir"
         onClick={() => input.current?.click()}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && input.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setOver(true); }}

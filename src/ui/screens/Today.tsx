@@ -372,7 +372,7 @@ function AfterRace({ athlete, ctx }: { athlete: Athlete; ctx: CoachContext }) {
 
 function TodaySkeleton() {
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Chargement">
+    <div className="space-y-5" role="status" aria-busy="true" aria-label="Chargement">
       <div className="h-10 w-48 animate-pulse rounded-lg bg-surface" />
       <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-surface" />
       <div className="h-32 animate-pulse rounded-[var(--radius-card)] bg-surface" />
