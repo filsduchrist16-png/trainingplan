@@ -8,7 +8,7 @@ export async function shoesWithKm(db: SentierDB, athleteId: string): Promise<Sho
   const acts = await db.activities.where('athleteId').equals(athleteId).filter((a) => a.shoeId !== undefined).toArray();
   const km = new Map<string, number>();
   for (const a of acts) km.set(a.shoeId!, (km.get(a.shoeId!) ?? 0) + a.distanceKm);
-  return shoes.sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((shoe) => ({ shoe, km: Math.round((shoe.initialKm + (km.get(shoe.id) ?? 0)) * 10) / 10 }));
+  return shoes.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.name.localeCompare(b.name)).map((shoe) => ({ shoe, km: Math.round((shoe.initialKm + (km.get(shoe.id) ?? 0)) * 10) / 10 }));
 }
 
 export interface NewShoe {
