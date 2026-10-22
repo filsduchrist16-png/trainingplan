@@ -56,7 +56,7 @@ test('déclarer une douleur tibiale change immédiatement le plan', async ({ pag
   await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Corps' }).click();
-  await page.getByRole('button', { name: 'tibia droit' }).click();
+  await page.getByRole('button', { name: 'tibia droit', exact: true }).click();
   await page.getByRole('slider', { name: 'Intensité' }).fill('4');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByText('STOP course').first()).toBeVisible();
