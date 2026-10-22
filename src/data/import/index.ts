@@ -1,6 +1,7 @@
 import { activityLoad, timeInZones, toIsoDate, isRunType, type Activity, type Athlete, type PlannedSession } from '@/engine';
 import type { SentierDB } from '../db';
 import { stamp } from '../ids';
+import { syncMilestones } from '../milestones';
 import { syncRunWalk } from '../runwalk';
 import { parseGarminCsv } from './csv';
 import { parseFit } from './fit';
@@ -125,5 +126,6 @@ export async function importFiles(db: SentierDB, athlete: Athlete, files: Import
       : parsed.length ? 'Déjà importé.' : 'Aucune activité trouvée dans ce fichier.';
     outcomes.push({ file: file.name, status, message, activityIds: ids, matches });
   }
+  if (outcomes.some((o) => o.activityIds.length)) await syncMilestones(db, athlete.id);
   return outcomes;
 }

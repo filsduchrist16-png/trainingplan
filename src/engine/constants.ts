@@ -402,3 +402,19 @@ export const CARB_LOADING_MIN_RACE_MIN = 90;
 export const PREVENTION_PAIN_LOOKBACK_DAYS = 28;
 /** Carte corporelle : niveau 1 = gêne (< 3/10), niveau 2 = douleur (3-5), niveau 3 = forte (≥ 6). */
 export const BODY_MAP_LEVELS: [number, 1 | 2 | 3][] = [[6, 3], [3, 2], [1, 1]];
+
+// ─── Jalons ──
+/** Course à pied d'affilée : durée (min) qui compte comme « 30 min sans s'arrêter ». */
+export const MILESTONE_CONTINUOUS_MIN = 30;
+/** D+ (m) d'une sortie qui compte comme « 1000 m de D+ ». */
+export const MILESTONE_BIG_CLIMB_M = 1000;
+/** Distance cumulée (km) qui donne un jalon. */
+export const MILESTONE_TOTAL_KM = [100, 250, 500, 1000, 2000, 5000];
+/** Régularité : semaines de suite avec au moins N sorties de course, et séries qui donnent un jalon. */
+export const MILESTONE_STREAK_MIN_RUNS = 2;
+export const MILESTONE_STREAK_WEEKS = [4, 8, 12, 26, 52];
+/** Distances (km) d'un premier : 5 km, 10 km, semi, marathon, 50 km. Tolérance : on compte à 98 % de la distance. */
+export const MILESTONE_DISTANCES_KM = [5, 10, 21.0975, 42.195, 50];
+export const MILESTONE_DISTANCE_TOLERANCE = 0.98;
+/** Records de sortie la plus longue : seulement au-delà de ce seuil (km). */
+export const MILESTONE_LONGEST_MIN_KM = 5;

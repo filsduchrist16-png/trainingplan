@@ -373,3 +373,18 @@ test('corps : la carte montre la douleur, la routine ciblée apparaît, la prév
   await page.getByRole('button', { name: 'Voir les exercices' }).first().click();
   await expect(page.getByText(/Mollets debout sur une jambe/)).toBeVisible();
 });
+
+test('jalons : un cap franchi au log rapide apparaît sur Aujourd’hui et dans Progrès', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('button', { name: "C'est fait" }).click();
+  await page.getByRole('textbox', { name: 'Distance' }).fill('50');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeHidden();
+  await expect(page.getByText('Bravo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Premier 50 km')).toBeVisible();
+  await page.getByRole('link', { name: 'Progrès' }).click();
+  await expect(page.getByRole('heading', { name: 'Jalons' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Jalons atteints' }).getByText('Premier 50 km')).toBeVisible();
+});

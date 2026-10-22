@@ -417,4 +417,7 @@ export interface Milestone extends Owned {
   key: string;
   date: ISODate;
   value?: number;
+  /** Texte du jalon au moment où il a été atteint (écrit par le moteur). */
+  title?: string;
+  why?: string;
 }

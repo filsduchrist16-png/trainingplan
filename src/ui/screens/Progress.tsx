@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { frCA } from 'date-fns/locale';
 import { addDays, aerobicEfficiency, cadenceByWeek, formatPace, hrvDays, mondayOf, restingHrTrend, toIsoDate, vo2maxSeries, weeklySummaries, zoneDistribution, type Explanation } from '@/engine';
 import { db } from '@/data/db';
+import { milestones, syncMilestones } from '@/data/milestones';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
 import { EmptyState } from '@/ui/components/EmptyState';
@@ -24,10 +25,12 @@ export function Progress() {
     // 12 semaines de volume, mais 8 semaines de plus d'historique ne servent qu'à comparer l'efficacité.
     const acts = await db.activities.where('date').aboveOrEqual(addDays(from, -4 * 7)).filter((a) => a.athleteId === athlete.id).toArray();
     const wellness = await db.wellness.where('date').aboveOrEqual(addDays(today, -35)).filter((w) => w.athleteId === athlete.id).toArray();
-    return { acts, wellness, weeks: weeklySummaries(acts.filter((a) => a.date >= from), from, mondayOf(today)) };
+    await syncMilestones(db, athlete.id); // rattrape l'historique : idempotent
+    return { acts, wellness, milestones: await milestones(db, athlete.id), weeks: weeklySummaries(acts.filter((a) => a.date >= from), from, mondayOf(today)) };
   }, [athlete?.id, from, today]);
   if (!data || !athlete) return null;
   const { acts, wellness, weeks } = data;
+  const achievements = data.milestones;
   const refHr = Math.round((athlete.zones.bounds[0] + athlete.zones.bounds[1]) / 2);
   const efficiency = athlete.health?.hrUnreliable ? undefined : aerobicEfficiency(acts, refHr, today);
   const distribution = athlete.health?.hrUnreliable ? undefined : zoneDistribution(acts, today);
@@ -85,6 +88,25 @@ export function Progress() {
             </Insight>
           )}
         </>
+      )}
+      {achievements.length > 0 && (
+        <Card className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Jalons</h2>
+            <Eyebrow>{achievements.length} atteint{achievements.length > 1 ? 's' : ''}</Eyebrow>
+          </div>
+          <ul className="space-y-2" aria-label="Jalons atteints">
+            {achievements.map((m) => (
+              <li key={m.key} className="rounded-xl bg-surface-2 p-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-medium">{m.title}</p>
+                  <span className="num text-xs text-muted">{format(parseISO(m.date), 'd MMM yyyy', { locale: frCA })}</span>
+                </div>
+                {m.why && <p className="mt-1 text-sm text-muted">{m.why}</p>}
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
       {vo2.length >= 2 && (
         <Insight title="VO2max estimée" eyebrow="Lissée sur 3 mesures">

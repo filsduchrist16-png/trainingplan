@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { frCA } from 'date-fns/locale';
@@ -9,6 +10,7 @@ import {
 } from '@/engine';
 import { db } from '@/data/db';
 import { swapSessions } from '@/data/log';
+import { recentMilestoneRows, syncMilestones } from '@/data/milestones';
 import { createRecoveryPlan } from '@/data/planner';
 import { saveWellness } from '@/data/wellness';
 import { AcwrGauge } from '@/ui/components/AcwrGauge';
@@ -53,9 +55,28 @@ function TodayFor({ athlete }: { athlete: Athlete }) {
       {ctx.health.level !== 'ok' && <HealthBanner ctx={ctx} />}
       <TodayCore athlete={athlete} ctx={ctx} />
       {athlete.runWalk && <RunWalkCard runWalk={athlete.runWalk} />}
+      <MilestoneCard athleteId={athlete.id} today={ctx.today} />
       <RaceCard ctx={ctx} />
       <Glance athlete={athlete} ctx={ctx} />
     </div>
+  );
+}
+
+/** Jalons des 7 derniers jours : une phrase sobre, la date, rien de plus. */
+function MilestoneCard({ athleteId, today }: { athleteId: string; today: string }) {
+  const recent = useLiveQuery(async () => {
+    await syncMilestones(db, athleteId);
+    return recentMilestoneRows(db, athleteId, today);
+  }, [athleteId, today]);
+  if (!recent?.length) return null;
+  return (
+    <Card className="space-y-2 border border-accent/40">
+      <Eyebrow>Bravo</Eyebrow>
+      <ul className="space-y-2">
+        {recent.slice(0, 3).map((m) => <li key={m.key}><p className="font-semibold">{m.title}</p><p className="text-sm text-muted">{m.why}</p></li>)}
+      </ul>
+      <Link to="/progres" className="text-sm underline underline-offset-4">Tous mes jalons</Link>
+    </Card>
   );
 }
 

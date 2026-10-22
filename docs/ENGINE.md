@@ -194,6 +194,16 @@ Repères prudents (pratique courante, À VALIDER par un nutritionniste du sport)
 - **Carte du corps** (`bodyMap`) : niveau de chaque zone sur 28 jours selon la douleur la plus forte : gêne (< 3/10), douleur (3-5), forte (≥ 6). La carte est cliquable : toucher une zone la sélectionne pour la déclarer. La carte informe, les garde-fous santé décident (les règles de blocage restent dans `guards.ts`).
 - Données : `preventionChecks` (routine, date), `painLogs` ; tout reste local.
 
+## Jalons (`milestones.ts`)
+
+De vrais premiers, sobres (un jalon, une phrase, la date), sans confettis. `newMilestones(activités, clés connues)` renvoie seulement les nouveaux (idempotent) ; la clé est unique par athlète, et le premier appel rattrape tout l'historique avec les vraies dates.
+
+- **Premiers** : première sortie, **30 min d'affilée** (cap du parcours de démarrage), premier 5 km, 10 km, semi, marathon, 50 km (on compte à 98 % de la distance), 1000 m de D+ en une sortie.
+- **Cumuls** : 100, 250, 500, 1000, 2000, 5000 km, à la sortie qui franchit le seuil.
+- **Régularité** : 4, 8, 12, 26, 52 semaines de suite avec au moins 2 sorties de course (une semaine ratée remet à zéro).
+- **Plus longue sortie** : le dernier record seulement (≥ 5 km, jamais pour la toute première sortie).
+- Affichage : carte « Bravo » sur Aujourd'hui (jalons des 7 derniers jours) et liste datée dans Progrès. Enregistrés après un log, un import et à l'ouverture de Progrès (`syncMilestones`).
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |
