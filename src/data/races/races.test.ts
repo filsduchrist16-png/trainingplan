@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error module JS sans types (script d'import)
-import { distancesFrom, mergeRaces, parseEvents, parseIskio, slug, toRace } from '../../../scripts/lib/races-parse.mjs';
+import { distanceTable, distancesFrom, mergeRaces, parseEvents, parseIskio, parsePasSorti, slug, toRace } from '../../../scripts/lib/races-parse.mjs';
 import { closestDistance, loadRaceCatalog, searchRaces, type CatalogRace } from '.';
 
 const html = (events: object[]) => `<script type="application/ld+json">${JSON.stringify({ '@type': 'ItemList', itemListElement: events.map((item) => ({ '@type': 'ListItem', item })) })}</script><script type="application/ld+json">{pas du json</script><script type="application/ld+json">{"@type":"BreadcrumbList"}</script>`;
@@ -70,6 +70,38 @@ describe('calendrier Iskio', () => {
     const old = mergeRaces([[rl], [{ ...iskio, id: 'x', name: 'Course des Récoltes de Saint-Joseph', date: '2027-11-30' }]]);
     expect(old.map((r: CatalogRace) => r.date)).toEqual(['2026-10-24', '2027-11-30']);
     expect(mergeRaces([[iskio]])).toHaveLength(1);
+  });
+});
+
+describe('calendrier Pas sorti du bois', () => {
+  const table = '<table><tbody><tr><td>Distance</td><td>D+</td></tr><tr><td><span>30 km</span></td><td>771 m</td></tr><tr><td>2,5 km</td><td>À confirmer</td></tr><tr><td>10 km</td><td>1 256 m</td></tr><tr><td>Note</td><td>x</td></tr></tbody></table>';
+  const page = (over: object = {}, extra = '') => `<html><script type="application/ld+json">${JSON.stringify({ '@type': 'Event', name: 'Trail du Mont Rigaud &amp; fils', url: 'https://passortidubois.com/events/mont-rigaud/', startDate: '2026-10-4', endDate: '2026-10-5', description: `<div>${table}</div>`, ...over })}</script><script type="application/ld+json">{"@type":"Organization"}</script><script type="application/ld+json">{pas json</script>
+    <em class="evcal_location" data-latlng="45.4501,-74.3002"></em><a href='https://organisateur.ca/' target="_blank"><span class='evcal_evdata_icons'><i class='fa fa-link'></i></span><h3>Site web de l'événement</h3></a>
+    <span>Région</span></div><div><p>Montérégie</p></div>${extra}</html>`;
+  it('lit le tableau distances / D+ (« À confirmer » sans D+, milliers avec espace)', () => {
+    expect(distanceTable(table)).toEqual([{ km: 30, gainM: 771 }, { km: 2.5 }, { km: 10, gainM: 1256 }]);
+    expect(distanceTable(undefined)).toEqual([]);
+  });
+  it('lit l’événement : date non complétée, distances, D+ par distance, site, région, coordonnées', () => {
+    const r = parsePasSorti(page());
+    expect(r).toMatchObject({
+      id: 'trail-du-mont-rigaud-fils-2026-10-04', name: 'Trail du Mont Rigaud & fils', date: '2026-10-04', endDate: '2026-10-05', kind: 'trail', city: '', region: 'Montérégie',
+      distancesKm: [2.5, 10, 30], gainByKm: { 30: 771, 10: 1256 }, website: 'https://organisateur.ca/', lat: 45.4501, lng: -74.3002, sources: ['passortidubois.com'], url: 'https://passortidubois.com/events/mont-rigaud/',
+    });
+  });
+  it('page sans événement exploitable, ou sans tableau / site / région : tolérant', () => {
+    expect(parsePasSorti('<html></html>')).toBeNull();
+    expect(parsePasSorti(page({ startDate: 'bientôt' }))).toBeNull();
+    const bare = parsePasSorti(`<script type="application/ld+json">${JSON.stringify({ '@type': 'Event', name: 'Simple', url: 'u', startDate: '2026-11-1', endDate: '2026-11-1' })}</script>`);
+    expect(bare).toMatchObject({ date: '2026-11-01', distancesKm: [], city: '' });
+    for (const k of ['endDate', 'gainByKm', 'website', 'region', 'lat']) expect(bare).not.toHaveProperty(k);
+  });
+  it('fusion : D+ et ville des autres sources complétés', () => {
+    const psdb = parsePasSorti(page({ name: 'Course du Lac', startDate: '2026-11-07' }));
+    const iskio = toRace(ev({ name: 'Course du Lac', startDate: '2026-11-07', endDate: '2026-11-07', description: '5 km' }), 'running.life');
+    const [m] = mergeRaces([[iskio], [psdb]]);
+    expect(m).toMatchObject({ city: 'Stoneham-et-Tewkesbury', gainByKm: { 30: 771, 10: 1256 }, distancesKm: [2.5, 5, 10, 30] });
+    expect(m.sources).toEqual(['running.life', 'passortidubois.com']);
   });
 });
 

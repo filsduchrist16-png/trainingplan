@@ -25,7 +25,7 @@ export function RacePicker({ today, kind, onPick }: { today: ISODate; kind: 'rou
             <li key={r.id}>
               <button type="button" onClick={() => onPick(r)} className="w-full rounded-xl bg-surface-2 p-3 text-left hover:bg-line">
                 <span className="block font-medium">{r.name}</span>
-                <span className="block text-xs text-muted">{r.dateConfirmed === false ? `≈ ${r.date} (date à confirmer)` : r.date}{r.endDate ? ` → ${r.endDate}` : ''} · {r.city}{r.distancesKm.length ? ` · ${r.distancesKm.map((d) => `${d} km`).join(', ')}` : ''}</span>
+                <span className="block text-xs text-muted">{r.dateConfirmed === false ? `≈ ${r.date} (date à confirmer)` : r.date}{r.endDate ? ` → ${r.endDate}` : ''} · {r.city || r.region || 'Québec'}{r.distancesKm.length ? ` · ${r.distancesKm.map((d) => `${d} km${r.gainByKm?.[String(d)] ? ` (D+ ${r.gainByKm[String(d)]} m)` : ''}`).join(', ')}` : ''}</span>
               </button>
             </li>
           ))}

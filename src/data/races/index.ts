@@ -16,6 +16,8 @@ export interface CatalogRace {
   lng?: number;
   kind: 'route' | 'trail';
   distancesKm: number[];
+  /** Dénivelé positif (m) par distance (km), quand la source le donne. */
+  gainByKm?: Record<string, number>;
   url: string;
   sources: string[];
 }
@@ -46,4 +48,10 @@ export function searchRaces(races: CatalogRace[], query: string, from: ISODate, 
 export function closestDistance(race: CatalogRace, targetKm: number): number | undefined {
   if (!race.distancesKm.length) return undefined;
   return race.distancesKm.reduce((best, d) => (Math.abs(d - targetKm) < Math.abs(best - targetKm) ? d : best));
+}
+
+/** D+ (m) de la distance du répertoire la plus proche de la distance voulue, si la source le donne. */
+export function closestGain(race: CatalogRace, targetKm: number): number | undefined {
+  const km = closestDistance(race, targetKm);
+  return km === undefined ? undefined : race.gainByKm?.[String(km)];
 }

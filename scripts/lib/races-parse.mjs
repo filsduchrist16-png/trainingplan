@@ -89,6 +89,66 @@ export function parseIskio(response) {
   return out;
 }
 
+const pad = (n) => String(n).padStart(2, '0');
+/** « 2026-9-27 » → « 2026-09-27 ». */
+const isoDate = (s) => {
+  const m = String(s ?? '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : undefined;
+};
+const textOf = (html) => html.replace(/<[^>]+>/g, '|').replace(/&rsquo;|&#8217;/g, '’').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+
+/** Tableau « Distance / D+ » d'une description HTML : [{ km, gainM? }]. « À confirmer » → pas de D+. */
+export function distanceTable(descriptionHtml = '') {
+  const rows = [];
+  for (const tr of descriptionHtml.matchAll(/<tr[^>]*>(.*?)<\/tr>/gs)) {
+    const cells = [...tr[1].matchAll(/<t[dh][^>]*>(.*?)<\/t[dh]>/gs)].map((c) => textOf(c[1]).replace(/\|/g, '').trim());
+    const km = cells[0]?.match(/^(\d+(?:[.,]\d+)?)\s*km$/i);
+    if (!km) continue;
+    const gain = cells[1]?.match(/^(\d[\d\s]*)\s*m$/i);
+    rows.push({ km: Number(km[1].replace(',', '.')), ...(gain ? { gainM: Number(gain[1].replace(/\s/g, '')) } : {}) });
+  }
+  return rows;
+}
+
+/**
+ * Page d'un événement du calendrier Pas sorti du bois (WordPress + EventON) : JSON-LD Event, tableau distances/D+,
+ * site de l'organisateur, région, coordonnées. Un calendrier de trail : tout est « trail ».
+ */
+export function parsePasSorti(html) {
+  let event;
+  for (const m of html.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)) {
+    try {
+      const j = JSON.parse(m[1]);
+      if (j?.['@type'] === 'Event' && j.name && isoDate(j.startDate)) { event = j; break; }
+    } catch { /* bloc ignoré */ }
+  }
+  if (!event) return null;
+  const date = isoDate(event.startDate);
+  const end = isoDate(event.endDate);
+  const table = distanceTable(event.description);
+  const text = textOf(html);
+  const region = text.match(/Région\|+([^|]+)\|/)?.[1]?.trim();
+  const site = html.match(/href=['"]([^'"]+)['"][^>]*>\s*<span[^>]*>\s*<i class=['"]fa fa-link['"]/)?.[1];
+  const geo = html.match(/data-latlng="(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)"/);
+  const name = event.name.replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, '’');
+  const gainByKm = Object.fromEntries(table.filter((r) => r.gainM !== undefined).map((r) => [String(r.km), r.gainM]));
+  return {
+    id: `${slug(name)}-${date}`,
+    name,
+    date,
+    ...(end && end !== date ? { endDate: end } : {}),
+    city: '',
+    ...(region ? { region } : {}),
+    ...(geo ? { lat: Math.round(Number(geo[1]) * 1e4) / 1e4, lng: Math.round(Number(geo[2]) * 1e4) / 1e4 } : {}),
+    kind: 'trail',
+    distancesKm: [...new Set(table.map((r) => r.km))].sort((a, b) => a - b),
+    ...(Object.keys(gainByKm).length ? { gainByKm } : {}),
+    url: event.url,
+    ...(site ? { website: site } : {}),
+    sources: ['passortidubois.com'],
+  };
+}
+
 /** Fusionne les courses des différentes sources (même nom normalisé et même date). */
 export function mergeRaces(lists) {
   const byKey = new Map();
@@ -103,7 +163,9 @@ export function mergeRaces(lists) {
       if (r.kind === 'trail') prev.kind = 'trail';
       if (prev.lat === undefined && r.lat !== undefined) { prev.lat = r.lat; prev.lng = r.lng; }
       prev.website ??= r.website;
+      if (r.gainByKm) prev.gainByKm = { ...r.gainByKm, ...prev.gainByKm };
       prev.region ??= r.region;
+      if (!prev.city && r.city) prev.city = r.city;
       if (r.dateConfirmed === undefined) delete prev.dateConfirmed;
     }
   }
