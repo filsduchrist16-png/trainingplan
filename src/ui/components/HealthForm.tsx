@@ -1,6 +1,7 @@
 import { HEALTH_QUESTIONS, POSTPARTUM_RETURN_TEST, POSTPARTUM_SYMPTOMS, screen, type ChronicCondition, type HealthProfile, type HealthQuestion, type ISODate } from '@/engine';
 import { cn } from '@/ui/lib/cn';
 import { useState } from 'react';
+import { cloudConfigured } from '@/data/cloud/config';
 import { Chip, Field, Segmented, TextInput } from './forms';
 
 export const EMPTY_ANSWERS: Record<HealthQuestion, boolean> = { q1: false, q2: false, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: true };
@@ -82,7 +83,7 @@ export function HealthForm({ health, onChange, body, onBodyChange, today }: {
           <strong>{e.title}.</strong> <span className="text-muted">{e.why}</span>
         </div>
       ))}
-      <p className="text-xs text-muted">Tes réponses restent sur ton appareil. Ce questionnaire ne remplace pas un avis médical.</p>
+      <p className="text-xs text-muted">{cloudConfigured ? 'Sans compte, tes réponses restent sur ton appareil. Avec un compte, elles sont copiées avec le reste de tes données sur le serveur (synchro), visibles de toi et de ton coach seulement.' : 'Tes réponses restent sur ton appareil.'} Ce questionnaire ne remplace pas un avis médical.</p>
     </div>
   );
 }
