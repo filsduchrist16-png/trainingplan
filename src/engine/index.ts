@@ -21,6 +21,7 @@ export {
   stageDurationMinutes, stageKind, stageLabel, stageRunMinutes, validationsRequired, walkFirstMinutes,
   type RunWalkOptions, type RunWalkSession, type RunWalkState,
 } from './runwalk';
+export { ROUTINES, ROUTINE_FOR_ZONE, bodyMap, preventionPlan, type BodyMapZone, type PreventionItem, type Routine } from './prevention';
 export { PRODUCT_PRESETS, carbTarget, carbsPerHour, carboLoading, carboLoadingStatus, gutPlan, racePlan, toleranceByLevel, type CarboLoading, type FuelItem, type GutPlan, type LoadingDay, type RacePlan, type RacePlanInput, type ToleranceBucket } from './nutrition';
 export { gearAdvice, shoeStatus, suggestShoe, type ShoeChoice, type ShoeState, type ShoeStatus } from './gear';
 export { aerobicEfficiency, cadenceByWeek, easyActivities, hrvDays, restingHrTrend, vo2maxSeries, zoneDistribution, type CadencePoint, type Efficiency, type EfficiencyPoint, type ProgressActivity, type RestingHr, type Vo2Point, type ZoneDistribution } from './progress';

@@ -396,3 +396,9 @@ export const CAFFEINE_MG_PER_KG = 3;
 export const CARB_LOADING_G_PER_KG = 8;
 export const CARB_LOADING_SHORT_G_PER_KG = 6;
 export const CARB_LOADING_MIN_RACE_MIN = 90;
+
+// ─── Prévention (routines de renforcement) ── À VALIDER par un physio ──
+/** Une douleur ou une blessure de moins de N jours déclenche la routine ciblée de sa zone. */
+export const PREVENTION_PAIN_LOOKBACK_DAYS = 28;
+/** Carte corporelle : niveau 1 = gêne (< 3/10), niveau 2 = douleur (3-5), niveau 3 = forte (≥ 6). */
+export const BODY_MAP_LEVELS: [number, 1 | 2 | 3][] = [[6, 3], [3, 2], [1, 1]];

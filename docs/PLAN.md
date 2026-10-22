@@ -14,7 +14,7 @@ Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités vien
 3. ~~Muscu~~ : fait (programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo guidé, double progression). Reste : bibliothèque d'exercices éditable, historique de charges en graphique.
 4. ~~Nutrition~~ : fait (gut training progressif, journal de tolérance, plan de course, carbo-loading).
 5. ~~Équipement~~ : fait (km par paire, rodage, usure, rotation, paire conseillée ; écran Équipement).
-6. Corps complet : carte corporelle, routine de prévention à cocher (mollets 2×/sem).
+6. ~~Corps complet~~ : fait (carte du corps cliquable, routines de prévention à cocher, routines ciblées par les douleurs).
 7. Jalons et séries de semaines cohérentes, confettis sobres sur les vrais jalons.
 8. Polish (Phase 5) : audit a11y, Lighthouse > 90 (bundle ~180 Ko gz à alléger), anglais.
 9. ~~Comptes et synchro Supabase (opt-in)~~ : intégré (compte optionnel, synchro, coach, communauté), voir `docs/SUPABASE.md`.

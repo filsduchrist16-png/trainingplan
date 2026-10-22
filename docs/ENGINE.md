@@ -188,6 +188,12 @@ Repères prudents (pratique courante, À VALIDER par un nutritionniste du sport)
 - **Carbo-loading** (`carboLoading`) : au-delà de 90 min, 8 g/kg/jour pendant 2 jours ; sinon un bon repas la veille (6 g/kg).
 - L'écran Nutrition affiche ce que décide le moteur ; la saisie se fait au log rapide (glucides, liquide, inconfort 0-5) pour les sorties de 75 min et plus. Le journal de tolérance est local : rien n'est envoyé.
 
+## Prévention et carte du corps (`prevention.ts`)
+
+- **Routines** (`ROUTINES`, À VALIDER par un physio) : de base, mollets et soléaire 2×/sem, fessiers et hanches 2×/sem, mobilité des chevilles 3×/sem. **Ciblées** : toute douleur déclarée dans les 28 derniers jours, ou blessure non résolue, ajoute la routine de sa zone (tibias, Achille, genou, bandelette, pied, dos…, `ROUTINE_FOR_ZONE`). `preventionPlan` compte les jours cochés de la semaine (lundi à dimanche, une coche par jour) et dit ce qui reste (`prevention.due`, `.targeted`, `.done`).
+- **Carte du corps** (`bodyMap`) : niveau de chaque zone sur 28 jours selon la douleur la plus forte : gêne (< 3/10), douleur (3-5), forte (≥ 6). La carte est cliquable : toucher une zone la sélectionne pour la déclarer. La carte informe, les garde-fous santé décident (les règles de blocage restent dans `guards.ts`).
+- Données : `preventionChecks` (routine, date), `painLogs` ; tout reste local.
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |

@@ -352,3 +352,24 @@ test('nutrition : noter une sortie longue fait monter la cible de glucides', asy
   await expect(page.getByTestId('gut-next')).toContainText('60 g de glucides par heure'); // 50 g/h bien toléré → +10
   await expect(page.getByText('inconfort 0/5')).toBeVisible();
 });
+
+test('corps : la carte montre la douleur, la routine ciblée apparaît, la prévention se coche', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Corps' }).click();
+  await expect(page.getByRole('heading', { name: 'Corps' })).toBeVisible();
+  // Toucher une zone de la carte la sélectionne pour la déclarer.
+  await page.getByRole('button', { name: /tibia droit : rien à signaler/ }).click();
+  await page.getByRole('slider', { name: 'Intensité' }).fill('2');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: /tibia droit : gêne/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: "Tibias : tibial antérieur fait aujourd'hui" })).toBeVisible();
+  await expect(page.getByText('ciblée', { exact: true })).toBeVisible();
+  // Cocher une routine de base.
+  await expect(page.getByText('0/2 cette semaine').first()).toBeVisible();
+  await page.getByRole('button', { name: "Mollets et soléaire fait aujourd'hui" }).click();
+  await expect(page.getByText('1/2 cette semaine').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Voir les exercices' }).first().click();
+  await expect(page.getByText(/Mollets debout sur une jambe/)).toBeVisible();
+});
