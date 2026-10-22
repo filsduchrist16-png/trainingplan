@@ -12,7 +12,7 @@ Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités vien
 1. ~~Progrès complet~~ : fait (efficacité aérobie à FC égale et découvertes, distribution par zones vs 80/10/10, cadence, VO2max lissée, FC repos, VFC).
 2. ~~Profil / zones~~ : fait (zones auto ou manuelles, FC max par test, niveau de forme, dispos). Le plan en cours se refait avec les nouvelles dispos (bouton dans Profil, `replanActive`).
 3. ~~Muscu~~ : fait (programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo guidé, double progression). Reste : bibliothèque d'exercices éditable, historique de charges en graphique.
-4. Nutrition : planificateur de gut training, log de tolérance, plan de course, carbo-loading.
+4. ~~Nutrition~~ : fait (gut training progressif, journal de tolérance, plan de course, carbo-loading).
 5. ~~Équipement~~ : fait (km par paire, rodage, usure, rotation, paire conseillée ; écran Équipement).
 6. Corps complet : carte corporelle, routine de prévention à cocher (mollets 2×/sem).
 7. Jalons et séries de semaines cohérentes, confettis sobres sur les vrais jalons.

@@ -372,3 +372,27 @@ export const SHOE_RETIRE_KM = 700;
 export const SHOE_WARN_REMAINING_SHARE = 0.15;
 /** Rotation : au-delà de ce nombre de km sur une même paire sans autre paire active, on conseille d'en alterner deux. */
 export const SHOE_ROTATION_MIN_KM = 100;
+
+// ─── Nutrition (gut training, plan de course, carbo-loading) ── À VALIDER par un nutritionniste du sport ──
+/** Glucides par heure visés selon la durée de l'effort (g/h) : [durée max min, g/h]. Au-delà de la dernière ligne : 90 g/h. */
+export const CARB_TARGET_BY_DURATION: [number, number][] = [[60, 0], [150, 60], [Infinity, 90]];
+/** Point de départ du gut training (g/h), puis pas de progression et plafond d'une semaine à l'autre. */
+export const GUT_START_CARBS_PER_H = 30;
+export const GUT_STEP_CARBS_PER_H = 10;
+/** Tolérance digestive (0 = aucun inconfort … 5 = très mal) : ≤ 1 on monte, 2 on garde, ≥ 3 on redescend. */
+export const GUT_TOLERANCE_UP_MAX = 1;
+export const GUT_TOLERANCE_HOLD_MAX = 2;
+/** Au-delà de ce niveau (g/h), un mélange glucose:fructose (≈ 2:1) est nécessaire pour l'absorption. */
+export const GUT_DUAL_TRANSPORT_FROM = 60;
+/** Liquides (mL/h) par température de course : [température max °C, mL/h]. */
+export const FLUID_ML_PER_H: [number, number][] = [[12, 400], [22, 550], [Infinity, 750]];
+/** Sodium (mg/h) : de base, et par temps chaud (> 22 °C). */
+export const SODIUM_MG_PER_H = 400;
+export const SODIUM_MG_PER_H_HOT = 700;
+export const HOT_TEMP_C = 22;
+/** Caféine : mg/kg, à prendre dans les derniers tiers d'une course de plus de 3 h seulement. */
+export const CAFFEINE_MG_PER_KG = 3;
+/** Carbo-loading : g/kg/jour pour les efforts de plus de 90 min (36-48 h avant) ; la veille d'un effort plus court. */
+export const CARB_LOADING_G_PER_KG = 8;
+export const CARB_LOADING_SHORT_G_PER_KG = 6;
+export const CARB_LOADING_MIN_RACE_MIN = 90;

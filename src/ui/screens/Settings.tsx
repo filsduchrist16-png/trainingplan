@@ -58,6 +58,7 @@ export function Settings() {
       <Card className="space-y-2">
         <Eyebrow>Raccourcis</Eyebrow>
         <Link to="/profil" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Profil : zones, FC max, dispos, calibration</Link>
+        <Link to="/nutrition" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Nutrition : gut training, plan de course, carbo-loading</Link>
         <Link to="/equipement" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Équipement : km par paire de chaussures</Link>
         <Link to="/muscu" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Séance de muscu libre</Link>
         <Link to="/sante" className="block rounded-xl bg-surface-2 p-3 hover:bg-line">Questionnaire santé</Link>

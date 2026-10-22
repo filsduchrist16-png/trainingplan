@@ -329,3 +329,26 @@ test('équipement : ajouter une paire neuve, la porter au log rapide, ses km mon
   await page.getByRole('link', { name: /Équipement/ }).click();
   await expect(page.getByRole('progressbar', { name: /Speedgoat neuve : \d+ km sur 700/ })).not.toHaveAttribute('aria-valuenow', '0');
 });
+
+test('nutrition : noter une sortie longue fait monter la cible de glucides', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /Nutrition/ }).click();
+  await expect(page.getByRole('heading', { name: "Nutrition d'effort" })).toBeVisible();
+  await expect(page.getByTestId('gut-next')).toContainText('30 g de glucides par heure');
+  await expect(page.getByRole('list', { name: 'Horaire des prises' })).toBeVisible();
+  await page.getByRole('link', { name: "Aujourd'hui" }).click();
+  await page.getByRole('button', { name: "C'est fait" }).click();
+  await page.getByRole('textbox', { name: 'Durée' }).fill('120');
+  await page.getByRole('button', { name: 'Noter ma nutrition' }).click();
+  await page.getByRole('textbox', { name: 'Glucides pris (total)' }).fill('100');
+  await page.getByRole('radio', { name: '0' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeHidden();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /Nutrition/ }).click();
+  await expect(page.getByTestId('gut-next')).toContainText('60 g de glucides par heure'); // 50 g/h bien toléré → +10
+  await expect(page.getByText('inconfort 0/5')).toBeVisible();
+});

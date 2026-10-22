@@ -178,6 +178,16 @@ Tendances calculées par règles ; chaque « découverte » est une Explanation 
 - **Paire conseillée** (`suggestShoe`) : active, adaptée au terrain (sentier pour le trail, route pour la route), jamais une paire à remplacer, ni en rodage pour une séance dure ; parmi les paires adaptées, la moins usée (la rotation se fait d'elle-même).
 - **Rotation** (`gearAdvice`) : une seule paire active depuis 100 km ou plus → conseil d'en alterner deux (`gear.rotation`) ; aucune paire → invitation à en ajouter (`gear.none`).
 
+## Nutrition d'effort (`nutrition.ts`)
+
+Repères prudents (pratique courante, À VALIDER par un nutritionniste du sport) ; rien de nouveau le jour de la course (`fuel.golden`).
+
+- **Cible de glucides** (`carbTarget`) : 0 sous 1 h, 60 g/h jusqu'à 2 h 30, 90 g/h au-delà.
+- **Gut training** (`gutPlan`) depuis le journal de tolérance (`nutritionLogs`, sorties de plus de 75 min seulement) : départ à 30 g/h ; dernière sortie sans inconfort (0-1) → +10 g/h, jusqu'à l'objectif de course (`gut.up`, `gut.goal`) ; inconfort 2 → on garde (`gut.hold`) ; 3 et plus → −10 g/h, sans passer sous 30 (`gut.down`). Au-delà de 60 g/h, un mélange glucose et fructose (≈ 2:1) est conseillé.
+- **Plan de course** (`racePlan`) : une prise toutes les 30 min vers la cible (jamais une demi-dose), liquides selon la température (400 / 550 / 750 mL/h), sodium (400, 700 mg/h au-dessus de 22 °C), caféine 3 mg/kg dans le dernier tiers d'une course de 3 h et plus (si déjà testée), avertissements (`fuel.dual`, `fuel.none`, `fuel.hot`).
+- **Carbo-loading** (`carboLoading`) : au-delà de 90 min, 8 g/kg/jour pendant 2 jours ; sinon un bon repas la veille (6 g/kg).
+- L'écran Nutrition affiche ce que décide le moteur ; la saisie se fait au log rapide (glucides, liquide, inconfort 0-5) pour les sorties de 75 min et plus. Le journal de tolérance est local : rien n'est envoyé.
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |
