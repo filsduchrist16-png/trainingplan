@@ -10,7 +10,7 @@ Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités vien
 
 **Reporté (backlog, par ordre de valeur) :**
 1. Progrès complet : FC vs allure en Z2, découvertes (« ton Z2 est 18 s/km plus rapide »), distribution par zones vs 80/10/10, VO2max lissée, cadence, VFC et FC repos.
-2. ~~Profil / zones~~ : fait (zones auto ou manuelles, FC max par test, niveau de forme, dispos). Reste : régénérer le plan en cours après un changement de dispos.
+2. ~~Profil / zones~~ : fait (zones auto ou manuelles, FC max par test, niveau de forme, dispos). Le plan en cours se refait avec les nouvelles dispos (bouton dans Profil, `replanActive`).
 3. Muscu : programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo excentrique guidé, double progression.
 4. Nutrition : planificateur de gut training, log de tolérance, plan de course, carbo-loading.
 5. Équipement : km par soulier, rodage (200 km), usure, rotation.

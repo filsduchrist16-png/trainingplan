@@ -257,3 +257,18 @@ test('répertoire des courses du Québec : choisir une course pré-remplit nom, 
   await first.click();
   await expect(page.getByRole('textbox', { name: /Nom/ })).toHaveValue(title);
 });
+
+test('profil : refaire le plan avec de nouvelles dispos', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /^Profil/ }).click();
+  const replan = page.getByRole('button', { name: 'Refaire mon plan avec ces dispos' });
+  await replan.scrollIntoViewIfNeeded();
+  // Le message « Sentier marche maintenant hors-ligne » peut recouvrir le bas de la page.
+  const ok = page.getByRole('button', { name: 'OK', exact: true });
+  if (await ok.isVisible()) await ok.click();
+  await replan.click({ force: true });
+  await expect(page.getByText(/Plan refait avec tes nouvelles dispos|Le plan n'a pas changé/)).toBeVisible();
+});

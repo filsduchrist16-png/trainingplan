@@ -6,7 +6,7 @@ import { createBlankAthlete } from './athlete';
 import { SentierDB } from './db';
 import { linkActivity } from './import';
 import { logManual } from './log';
-import { createPlan } from './planner';
+import { createPlan, replanActive } from './planner';
 import { syncRunWalk } from './runwalk';
 import { stamp } from './ids';
 
@@ -84,5 +84,39 @@ describe('T7 — l’échelle suit le réalisé', () => {
     await createPlan(db, athlete, { request: request({ goal: 'route_10k', experience: 'regulier', currentWeeklyKm: 30, continuousMin: 60, race: { date: '2026-09-12', distanceKm: 10, elevationGainM: 0 } }) }, START, START);
     expect(await syncRunWalk(db, athlete.id, '2026-04-24')).toBeUndefined();
     expect((await db.athletes.get(athlete.id))!.runWalk).toBeUndefined();
+  });
+});
+
+describe('refaire le plan avec de nouvelles dispos', () => {
+  it('même objectif, séances faites gardées, progression de l’échelle conservée, nouvelles dispos appliquées', async () => {
+    await createPlan(db, athlete, { request: request() }, START, START);
+    await log('2026-04-21', 4);
+    await log('2026-04-23', 3);
+    await syncRunWalk(db, athlete.id, '2026-04-24'); // palier 5
+    await db.athletes.update(athlete.id, { availability: { ...athlete.availability, runDaysPerWeek: 2, allowedDays: [3, 6] } });
+    const r = await replanActive(db, athlete.id, '2026-04-24');
+    expect(r.ok).toBe(true);
+    const blocks = await db.blocks.toArray();
+    expect(blocks.map((b) => b.status).sort()).toEqual(['actif', 'archive']);
+    expect((await db.sessions.where('status').equals('faite').toArray())).toHaveLength(2);
+    const future = (await db.sessions.where('date').aboveOrEqual('2026-04-24').toArray()).filter((s) => s.type === 'marche_course');
+    expect(future.length).toBeGreaterThan(0);
+    // 2 sorties par semaine : mercredi et samedi seulement.
+    expect(new Set(future.map((s) => new Date(`${s.date}T12:00:00`).getDay()))).toEqual(new Set([3, 6]));
+    expect((await db.athletes.get(athlete.id))!.runWalk!.state.stage).toBe(5);
+    expect(future[0]!.title).toMatch(/2 min course/);
+  });
+  it('sans plan actif, ou plan refusé par le moteur : rien ne change', async () => {
+    expect(await replanActive(db, athlete.id, START)).toEqual({ ok: false, warnings: [] });
+    await createPlan(db, athlete, { request: request() }, START, START);
+    await db.athletes.update(athlete.id, { availability: { ...athlete.availability, runDaysPerWeek: 3 } });
+    const before = await db.sessions.count();
+    // Un questionnaire bloquant refuse le nouveau plan.
+    await db.athletes.update(athlete.id, { health: { answers: { q1: false, q2: true, q3: false, q4: false, q5: false, q6: false, q7: false, q8: false, q9: true }, answeredAt: '2026-04-01', conditions: [] } });
+    const r = await replanActive(db, athlete.id, START);
+    expect(r.ok).toBe(false);
+    expect(r.warnings![0]!.ruleId).toBe('health.clearance');
+    expect(await db.sessions.count()).toBe(before);
+    expect((await db.blocks.toArray()).map((b) => b.status)).toEqual(['actif']);
   });
 });

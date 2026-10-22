@@ -200,3 +200,22 @@ export async function applyEvaluation(db: SentierDB, athleteId: string, minutes:
   const r = await createPlan(db, athlete, { request, raceName: block.name, ...(block.raceId ? { raceId: block.raceId } : {}) }, today, addDays(today, 1));
   return { ok: r.ok, warnings: r.warnings };
 }
+
+/**
+ * Refait le plan actif avec les disponibilités (et le profil santé) actuels de l'athlète : même objectif, même course,
+ * mêmes séances faites. L'échelle marche/course garde sa progression. Si le moteur refuse le plan, rien ne change.
+ */
+export async function replanActive(db: SentierDB, athleteId: string, today: ISODate): Promise<{ ok: boolean; warnings: Block['warnings'] }> {
+  const athlete = await db.athletes.get(athleteId);
+  const block = await db.blocks.where('status').equals('actif').filter((b) => b.athleteId === athleteId).first();
+  if (!athlete || !block?.request) return { ok: false, warnings: [] };
+  const previous = block.request as PlanRequest;
+  const request: PlanRequest = {
+    ...previous, startDate: today, availability: athlete.availability, screening: undefined, profile: undefined,
+    runWalk: block.runWalkStart ? athlete.runWalk?.state : undefined,
+  };
+  // Une séance déjà faite aujourd'hui reste : le nouveau plan commence demain.
+  const doneToday = (await db.sessions.where('date').equals(today).filter((s) => s.athleteId === athleteId && s.status === 'faite').count()) > 0;
+  const r = await createPlan(db, athlete, { request, raceName: block.name, ...(block.raceId ? { raceId: block.raceId } : {}) }, today, doneToday ? addDays(today, 1) : today);
+  return { ok: r.ok, warnings: r.warnings };
+}

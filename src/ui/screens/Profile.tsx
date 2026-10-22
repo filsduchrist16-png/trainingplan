@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router';
-import { hrMaxFromTest, pacesFromVdot, formatPace, vdotFromRace, isPlausibleVdot, zonesFromHrMax, zonesKarvonen, type Athlete, type Weekday, type ZoneBounds } from '@/engine';
+import { hrMaxFromTest, pacesFromVdot, formatPace, vdotFromRace, isPlausibleVdot, zonesFromHrMax, zonesKarvonen, toIsoDate, type Athlete, type Weekday, type ZoneBounds } from '@/engine';
 import { db } from '@/data/db';
 import { updateAthlete } from '@/data/athlete';
 import { parseFile } from '@/data/import';
+import { replanActive } from '@/data/planner';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
 import { Chip, Field, Segmented, Stepper, TextInput } from '@/ui/components/forms';
@@ -91,7 +93,7 @@ function ProfileFor({ athlete }: { athlete: Athlete }) {
         </Field>
         <Stepper label="Max en semaine" value={athlete.availability.maxWeekdayMinutes} step={15} min={20} max={180} unit="min" onChange={(v) => void save({ availability: { ...athlete.availability, maxWeekdayMinutes: v } })} />
         <Stepper label="Max la fin de semaine" value={athlete.availability.maxWeekendMinutes} step={15} min={30} max={480} unit="min" onChange={(v) => void save({ availability: { ...athlete.availability, maxWeekendMinutes: v } })} />
-        <p className="text-xs text-muted">Ça s'applique aux prochains plans. Pour refaire le plan actuel avec ces dispos, crée un <Link to="/objectif" className="underline underline-offset-4">nouvel objectif</Link> : l'ancien est archivé, tes séances faites restent.</p>
+        <Replan athlete={athlete} />
       </Card>
 
       {msg && <p role="status" className="text-center text-sm text-ok">{msg}</p>}
@@ -187,5 +189,27 @@ function Calibration({ athlete, onSave }: { athlete: Athlete; onSave: (p: Partia
         {athlete.vdot && <p className="text-xs text-muted">Niveau actuel : {athlete.vdot} ({athlete.vdotSource ?? 'estimé'}).</p>}
       </div>
     </Card>
+  );
+}
+
+/** Refaire le plan actif avec les dispos actuelles (l'ancien est archivé, les séances faites restent). */
+function Replan({ athlete }: { athlete: Athlete }) {
+  const hasPlan = useLiveQuery(async () => (await db.blocks.where('status').equals('actif').filter((b) => b.athleteId === athlete.id).count()) > 0, [athlete.id]);
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'refused'>('idle');
+  const [reason, setReason] = useState('');
+  if (!hasPlan) return <p className="text-xs text-muted">Ça s'applique à ton prochain plan (<Link to="/objectif" className="underline underline-offset-4">nouvel objectif</Link>).</p>;
+  async function run() {
+    setState('busy');
+    const r = await replanActive(db, athlete.id, toIsoDate(new Date()));
+    setReason(r.warnings?.[0]?.why ?? '');
+    setState(r.ok ? 'done' : 'refused');
+  }
+  return (
+    <div className="space-y-2">
+      <Button variant="outline" size="sm" disabled={state === 'busy'} onClick={run}>Refaire mon plan avec ces dispos</Button>
+      <p className="text-xs text-muted">L'ancien plan est archivé, tes séances faites restent, et la progression marche/course est conservée.</p>
+      {state === 'done' && <p role="status" className="text-sm text-ok">Plan refait avec tes nouvelles dispos.</p>}
+      {state === 'refused' && <p role="alert" className="text-sm text-warn">Le plan n'a pas changé. {reason}</p>}
+    </div>
   );
 }
