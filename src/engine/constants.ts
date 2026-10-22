@@ -331,3 +331,13 @@ export const EVALUATION_WALK_MIN = 5;
 export const EVALUATION_MAX_RUN_MIN = 10;
 /** Au-delà de cette distance (km), courir l'épreuve en marche/course n'est plus une option raisonnable : objectif irréaliste. À VALIDER. */
 export const RUNWALK_RACE_MAX_KM = 10;
+
+// ─── Muscu (programmes et double progression) ── schémas À VALIDER (pratique courante) ──
+/** Incrément de charge quand toutes les séries atteignent le haut de la fourchette (kg). */
+export const STRENGTH_LOAD_STEP_KG = 2.5;
+/** RPE au-delà duquel on ne monte pas la charge, même si les reps sont atteintes. */
+export const STRENGTH_PROGRESS_MAX_RPE = 8;
+/** Séances de force : débutants plafonnés à 3 séries, fourchettes de reps plus hautes (technique d'abord). */
+export const STRENGTH_NOVICE_MAX_SETS = 3;
+/** Repos par défaut entre deux séries (s), selon l'objectif de la phase. */
+export const STRENGTH_REST_SEC = { fondation: 60, force: 120, maintien: 90 } as const;
