@@ -16,9 +16,17 @@
         else if (t === 'system' && matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
+    <style>
+      /* Écran de démarrage : du texte visible dès le HTML, avant le JavaScript (React le remplace au premier rendu). */
+      body { margin: 0; background: #0f201b; color: #e6ebe4; font-family: ui-sans-serif, system-ui, sans-serif; }
+      [data-theme='light'] body { background: #eef0ea; color: #13261f; }
+      #boot { max-width: 28rem; margin: 0 auto; padding: 4.5rem 1rem 0; }
+      #boot .b-brand { margin: 0 0 .75rem; font-size: 2.25rem; font-weight: 600; letter-spacing: -.01em; }
+      #boot .b-tag { margin: 0; font-size: 1.25rem; line-height: 1.4; opacity: .75; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="boot" aria-hidden="true"><p class="b-brand">Sentier</p><p class="b-tag">Ton plan de course qui s'adapte à ta vie. Pas l'inverse.</p></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

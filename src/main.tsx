@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
+import { LazyMotion, MotionConfig } from 'motion/react';
 import { RouterProvider } from 'react-router/dom';
 import { router } from './app/routes';
 import { db, requestPersistence } from './data/db';
@@ -15,8 +15,8 @@ if (cloudConfigured) void import('./data/cloud/session').then((m) => m.startClou
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* LazyMotion + `m` : seules les fonctions d'animation DOM sont chargées (bundle plus léger). */}
-    <LazyMotion features={domAnimation} strict>
+    {/* LazyMotion + `m` : les fonctions d'animation DOM se chargent après le premier rendu (bundle initial plus léger). */}
+    <LazyMotion features={() => import('./ui/design/motionFeatures').then((m) => m.default)} strict>
       <MotionConfig reducedMotion="user">
         <RouterProvider router={router} />
       </MotionConfig>

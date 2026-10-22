@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -24,6 +24,21 @@ function buildInfo() {
   return { version, commit: commit.slice(0, 7), date: new Date().toISOString() };
 }
 
+/**
+ * Feuille de style non bloquante : le HTML contient déjà l'écran de démarrage avec ses styles en ligne, donc le premier
+ * affichage n'attend plus le CSS. La feuille s'applique dès son arrivée (avant le JavaScript en pratique).
+ */
+function nonBlockingCss(): Plugin {
+  return {
+    name: 'sentier-non-blocking-css',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler: (html) => html.replace(/<link rel="stylesheet"([^>]*?) href="([^"]+\.css)">/g, '<link rel="stylesheet"$1 href="$2" media="print" onload="this.media=\'all\'"><noscript><link rel="stylesheet" href="$2"></noscript>'),
+    },
+  };
+}
+
 export default defineConfig({
   define: { __APP_BUILD__: JSON.stringify(buildInfo()) },
   resolve: {
@@ -32,6 +47,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    nonBlockingCss(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
@@ -55,6 +71,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/robots\.txt$/],
       },
     }),
   ],

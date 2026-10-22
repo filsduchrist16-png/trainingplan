@@ -1,21 +1,19 @@
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from './AppShell';
-import { Today } from '@/ui/screens/Today';
-import { Settings } from '@/ui/screens/Settings';
 import { Placeholder } from '@/ui/screens/Placeholder';
 
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
     children: [
-      { index: true, element: <Today /> },
+      { index: true, lazy: async () => ({ Component: (await import('@/ui/screens/Home')).Home }) },
       { path: 'plan', lazy: async () => ({ Component: (await import('@/ui/screens/Plan')).Plan }) },
       { path: 'seance/:id', lazy: async () => ({ Component: (await import('@/ui/screens/SessionDetail')).SessionDetail }) },
       { path: 'importer', lazy: async () => ({ Component: (await import('@/ui/screens/Import')).Import }) },
       { path: 'activite/:id', lazy: async () => ({ Component: (await import('@/ui/screens/ActivityDebrief')).ActivityDebrief }) },
       { path: 'progres', lazy: async () => ({ Component: (await import('@/ui/screens/Progress')).Progress }) },
       { path: 'corps', lazy: async () => ({ Component: (await import('@/ui/screens/Body')).Body }) },
-      { path: 'plus', element: <Settings /> },
+      { path: 'plus', lazy: async () => ({ Component: (await import('@/ui/screens/Settings')).Settings }) },
       { path: 'nutrition', lazy: async () => ({ Component: (await import('@/ui/screens/Nutrition')).Nutrition }) },
       { path: 'equipement', lazy: async () => ({ Component: (await import('@/ui/screens/Equipement')).Equipement }) },
       { path: 'muscu', lazy: async () => ({ Component: (await import('@/ui/screens/Muscu')).Muscu }) },
