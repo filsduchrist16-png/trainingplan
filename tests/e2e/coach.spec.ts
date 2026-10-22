@@ -305,3 +305,27 @@ test('progrès : tendances calculées par le moteur à partir de l’historique 
   await expect(page.getByRole('heading', { name: 'Efficacité aérobie' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'VO2max estimée' })).toBeVisible();
 });
+
+test('équipement : ajouter une paire neuve, la porter au log rapide, ses km montent', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await expect(page.getByText('Séance du jour')).toBeVisible();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /Équipement/ }).click();
+  await expect(page.getByRole('heading', { name: 'Équipement' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Peregrine 15' })).toBeVisible();
+  await page.getByRole('button', { name: 'Ajouter une paire' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('Speedgoat neuve');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('heading', { name: 'Speedgoat neuve' })).toBeVisible();
+  await expect(page.getByText('En rodage').first()).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: /Speedgoat neuve : 0 km sur 700/ })).toBeVisible();
+  await page.getByRole('link', { name: "Aujourd'hui" }).click();
+  await page.getByRole('button', { name: "C'est fait" }).click();
+  await page.getByRole('button', { name: /Speedgoat neuve · 0 km/ }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeHidden();
+  await page.getByRole('link', { name: 'Plus' }).click();
+  await page.getByRole('link', { name: /Équipement/ }).click();
+  await expect(page.getByRole('progressbar', { name: /Speedgoat neuve : \d+ km sur 700/ })).not.toHaveAttribute('aria-valuenow', '0');
+});

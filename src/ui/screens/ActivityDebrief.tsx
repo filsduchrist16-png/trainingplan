@@ -7,12 +7,14 @@ import { m } from 'motion/react';
 import { debrief, formatPace, toIsoDate, type BodyZone } from '@/engine';
 import { db } from '@/data/db';
 import { stamp } from '@/data/ids';
+import { setActivityShoe } from '@/data/gear';
 import { syncRunWalk } from '@/data/runwalk';
 import { Button } from '@/ui/components/Button';
 import { Card, Eyebrow } from '@/ui/components/Card';
 import { EmptyState } from '@/ui/components/EmptyState';
 import { Chip, Field, Segmented } from '@/ui/components/forms';
 import { HrChart, ZoneBar } from '@/ui/components/HrChart';
+import { ShoePicker } from '@/ui/components/ShoePicker';
 import { Why } from '@/ui/components/Why';
 import { useActiveAthlete } from '@/ui/hooks/useAthlete';
 import { cn } from '@/ui/lib/cn';
@@ -97,6 +99,7 @@ export function ActivityDebrief() {
           ))}
         </Card>
       )}
+      {(a.sport === 'course' || a.sport === 'trail') && <Card><ShoePicker athleteId={athlete.id} value={a.shoeId} onChange={(id) => void setActivityShoe(db, a.id, id)} trail={a.sport === 'trail'} /></Card>}
       {!data.subjective && <SubjectiveForm activityId={a.id} athleteId={athlete.id} date={a.date} runWalk={data.session?.type === 'marche_course'} />}
     </div>
   );

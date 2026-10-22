@@ -171,6 +171,13 @@ Tendances calculées par règles ; chaque « découverte » est une Explanation 
 - **Cadence** hebdomadaire pondérée par la durée, avec la zone cible ; **VO2max** lissée sur 3 mesures ; **FC repos** : moyenne 7 jours contre la base des 28 jours d'avant (+5 bpm → `.restinghr.up`, attention ; −5 bpm → `.down`) ; **VFC** : jours déséquilibrés sur 7 jours.
 - L'écran Progrès affiche les courbes (Sparkline) et la phrase du moteur ; il ne contient aucune règle.
 
+## Équipement (`gear.ts`)
+
+- **Km d'une paire** = km initiaux + km des sorties associées (`shoesWithKm`, couche data). La paire se choisit au log rapide et dans le debrief d'une activité importée ; ★ marque la paire conseillée pour la sortie.
+- **État** (`shoeStatus`, seuils `SHOE_*` À VALIDER) : *rodage* (neuve : 50 km, `gear.breakin`), *ok*, *usure* (moins de 15 % de la durée de vie restante, `gear.wear`), *retraite* (700 km par défaut, `gear.retire`).
+- **Paire conseillée** (`suggestShoe`) : active, adaptée au terrain (sentier pour le trail, route pour la route), jamais une paire à remplacer, ni en rodage pour une séance dure ; parmi les paires adaptées, la moins usée (la rotation se fait d'elle-même).
+- **Rotation** (`gearAdvice`) : une seule paire active depuis 100 km ou plus → conseil d'en alterner deux (`gear.rotation`) ; aucune paire → invitation à en ajouter (`gear.none`).
+
 ## Garde-fous santé (`evaluateHealth`)
 
 | Signal | Effet |

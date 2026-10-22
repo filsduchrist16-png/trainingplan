@@ -362,3 +362,13 @@ export const PROGRESS_DISTRIBUTION_WEEKS = 4;
 export const PROGRESS_RESTING_HR_ALERT = 5;
 /** Lissage de la VO2max estimée (points de la moyenne glissante). */
 export const PROGRESS_VO2_SMOOTHING = 3;
+
+// ─── Équipement (chaussures) ── seuils À VALIDER (pratique courante) ──
+/** Rodage par défaut d'une paire neuve de trail / de route (km). Le rodage est surtout une règle de prudence pour les chaussures neuves. */
+export const SHOE_BREAK_IN_KM = 50;
+/** Durée de vie par défaut d'une paire (km) : fourchette courante 600-800 km. */
+export const SHOE_RETIRE_KM = 700;
+/** On prévient quand il reste moins de cette part de la durée de vie. */
+export const SHOE_WARN_REMAINING_SHARE = 0.15;
+/** Rotation : au-delà de ce nombre de km sur une même paire sans autre paire active, on conseille d'en alterner deux. */
+export const SHOE_ROTATION_MIN_KM = 100;

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { C, toIsoDate, type Athlete, type BodyZone, type PlannedSession } from '@/engine';
+import { C, isRunType, toIsoDate, type Athlete, type BodyZone, type PlannedSession } from '@/engine';
 import { db } from '@/data/db';
 import { logManual } from '@/data/log';
 import { applyEvaluation } from '@/data/planner';
 import { Button } from './Button';
 import { Chip, Field, Segmented, Stepper } from './forms';
 import { Sheet } from './Sheet';
+import { ShoePicker } from './ShoePicker';
 
 const PAIN: { z: BodyZone; label: string }[] = [
   { z: 'tibia_g', label: 'Tibia G' }, { z: 'tibia_d', label: 'Tibia D' }, { z: 'achille_g', label: 'Achille G' }, { z: 'achille_d', label: 'Achille D' }, { z: 'genou_g', label: 'Genou G' }, { z: 'genou_d', label: 'Genou D' },
@@ -19,7 +20,9 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
   const runWalk = session?.type === 'marche_course';
   const [completed, setCompleted] = useState(true);
   const evaluation = session?.type === 'evaluation';
+  const isRunSession = !session || isRunType(session.type);
   const [ranMin, setRanMin] = useState(C.EVALUATION_MAX_RUN_MIN);
+  const [shoeId, setShoeId] = useState<string | undefined>(undefined);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [pain, setPain] = useState<{ zone: BodyZone; intensity: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,6 +38,7 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
         distanceKm: distance,
         elevationGainM: session?.elevationGainM,
         rpe,
+        ...(shoeId ? { shoeId } : {}),
         ...(runWalk ? { completed } : {}),
         feeling,
         pains: pain ? [pain] : [],
@@ -64,6 +68,7 @@ export function QuickLogSheet({ open, onClose, athlete, session, date }: { open:
         <Field label={`Effort perçu (RPE) : ${rpe}/10`} hint="1 = marche tranquille · 5 = soutenu · 10 = à bloc">
           <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full accent-[var(--accent)]" aria-label="RPE" />
         </Field>
+        {isRunSession && <ShoePicker athleteId={athlete.id} value={shoeId} onChange={setShoeId} trail={['cotes_longues', 'descentes', 'longue_specifique', 'back_to_back'].includes(session?.type ?? '')} hard={session?.isKey === true} />}
         <Field label="Sensations" group>
           <Segmented label="Sensations" value={feeling} onChange={setFeeling} options={[{ value: 1, label: '😖' }, { value: 2, label: '😕' }, { value: 3, label: '😐' }, { value: 4, label: '🙂' }, { value: 5, label: '😄' }]} />
         </Field>

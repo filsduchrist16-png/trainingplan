@@ -11,6 +11,8 @@ export interface QuickLog {
   distanceKm?: number;
   elevationGainM?: number;
   rpe: number;
+  /** Paire de chaussures portée. */
+  shoeId?: string;
   /** Marche/course : « J'ai fait tous les intervalles ». */
   completed?: boolean;
   feeling?: Subjective['feeling'];
@@ -39,6 +41,7 @@ export async function logManual(db: SentierDB, athlete: Athlete, q: QuickLog): P
       distanceKm: q.distanceKm ?? 0,
       elevationGainM: q.elevationGainM ?? 0,
       elevationLossM: q.elevationGainM ?? 0,
+      ...(q.shoeId ? { shoeId: q.shoeId } : {}),
       load,
     }, id));
     await db.subjectives.add(stamp({ athleteId: athlete.id, date: q.date, activityId: id, rpe: q.rpe, ...(q.completed !== undefined ? { completed: q.completed } : {}), ...(q.feeling ? { feeling: q.feeling } : {}), pains: q.pains, context: [], ...(q.notes ? { notes: q.notes } : {}) }));
