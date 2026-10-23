@@ -216,6 +216,14 @@ export const WALK_FIRST_TARGET_MIN = 30;
 export const BASE_WEEKS_AFTER_RUNWALK = 4;
 /** Z2 minimum avant des strides : en dessous, la séance devient une sortie facile. À VALIDER (pratique courante). */
 export const STRIDES_MIN_BASE_MIN = 10;
+/**
+ * Séance de qualité trop longue pour le temps du jour : échauffement et retour au calme raccourcis à ces durées (min),
+ * puis une répétition de moins à la fois, jamais sous QUALITY_MIN_REPS ni sous la moitié des répétitions prévues
+ * (sinon la séance perd son sens et devient facile). À VALIDER.
+ */
+export const QUALITY_SHORT_WARMUP_MIN = 10;
+export const QUALITY_SHORT_COOLDOWN_MIN = 5;
+export const QUALITY_MIN_REPS = 2;
 /** Strides et sprints en côte seulement quand on court au moins 30 min d'affilée (sortie longue ≥ 30 min). */
 export const STRIDES_MIN_CONTINUOUS_MIN = 30;
 /** Démarrage : au plus 3 séances par semaine, jamais deux jours de suite. */
@@ -226,6 +234,11 @@ export const RUN_WALK_LONG_DAY_EXTRA_WALK_MIN = 10;
 export const RUN_WALK_FIRST_INTERVAL_SHARE = 0.5;
 /** Volume de départ minimal d'un plan démarrage (≈ 3 × 20 min de marche-course). */
 export const DEMARRAGE_START_KM = 6;
+/**
+ * Reprise sans volume actuel (0 km/sem) mais en course continue : chaque sortie de départ vaut cette part de ce qu'on
+ * court d'une traite (on garde de la marge après une pause). À VALIDER.
+ */
+export const RESTART_RUN_SHARE = 0.75;
 
 /** Longueur maximale d'un plan. Au-delà, le plan démarre plus tard et on garde la forme d'ici là. */
 export const MAX_PLAN_WEEKS = 52;
@@ -245,6 +258,14 @@ export const LONG_RUN_SHARE_BY_PHASE = {
 export const LONG_RUN_SHARE_LONG_GOALS = { spec1: 0.35, spec2: 0.4, precomp: 0.4 } as const;
 /** Seuil (minutes de longue max de l'objectif) au-delà duquel un objectif est « long ». */
 export const LONG_GOAL_MIN_LONG_RUN_MIN = 180;
+/**
+ * Prêt pour la course : la plus longue sortie atteinte avant l'affûtage vaut au moins cette part de l'épreuve
+ * (en km-effort, D+ compris). En dessous, le plan le dit et propose un objectif plus court ou une date plus lointaine.
+ * Ordres de grandeur des plans « finir en santé ». À VALIDER.
+ */
+export const RACE_READY_LONG_RUN_SHARE = {
+  route_5k: 0.8, route_10k: 0.7, route_semi: 0.6, route_marathon: 0.5, trail_court: 0.5, trail_moyen: 0.4, ultra: 0.3,
+} as const;
 
 /**
  * Croissance de la sortie longue : +10 % de la plus longue sortie récente, sans pas minimum
@@ -263,6 +284,8 @@ export const ELEVATION_PHASE_FACTOR = {
 
 /** Sortie facile minimale : en dessous, mieux vaut un jour de repos. */
 export const MIN_EASY_RUN_KM = 3;
+/** Une sortie facile un peu sous le minimum (arrondis) est gardée plutôt que retirée : jusqu'à 10 % sous. À VALIDER. */
+export const EASY_RUN_MIN_TOLERANCE = 0.1;
 /** Durée d'une séance de muscu (min). */
 export const STRENGTH_SESSION_MIN = 45;
 /** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */

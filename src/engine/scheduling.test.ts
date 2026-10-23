@@ -283,6 +283,54 @@ describe('débutant : ni test à fond ni séance dure plus longue que la longue'
   });
 });
 
+describe('temps disponible du jour', () => {
+  const dayCap = (sessions: SessionDraft[], av: Availability) => sessions.filter((x) => isRunType(x.type) && x.type !== 'repos' && x.type !== 'course' && !x.type.startsWith('longue')).every((x) => {
+    const wd = weekday(x.date);
+    return x.durationMin <= (wd === av.longRunDay || wd >= 6 ? av.maxWeekendMinutes : av.maxWeekdayMinutes);
+  });
+  it('les séances clés sont raccourcies (échauffement, répétitions) pour tenir dans le temps du jour', () => {
+    const av = { ...avail, maxWeekdayMinutes: 45 };
+    const { weeks } = fullPlan('route_10k', { currentWeeklyKm: 40, longestRecentRunKm: 14, availability: av });
+    for (const w of weeks) expect(dayCap(w.sessions, av), `semaine ${w.week.index}`).toBe(true);
+    const keys = weeks.flatMap((w) => w.sessions).filter((x) => x.isKey && x.type !== 'course' && !x.type.startsWith('longue'));
+    expect(keys.length).toBeGreaterThan(5);
+    expect(keys.some((x) => x.steps[0]!.minutes === 10)).toBe(true);
+  });
+  it('une séance clé qui ne tient pas, même raccourcie, devient facile, et on le dit (même en semaine de course)', () => {
+    const av = { ...avail, maxWeekdayMinutes: 20 };
+    const { weeks } = fullPlan('route_10k', { currentWeeklyKm: 40, longestRecentRunKm: 14, availability: av });
+    for (const w of weeks) expect(dayCap(w.sessions, av), `semaine ${w.week.index}`).toBe(true);
+    const notes = weeks.flatMap((w) => w.notes);
+    expect(notes.map((n) => n.ruleId)).toContain('week.quality.daycap');
+    expect(notes.find((n) => n.ruleId === 'week.quality.daycap')!.why).toMatch(/20 min/);
+    const race = weeks.at(-1)!;
+    expect(race.sessions.some((x) => x.type === 'course')).toBe(true);
+  });
+  it('sortie longue sous 30 min : la séance clé remplacée est une sortie facile, sans strides', () => {
+    const av = { ...avail, maxWeekdayMinutes: 20 };
+    const week = generatePlan({ goal: 'route_10k', startDate: START, race: { date: '2026-10-24', distanceKm: 10, elevationGainM: 0 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 40, longestRecentRunKm: 14, availability: av }).weeks.find((w) => w.phase === 'precomp')!;
+    const out = buildWeekSessions({ ...week, kind: 'taper', longRunKm: 4, longestRunKm: undefined, targetKm: 12 }, { goal: 'route_10k', family: 'route', availability: av, experience: 'regulier', hrMaxEstimated: false, hasPoles: false, planWeek: 20, phaseWeek: 0 });
+    const n = out.notes.find((x) => x.ruleId === 'week.quality.daycap')!;
+    expect(n.why).not.toMatch(/strides/);
+  });
+  it('course B un jour de semaine très court : la séance clé devient facile', () => {
+    const av = { ...avail, maxWeekdayMinutes: 20 };
+    const bRace = { date: addDays(START, 12 * 7 + 6), distanceKm: 10 };
+    const plan = generatePlan({ goal: 'route_10k', startDate: START, race: { date: '2026-10-24', distanceKm: 10, elevationGainM: 0 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 40, longestRecentRunKm: 14, availability: av, bRaces: [bRace] });
+    const week = plan.weeks.find((w) => w.bRaceDate)!;
+    const out = buildWeekSessions({ ...week, keySessions: 3 }, { goal: 'route_10k', family: 'route', availability: av, experience: 'regulier', hrMaxEstimated: false, hasPoles: false, planWeek: 12, phaseWeek: 1, bRace });
+    expect(out.sessions.some((x) => x.type === 'course' && x.date === bRace.date)).toBe(true);
+    expect(dayCap(out.sessions, av)).toBe(true);
+    expect(out.notes.map((n) => n.ruleId)).toContain('week.quality.daycap');
+  });
+  it('sprints en côte qui ne tiennent pas dans le temps du jour : sortie facile à la place', () => {
+    const av = { ...avail, maxWeekdayMinutes: 12 };
+    const { weeks } = fullPlan('route_10k', { currentWeeklyKm: 40, longestRecentRunKm: 14, availability: av });
+    expect(weeks.flatMap((w) => w.sessions).some((x) => x.type === 'hill_sprints')).toBe(false);
+    for (const w of weeks) expect(dayCap(w.sessions, av), `semaine ${w.week.index}`).toBe(true);
+  });
+});
+
 describe('T3 — semaines de démarrage', () => {
   const zero = { experience: 'jamais' as const, currentWeeklyKm: 0, vdot: undefined, availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] as Availability['allowedDays'] } };
   const forbidden = ['longue_facile', 'longue_specifique', 'back_to_back', 'strides', 'hill_sprints', 'descentes', 'test', 'plyo'];
@@ -613,5 +661,20 @@ describe('T13 — objectif irréaliste et séance d’évaluation', () => {
     const { plan, weeks } = fullPlan('route_10k', zero);
     expect(plan.start!.evaluation).toBe(false);
     expect(weeks[0]!.sessions.some((s) => s.type === 'evaluation')).toBe(false);
+  });
+});
+
+describe('départ en cours de semaine', () => {
+  it('la 1re séance à venir porte le 1er palier prévu, pas celui d’une séance déjà passée', () => {
+    const three: Availability = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6], longRunDay: 6 };
+    const friday = addDays(START, 4);
+    const plan = generatePlan({ goal: 'debuter', startDate: friday, experience: 'jamais', difficulty: 'equilibre', currentWeeklyKm: 0, continuousMin: 3, availability: three });
+    const monday = generatePlan({ goal: 'debuter', startDate: START, experience: 'jamais', difficulty: 'equilibre', currentWeeklyKm: 0, continuousMin: 3, availability: three });
+    const ctx = { goal: 'debuter' as const, family: 'debuter' as const, availability: three, experience: 'jamais' as const, hrMaxEstimated: true, hasPoles: false, planWeek: 0, phaseWeek: 0 };
+    const first = buildWeekSessions(plan.weeks[0]!, { ...ctx, fromDate: friday }).sessions.filter((s) => s.type === 'marche_course');
+    const ref = buildWeekSessions(monday.weeks[0]!, ctx).sessions.filter((s) => s.type === 'marche_course');
+    expect(first).toHaveLength(1);
+    expect(first[0]!.date).toBe(addDays(START, 5));
+    expect(first[0]!.steps[1]).toEqual(ref[0]!.steps[1]);
   });
 });

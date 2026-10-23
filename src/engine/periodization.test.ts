@@ -114,7 +114,11 @@ describe('cas limites', () => {
     const p = generatePlan(req({ race: { date: addDays(START, 4 * 7 + 5), distanceKm: 43, elevationGainM: 1500 } }));
     expect(p.weeks).toHaveLength(5);
     assertTenPercentRule(p.weeks.map((w) => w.targetKm), [25]);
-    expect(p.warnings.map((w) => w.ruleId)).toEqual(expect.arrayContaining(['plan.short', 'peak.unreachable']));
+    // 5 semaines pour 43 km : la sortie longue n'y arrivera pas, et le plan le dit (au lieu de « pas grave »).
+    expect(p.warnings.map((w) => w.ruleId)).toEqual(expect.arrayContaining(['plan.short', 'plan.longrun.short']));
+    expect(p.warnings.map((w) => w.ruleId)).not.toContain('peak.unreachable');
+    expect(p.options).toEqual(['objectif_intermediaire', 'decaler']);
+    expect(p.alternative).toBeDefined();
   });
   it('course dans plus d’un an : le plan démarre plus tard', () => {
     const p = generatePlan(req({ race: { date: addDays(START, 70 * 7), distanceKm: 43, elevationGainM: 1500 } }));
@@ -126,19 +130,28 @@ describe('cas limites', () => {
     expect(generatePlan(req({ startDate: '2026-04-23' })).weeks[0]!.startDate).toBe(START);
   });
   it('utilise l’historique récent comme référence', () => {
-    const p = generatePlan(req({ currentWeeklyKm: 30, recentWeeksKm: [50, 45, 40] }));
+    const p = generatePlan(req({ currentWeeklyKm: 30, recentWeeksKm: [50, 45, 40], longestRecentRunKm: 25 }));
     expect(p.weeks[0]!.targetKm).toBe(55); // max(50,45,40,30) × 1,1
     assertTenPercentRule(p.weeks.map((w) => w.targetKm), [50, 45, 40, 30]);
   });
-  it('sans aucune sortie connue : pas de plus longue sortie de référence à l’affûtage', () => {
+  it('reprise sans volume (0 km/sem) : on repart d’une sortie de référence, jamais d’un plan à 0 km', () => {
     const p = generatePlan(req({ experience: 'avance', currentWeeklyKm: 0 }));
-    expect(p.weeks.filter((w) => w.phase === 'taper').every((w) => w.longestRunKm === undefined)).toBe(true);
+    expect(p.weeks.every((w) => w.targetKm > 0)).toBe(true);
+    expect(p.weeks[0]!.targetKm).toBeGreaterThanOrEqual(6);
+    expect(p.warnings.map((w) => w.ruleId)).toContain('start.restart');
+    // Capacité déclarée : la sortie de départ vaut 75 % de ce qu'on court d'une traite.
+    const known = generatePlan(req({ experience: 'avance', currentWeeklyKm: 0, continuousMin: 60 }));
+    expect(known.weeks[0]!.targetKm).toBeGreaterThan(p.weeks[0]!.targetKm);
+  });
+  it('plan sans volume ni sortie connue : pas de plus longue sortie de référence à l’affûtage', () => {
+    const p = generatePlan(req({ goal: 'route_5k', experience: 'jamais', currentWeeklyKm: 0, race: { date: addDays(START, 3 * 7 + 5), distanceKm: 5, elevationGainM: 0 } }));
+    expect(p.weeks.every((w) => w.longestRunKm === undefined)).toBe(true);
   });
   it('ne force pas de baisse chez quelqu’un déjà au-dessus du pic', () => {
     const p = generatePlan(req({ currentWeeklyKm: 90 }));
     // Pas de baisse vers le pic : seule la contenance des sorties (temps dispo en semaine) plafonne, et c'est dit.
     expect(p.weeks[0]!.targetKm).toBeGreaterThan(p.targetPeakKm);
-    expect(p.weeks[0]!.targetKm).toBeGreaterThan(85);
+    expect(p.weeks[0]!.targetKm).toBeGreaterThan(80);
   });
   it('plafonne au temps disponible et le dit', () => {
     const tight = { ...avail, runDaysPerWeek: 3, maxWeekdayMinutes: 45, maxWeekendMinutes: 90 };
@@ -372,5 +385,37 @@ describe('T12 — disponibilité de 1 ou 2 jours', () => {
     expect(p.weeks.some((w) => w.keySessions > 0)).toBe(true);
     const fit = generatePlan(req({ goal: 'route_10k', availability: two, currentWeeklyKm: 20, longestRecentRunKm: 10 }));
     expect(fit.weeks.flatMap((w) => w.notes).some((n) => n.ruleId === 'week.twodays')).toBe(false);
+  });
+});
+
+describe('départ en cours de semaine (marche-course)', () => {
+  const three: Availability = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6], longRunDay: 6 };
+  const zero = (startDate: string, over: Partial<PlanRequest> = {}) => generatePlan(req({ goal: 'debuter', race: undefined, experience: 'jamais', currentWeeklyKm: 0, continuousMin: 3, availability: three, startDate, ...over }));
+
+  it('vendredi : une seule séance cette semaine, au palier d’entrée (l’échelle ne saute pas les jours passés)', () => {
+    const monday = zero(START);
+    const friday = zero(addDays(START, 4));
+    expect(friday.weeks[0]!.startDate).toBe(START);
+    expect(friday.weeks[0]!.runWalk!.sessions).toHaveLength(1);
+    expect(friday.weeks[0]!.runWalk!.sessions[0]!.stage).toBe(monday.weeks[0]!.runWalk!.sessions[0]!.stage);
+    // La séance perdue rallonge le parcours au besoin, sans jamais l'accélérer.
+    expect(friday.weeks.length).toBeGreaterThanOrEqual(monday.weeks.length);
+  });
+  it('dimanche, plus aucune séance cette semaine : le plan commence lundi prochain', () => {
+    const p = zero(addDays(START, 6));
+    expect(p.weeks[0]!.startDate).toBe(addDays(START, 7));
+    expect(p.weeks[0]!.runWalk!.sessions).toHaveLength(3);
+  });
+  it('dimanche avec la course cette semaine : la semaine reste celle de la course', () => {
+    const p = zero(addDays(START, 6), { goal: 'route_5k', race: { date: addDays(START, 6), distanceKm: 5, elevationGainM: 0 } });
+    expect(p.weeks[0]!.startDate).toBe(START);
+    expect(p.weeks[0]!.raceDate).toBe(addDays(START, 6));
+  });
+  it('re-planification avec un parcours déjà terminé : pas de semaine de démarrage', () => {
+    const p = zero(START, { runWalk: { stage: 19, validatedAtStage: 0, failsAtStage: 0 }, durationWeeks: 6 });
+    expect(p.weeks.some((w) => w.phase === 'demarrage')).toBe(false);
+    // Une seule séance à valider : le démarrage tient dans la 1re semaine.
+    const almost = zero(START, { runWalk: { stage: 18, validatedAtStage: 1, failsAtStage: 0 }, durationWeeks: 6 });
+    expect(almost.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(1);
   });
 });

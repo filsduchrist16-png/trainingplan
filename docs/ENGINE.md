@@ -77,7 +77,9 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 - une **séance dure** (échauffement et retour au calme inclus) plus longue que la longue est remplacée par du facile (avec strides si la longue fait 30 min), règle `week.quality.light`. En **décharge et à l'affûtage**, l'intensité est gardée : la longue est allongée jusqu'à la séance dure, sans dépasser la plus longue sortie déjà faite (`longestRunKm` de la semaine) ;
 - seules les semaines de course échappent à la règle (la course est la sortie la plus longue) ;
 - le **test 3 km chrono** est réservé aux coureurs réguliers et avancés ;
-- sans plus longue sortie déclarée, elle est estimée à `volume hebdo ÷ 3`, jamais « illimitée ».
+- sans plus longue sortie déclarée, elle est estimée à `volume hebdo ÷ 3`, jamais « illimitée » ;
+- la plus longue sortie se compte en **km-effort** (D+ compris, `KM_EFFORT_PER_100M_GAIN`) : en trail, c'est le **temps passé** qui grandit de 10 %, pas seulement les km à plat. Une sortie de 30 min à plat suivie d'une longue vallonnée de 39 min, ça n'arrive plus ;
+- **reprise sans volume** (course continue mais 0 km/sem en ce moment, `start.restart`) : le plan repart de sorties à `RESTART_RUN_SHARE` (75 %) de ce qu'on court d'une traite (ou 2 km si on ne le sait pas), jamais d'un plan à 0 km (+10 % de rien resterait rien).
 
 ## Périodisation (`generatePlan`)
 
@@ -89,6 +91,9 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 - **Après une course A** : 1 à 3 semaines de récupération selon la distance, puis un nouveau cycle.
 - **Démarrage** : sous 10 km/semaine, le plan commence par une phase de marche-course.
 - **Plafonds** : le pic est limité par le temps disponible. Si le pic visé est inatteignable en respectant les 10 %, le moteur **plafonne et le dit**.
+- **Prêt pour la course ?** (`plan.longrun.short`, attention) : la plus longue sortie atteinte avant l'affûtage doit couvrir au moins `RACE_READY_LONG_RUN_SHARE` de l'épreuve en km-effort (5 km : 80 %, 10 km : 70 %, semi : 60 %, marathon et trail court : 50 %, trail moyen : 40 %, ultra : 30 %). Sinon, pas de « pas grave » rassurant (`peak.unreachable` n'est pas émis) : l'explication donne la distance atteinte et la distance visée, et propose un objectif plus court qui tient à cette date (`alternative`) ou une course plus tard (`options`).
+- **Affûtage** : le volume de chaque semaine d'affûtage tient aussi dans ses sorties (longue d'affûtage + autres sorties ≤ la longue et ≤ le temps dispo en semaine).
+- **Pas d'affûtage** (démarrage fini juste avant la course) : la semaine de course reste une semaine de course (`kind: 'course'`, volume à 60 %, pas de longue, `week.taper`).
 
 ## Disponibilité réduite (1 ou 2 jours)
 
@@ -105,6 +110,10 @@ Le volume hebdomadaire ne suffit pas : 15 km répartis sur 3 sorties, c'est 5 km
 
 Un plan complet (plan + séances de chaque semaine) par persona de l'audit (jamais couru, ne marche pas 30 min ; 5 km en 10 et 20 semaines ; débutant 4 min, 10 km ; 2 j/sem ; 62 ans, IMC 32, bêtabloquant ; post-partum 4 mois ; régulier « Je sais pas », semi), et 5 invariants vérifiés : (1) rien de continu, long, clé, strides ou test avant le palier 13 ; (2) temps de course +25 % au plus d'une séance à l'autre en marche/course, +10 % ensuite sur la plus longue séance ; (3) la longue est la plus longue sortie ; (4) volume hebdo ≤ +10 % du max des 4 dernières semaines hors démarrage ; (5) toute restriction a son explication.
 
+## Balayage des invariants (`invariants.test.ts`)
+
+Près de 2 800 plans (9 objectifs × 4 niveaux × 1, 2, 3, 5, 7 jours × volumes × délais × plages horaires), chaque semaine construite séance par séance. Aucune violation tolérée : refus sans explication, plan à 0 km, course hors de la dernière semaine, valeur invalide, volume > +10 %, séance hors semaine ou un jour non disponible, séance plus longue que le temps du jour, deux sorties le même jour, séances clés collées, longue qui n'est pas la plus longue ou manquante, pas de séance de course, séance clé à moins de 3 jours de la course, volume planifié loin de la cible (semaines ≥ 12 km), sortie > +10 % de la plus longue déjà faite, muscu la veille de la longue.
+
 ## Semaine type (`buildWeekSessions`)
 
 - **Choix des jours** : le jour de la longue d'abord, puis les jours les plus espacés possible.
@@ -114,7 +123,10 @@ Un plan complet (plan + séances de chaque semaine) par persona de l'audit (jama
   - **Spécifique** : seuil, côtes longues, VO2max (au plus une fois par semaine, pas avant 4 semaines de base), descentes (trail, pas la veille d'une séance dure), back-to-back (trail moyen et ultra, en phase pic).
   - **Pré-compétition** : allure ou effort de course, plyométrie.
 - **Muscu** : greffée aux jours durs (« jours durs durs, jours faciles faciles »), jamais la veille de la longue ni d'une course.
-- **Volume restant** : il va aux sorties faciles, avec un plafond horaire par jour. Si le temps manque, le moteur laisse du volume de côté plutôt que d'allonger tout, et le dit.
+- **Volume restant** : il va aux sorties faciles, avec un plafond horaire par jour. Si le temps manque, le moteur laisse du volume de côté plutôt que d'allonger tout, et le dit. Une sortie facile est gardée jusqu'à `EASY_RUN_MIN_TOLERANCE` (10 %) sous le minimum (arrondis) ; le minimum est la longue elle-même quand elle est plus courte que `MIN_EASY_RUN_KM`.
+- **Temps disponible du jour** : **aucune séance ne dépasse le temps déclaré pour ce jour** (semaine, ou fin de semaine et jour de la longue). Les séances clés sont construites pour tenir dans ce temps **et sous la longue** : échauffement et retour au calme raccourcis (`QUALITY_SHORT_WARMUP_MIN`, `QUALITY_SHORT_COOLDOWN_MIN`), puis une répétition de moins à la fois, jamais sous la moitié des répétitions ni sous `QUALITY_MIN_REPS`. Si même la version courte ne tient pas, une sortie facile la remplace (`week.quality.light` si c'est la longue qui bloque, `week.quality.daycap` si c'est le temps du jour). Sprints en côte et descentes raccourcissent d'abord leur partie facile. Le rappel d'allure de la semaine de course (J-3) n'est posé que s'il tient.
+- **Back-to-back** : seulement si le jour 1 reste la plus longue sortie de la semaine ; le jour 2 tient dans le temps du jour. Les autres sorties de la semaine ne dépassent pas le jour 1.
+- **Semaine de course** : aucune sortie ne dépasse la plus longue sortie déjà faite. Le test de calibration n'est annoncé (`week.test`) que s'il est vraiment au programme.
 
 ## Dépistage santé (`screen`)
 

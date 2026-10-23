@@ -1,4 +1,4 @@
-import { EVALUATION_MAX_RUN_MIN, EVALUATION_WALK_MIN, GUT_TRAINING_MIN_MINUTES, STRIDES_MIN_BASE_MIN, RUN_WALK_COOLDOWN_MIN, RUN_WALK_LADDER, RUN_WALK_WARMUP_MIN, TRAIL_PACE_FACTOR, WALK_FIRST_START_MIN, WALK_PACE_MIN_PER_KM } from './constants';
+import { KM_EFFORT_PER_100M_GAIN, QUALITY_MIN_REPS, QUALITY_SHORT_COOLDOWN_MIN, QUALITY_SHORT_WARMUP_MIN, EVALUATION_MAX_RUN_MIN, EVALUATION_WALK_MIN, GUT_TRAINING_MIN_MINUTES, STRIDES_MIN_BASE_MIN, RUN_WALK_COOLDOWN_MIN, RUN_WALK_LADDER, RUN_WALK_WARMUP_MIN, TRAIL_PACE_FACTOR, WALK_FIRST_START_MIN, WALK_PACE_MIN_PER_KM } from './constants';
 import { STAGE_WALK, TRANSITION_LAST, continuousMinutes, stageDurationMinutes, stageKind, stageRunMinutes, stageWalkMinutes } from './runwalk';
 import { pacesFromVdot, easyPace, type PaceKey } from './paces';
 import { SESSION_LIBRARY } from './library';
@@ -88,6 +88,26 @@ function make(type: SessionType, title: string, steps: Step[], ctx: BuildContext
   return { type, title, durationMin: minutes, distanceKm: km, steps, why: SESSION_LIBRARY[type].oneLiner, ...extra };
 }
 
+/**
+ * Première version qui tient dans `maxMin` (temps dispo du jour, ou la sortie longue). Sinon la plus courte : c'est
+ * l'appelant qui la remplace alors par une sortie facile, et le dit.
+ */
+function firstFit(maxMin: number, candidates: (() => BuiltSession)[]): BuiltSession {
+  let s!: BuiltSession;
+  for (const c of candidates) {
+    s = c();
+    if (s.durationMin <= maxMin) return s;
+  }
+  return s;
+}
+
+/** Séance [échauffement, effort, retour au calme] : version complète, puis échauffement/retour courts, puis une répétition de moins à la fois (au moins la moitié). */
+function shrinking(maxMin: number, reps: number, build: (reps: number, wuMin: number, cdMin: number) => BuiltSession): BuiltSession {
+  const minReps = Math.min(reps, Math.max(QUALITY_MIN_REPS, Math.ceil(reps / 2)));
+  const shorter = Array.from({ length: reps - minReps + 1 }, (_, i) => () => build(reps - i, QUALITY_SHORT_WARMUP_MIN, QUALITY_SHORT_COOLDOWN_MIN));
+  return firstFit(maxMin, [() => build(reps, 15, 10), ...shorter]);
+}
+
 const wu = (minutes = 15): Step => ({ kind: 'echauffement', minutes, target: { zone: 'z2' } });
 const cd = (minutes = 10): Step => ({ kind: 'retour_calme', minutes, target: { zone: 'z1' } });
 
@@ -111,57 +131,67 @@ export function strides(km: number, ctx: BuildContext, maxMin = Infinity): Built
   return make('strides', `Z2 ${base} min + ${reps} strides`, [{ kind: 'continu', minutes: base, target: { zone: 'z2' } }, block], ctx);
 }
 
-export function hillSprints(km: number, ctx: BuildContext): BuiltSession {
+export function hillSprints(km: number, ctx: BuildContext, maxMin = Infinity): BuiltSession {
   const reps = pick([6, 8, 8, 10], ctx.phaseWeek);
   const easyMin = Math.max(10, round5(km * paceForTarget({ zone: 'z2' }, ctx)) - 25);
-  return make('hill_sprints', `${reps} sprints en côte de 10 s`, [
-    wu(),
-    { kind: 'effort', seconds: 10, repeat: reps, target: { rpe: 9 }, recoverySeconds: 120, recoveryWalk: true, note: 'Côte raide, à fond, récup complète 2 min en marchant.' },
-    { kind: 'continu', minutes: easyMin, target: { zone: 'z2' } },
+  const build = (r: number, w: number, easy: number) => make('hill_sprints', `${r} sprints en côte de 10 s`, [
+    wu(w),
+    { kind: 'effort', seconds: 10, repeat: r, target: { rpe: 9 }, recoverySeconds: 120, recoveryWalk: true, note: 'Côte raide, à fond, récup complète 2 min en marchant.' },
+    ...(easy > 0 ? [{ kind: 'continu', minutes: easy, target: { zone: 'z2' } } as Step] : []),
   ], ctx);
+  // Temps du jour : on raccourcit d'abord la partie facile, puis l'échauffement, puis les sprints.
+  const easier = Array.from({ length: Math.floor(easyMin / 5) }, (_, i) => () => build(reps, 15, easyMin - 5 * (i + 1)));
+  return firstFit(maxMin, [() => build(reps, 15, easyMin), ...easier, () => shrinking(maxMin, reps, (r, w) => build(r, w, 0))]);
 }
 
-export function descents(km: number, ctx: BuildContext): BuiltSession {
+export function descents(km: number, ctx: BuildContext, maxMin = Infinity): BuiltSession {
   const reps = pick([4, 5, 6, 8], ctx.phaseWeek);
-  return make('descentes', `Z2 + ${reps} descentes techniques`, [
-    wu(Math.max(15, round5(km * paceForTarget({ zone: 'z2' }, ctx)) - reps * 4 - 10)),
-    { kind: 'effort', minutes: 2, repeat: reps, target: { zone: 'z2' }, recoverySeconds: 180, recoveryWalk: true, note: 'Descente contrôlée : regard loin, pas courts et rapides. Remontée en marchant.' },
-    cd(),
+  const easyMin = Math.max(15, round5(km * paceForTarget({ zone: 'z2' }, ctx)) - reps * 4 - 10);
+  const build = (r: number, w: number, c: number) => make('descentes', `Z2 + ${r} descentes techniques`, [
+    wu(w),
+    { kind: 'effort', minutes: 2, repeat: r, target: { zone: 'z2' }, recoverySeconds: 180, recoveryWalk: true, note: 'Descente contrôlée : regard loin, pas courts et rapides. Remontée en marchant.' },
+    cd(c),
   ], ctx);
+  const easier = Array.from({ length: Math.max(0, Math.floor((easyMin - 15) / 5)) }, (_, i) => () => build(reps, easyMin - 5 * (i + 1), 10));
+  return firstFit(maxMin, [() => build(reps, easyMin, 10), ...easier, () => shrinking(maxMin, reps, build)]);
 }
 
-export function threshold(ctx: BuildContext): BuiltSession {
+export function threshold(ctx: BuildContext, maxMin = Infinity): BuiltSession {
   const ladder: [number, number][] = ctx.light ? [[3, 6], [3, 8], [4, 6], [3, 8]] : ctx.taper ? [[2, 8]] : [[3, 8], [4, 8], [3, 10], [4, 10], [2, 15], [1, 25]];
   const [reps, min] = pick(ladder, ctx.phaseWeek);
   const target: Intensity = ctx.trail ? { zone: 'z4' } : { pace: 'T' };
-  const effort: Step = reps > 1
-    ? { kind: 'effort', minutes: min, repeat: reps, target, recoverySeconds: 120, note: 'Seuil : « confortablement dur », récup 2 min trot.' }
-    : { kind: 'effort', minutes: min, target, note: 'Seuil continu, effort régulier.' };
-  return make('seuil', reps > 1 ? `Seuil ${reps} × ${min} min` : `Seuil continu ${min} min`, [wu(), effort, cd()], ctx, { rpeTarget: 7 });
+  return shrinking(maxMin, reps, (r, w, c) => {
+    const effort: Step = r > 1
+      ? { kind: 'effort', minutes: min, repeat: r, target, recoverySeconds: 120, note: 'Seuil : « confortablement dur », récup 2 min trot.' }
+      : { kind: 'effort', minutes: min, target, note: 'Seuil continu, effort régulier.' };
+    return make('seuil', r > 1 ? `Seuil ${r} × ${min} min` : `Seuil continu ${min} min`, [wu(w), effort, cd(c)], ctx, { rpeTarget: 7 });
+  });
 }
 
-export function vo2(ctx: BuildContext): BuiltSession {
+export function vo2(ctx: BuildContext, maxMin = Infinity): BuiltSession {
   const ladder: [number, number, number][] = ctx.taper ? [[4, 2, 0]] : [[5, 3, 0], [6, 3, 0], [5, 4, 0], [12, 0, 30], [6, 4, 0]];
   const [reps, min, sec] = pick(ladder, ctx.phaseWeek);
   const hill = ctx.trail ? ' en côte' : '';
   const target: Intensity = ctx.trail ? { zone: 'z5' } : { pace: 'I' };
-  const effort: Step = min
-    ? { kind: 'effort', minutes: min, repeat: reps, target, note: `Récup égale en trot${ctx.trail ? ' (redescente)' : ''}.` }
-    : { kind: 'effort', seconds: sec, repeat: reps, target, note: '30 s vite / 30 s trot.' };
-  const title = min ? `VO2max${hill} ${reps} × ${min} min` : `VO2max${hill} ${reps} × 30/30`;
-  return make('vo2max', title, [wu(), effort, cd()], ctx, { rpeTarget: 9 });
+  return shrinking(maxMin, reps, (r, w, c) => {
+    const effort: Step = min
+      ? { kind: 'effort', minutes: min, repeat: r, target, note: `Récup égale en trot${ctx.trail ? ' (redescente)' : ''}.` }
+      : { kind: 'effort', seconds: sec, repeat: r, target, note: '30 s vite / 30 s trot.' };
+    const title = min ? `VO2max${hill} ${r} × ${min} min` : `VO2max${hill} ${r} × 30/30`;
+    return make('vo2max', title, [wu(w), effort, cd(c)], ctx, { rpeTarget: 9 });
+  });
 }
 
-export function longHills(ctx: BuildContext): BuiltSession {
+export function longHills(ctx: BuildContext, maxMin = Infinity): BuiltSession {
   const ladder: [number, number][] = ctx.light ? [[4, 3], [5, 3]] : ctx.taper ? [[3, 4]] : [[4, 4], [5, 4], [4, 6], [5, 6], [6, 5]];
   const [reps, min] = pick(ladder, ctx.phaseWeek);
   const zone = ctx.light ? 'z3' : 'z4';
   const poles = ctx.hasPoles && !ctx.light ? ' Bâtons permis : pratique-les comme le jour J.' : '';
-  return make('cotes_longues', `Côtes longues ${reps} × ${min} min`, [
-    wu(),
-    { kind: 'effort', minutes: min, repeat: reps, target: { zone }, note: `Montée régulière, redescente en trottinant.${poles}` },
-    cd(),
-  ], ctx, { rpeTarget: ctx.light ? 6 : 7 });
+  return shrinking(maxMin, reps, (r, w, c) => make('cotes_longues', `Côtes longues ${r} × ${min} min`, [
+    wu(w),
+    { kind: 'effort', minutes: min, repeat: r, target: { zone }, note: `Montée régulière, redescente en trottinant.${poles}` },
+    cd(c),
+  ], ctx, { rpeTarget: ctx.light ? 6 : 7 }));
 }
 
 /** Allure spécifique à l'objectif route. */
@@ -169,21 +199,21 @@ function racePaceKey(goal: GoalKind): PaceKey {
   return goal === 'route_marathon' ? 'M' : goal === 'route_5k' ? 'I' : 'T';
 }
 
-export function racePace(ctx: BuildContext): BuiltSession {
+export function racePace(ctx: BuildContext, maxMin = Infinity): BuiltSession {
   if (ctx.trail) {
     // En trail, « allure course » = effort de course sur le terrain de course.
     const [reps, min] = ctx.taper ? [2, 6] : pick([[2, 12], [3, 12], [2, 20]] as [number, number][], ctx.phaseWeek);
-    return make('tempo', `Effort course ${reps} × ${min} min`, [wu(), { kind: 'effort', minutes: min, repeat: reps, target: { zone: 'z3' }, recoverySeconds: 180, note: 'Effort de course sur terrain race-like, montées comprises.' }, cd()], ctx, { rpeTarget: 6 });
+    return shrinking(maxMin, reps, (r, w, c) => make('tempo', `Effort course ${r} × ${min} min`, [wu(w), { kind: 'effort', minutes: min, repeat: r, target: { zone: 'z3' }, recoverySeconds: 180, note: 'Effort de course sur terrain race-like, montées comprises.' }, cd(c)], ctx, { rpeTarget: 6 }));
   }
   const key = racePaceKey(ctx.goal);
   const ladder: [number, number][] = ctx.taper ? [[2, 5]] : key === 'M' ? [[2, 10], [2, 15], [3, 15], [2, 20]] : [[3, 8], [3, 10], [2, 15]];
   const [reps, min] = pick(ladder, ctx.phaseWeek);
-  return make('tempo', `Allure course ${reps} × ${min} min`, [wu(), { kind: 'effort', minutes: min, repeat: reps, target: { pace: key }, recoverySeconds: 120, note: 'Exactement l’allure objectif : pas plus vite.' }, cd()], ctx, { rpeTarget: 7 });
+  return shrinking(maxMin, reps, (r, w, c) => make('tempo', `Allure course ${r} × ${min} min`, [wu(w), { kind: 'effort', minutes: min, repeat: r, target: { pace: key }, recoverySeconds: 120, note: 'Exactement l’allure objectif : pas plus vite.' }, cd(c)], ctx, { rpeTarget: 7 }));
 }
 
 export function longRun(km: number, ctx: BuildContext, specific: boolean, gainM = 0): BuiltSession {
   const pace = paceForTarget({ zone: 'z2' }, ctx);
-  const effortKm = km + gainM / 100;
+  const effortKm = km + (gainM / 100) * KM_EFFORT_PER_100M_GAIN;
   // Arrondie à la minute inférieure : la croissance de 10 % se lit à la minute près.
   const minutes = Math.floor(effortKm * pace);
   const gut = minutes >= GUT_TRAINING_MIN_MINUTES ? ' Gut training : glucides dès 30-45 min.' : '';
@@ -265,8 +295,9 @@ export function runWalk(stage: number, ctx: BuildContext, opts: { walkMin?: numb
   };
 }
 
-export function calibrationTest(ctx: BuildContext): BuiltSession {
-  return make('test', 'Test 3 km', [wu(15), { kind: 'effort', distanceKm: 3, target: { rpe: 10 }, note: 'Le plus vite possible, régulier, finis fort. Ta FC max et ton niveau en sortent.' }, cd(10)], ctx, { rpeTarget: 10 });
+export function calibrationTest(ctx: BuildContext, maxMin = Infinity): BuiltSession {
+  const build = (w: number, c: number) => make('test', 'Test 3 km', [wu(w), { kind: 'effort', distanceKm: 3, target: { rpe: 10 }, note: 'Le plus vite possible, régulier, finis fort. Ta FC max et ton niveau en sortent.' }, cd(c)], ctx, { rpeTarget: 10 });
+  return firstFit(maxMin, [() => build(15, 10), () => build(QUALITY_SHORT_WARMUP_MIN, QUALITY_SHORT_COOLDOWN_MIN)]);
 }
 
 export function raceDay(distanceKm: number, ctx: BuildContext): BuiltSession {

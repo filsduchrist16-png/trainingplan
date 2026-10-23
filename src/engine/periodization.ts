@@ -1,11 +1,11 @@
 import {
   B_RACE_RECOVERY_RATIO, B_RACE_WEEK_RATIO, BUILD_WEEKS_BEFORE_DELOAD, DELOAD_RATIO, DEMARRAGE_START_KM,
-  BASE_WEEKS_AFTER_RUNWALK, HEALTH_PRUDENT_EASY_WEEKS, RUNWALK_RACE_MAX_KM, TWO_DAYS_KEY_MIN_CONTINUOUS, ELEVATION_PHASE_FACTOR, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, LONG_RUN_SHARE_BY_PHASE,
+  BASE_WEEKS_AFTER_RUNWALK, HEALTH_PRUDENT_EASY_WEEKS, RUNWALK_RACE_MAX_KM, TWO_DAYS_KEY_MIN_CONTINUOUS, ELEVATION_PHASE_FACTOR, KM_EFFORT_PER_100M_GAIN, LONG_GOAL_MIN_LONG_RUN_MIN, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, ASSUMED_RUNS_PER_WEEK, LONG_RUN_GROWTH, RESTART_RUN_SHARE, LONG_RUN_SHARE_BY_PHASE,
   LONG_RUN_SHARE_LONG_GOALS, LONG_RUN_SHARE_MAX,
   MAX_KEY_SESSIONS, MAX_KEY_SESSIONS_PEAK, MAX_PLAN_WEEKS, MAX_WEEKLY_INCREASE, MIN_WEEKS_BEFORE_FIRST_DELOAD,
-  PHASE_RATIOS, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
+  PHASE_RATIOS, RACE_READY_LONG_RUN_SHARE, RECOVERY_VOLUME_RATIOS, RECOVERY_WEEKS_BY_DISTANCE, TAPER_PROFILES,
 } from './constants';
-import { addDays, diffDays, mondayOf } from './dates';
+import { addDays, diffDays, mondayOf, weekday } from './dates';
 import { explain } from './explain';
 import { firstStage, startMode, type StartMode } from './startmode';
 import type { Screening } from './screening';
@@ -201,12 +201,22 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   const needsDemarrage = family === 'debuter' || start.runWalk;
   // Parcours de démarrage : il dure jusqu'à 30 min continues (projection si chaque séance est validée), JAMAIS tronqué.
   const journeyState = needsDemarrage ? (req.runWalk ?? initialRunWalkState(start.stage)) : undefined;
-  const spw = Math.max(1, journeyDays(req.availability).length);
+  const jDays = journeyDays(req.availability);
+  const spw = Math.max(1, jDays.length);
+  // Départ en cours de semaine : seules les séances qui restent cette semaine comptent. L'échelle ne saute jamais un
+  // palier parce que les premiers jours de la semaine sont passés. S'il n'en reste aucune, on commence lundi prochain.
+  const farRace = Boolean(req.race && diffDays(mondayOf(req.startDate), mondayOf(req.race.date)) / 7 + 1 > MAX_PLAN_WEEKS);
+  const leftThisWeek = jDays.filter((d) => d >= weekday(req.startDate)).length;
+  const nextMonday = addDays(mondayOf(req.startDate), 7);
+  const shiftStart = Boolean(journeyState) && leftThisWeek === 0 && !farRace && (!req.race || req.race.date >= nextMonday);
+  const firstCount = farRace || shiftStart ? spw : Math.max(1, leftThisWeek);
+  const weeksFor = (n: number) => (n <= 0 ? 0 : n <= firstCount ? 1 : 1 + Math.ceil((n - firstCount) / spw));
+  const sessionsIn = (weeks: number) => (weeks <= 0 ? 0 : firstCount + (weeks - 1) * spw);
   // Marche seulement : le parcours ne se termine pas dans ce plan (il dure tout le plan).
-  const journeyWeeksNeeded = !journeyState ? 0 : walkOnly ? MAX_PLAN_WEEKS : Math.ceil(sessionsToReach(journeyState, JOURNEY_DONE, slow) / spw);
+  const journeyWeeksNeeded = !journeyState ? 0 : walkOnly ? MAX_PLAN_WEEKS : weeksFor(sessionsToReach(journeyState, JOURNEY_DONE, slow));
 
   // ── Calendrier ────────────────────────────────────────────────────────────
-  let startMonday = mondayOf(req.startDate);
+  let startMonday = shiftStart ? nextMonday : mondayOf(req.startDate);
   let totalWeeks: number;
   const raceMonday = req.race ? mondayOf(req.race.date) : undefined;
   if (req.race) {
@@ -236,7 +246,16 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   // ── Volumes cible ─────────────────────────────────────────────────────────
   const exp = experienceIndex(experience);
   if (family !== 'forme' || start.runWalk) warnings.unshift(start.explanation);
-  const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM) : req.currentWeeklyKm;
+  // Reprise : course continue mais 0 km/sem en ce moment (pause). On repart de ce qu'on court d'une traite, avec marge,
+  // jamais de zéro (un plan à 0 km ne monterait jamais : +10 % de rien reste rien).
+  const restart = !needsDemarrage && req.currentWeeklyKm <= 0;
+  const capacityKm = start.capacityMin / easyMinutes(1, req.vdot, { trail });
+  const restartRunKm = capacityKm > 0 ? capacityKm * RESTART_RUN_SHARE : DEMARRAGE_START_KM / ASSUMED_RUNS_PER_WEEK;
+  const startKm = needsDemarrage || family === 'forme' ? Math.max(req.currentWeeklyKm, DEMARRAGE_START_KM)
+    : restart ? Math.max(DEMARRAGE_START_KM, floorKm(restartRunKm * Math.min(days, ASSUMED_RUNS_PER_WEEK))) : req.currentWeeklyKm;
+  if (restart && family !== 'forme') {
+    warnings.push(explain('start.restart', 'info', 'On repart en douceur', `Tu ne cours pas en ce moment : le plan repart à ${startKm} km/sem, des sorties d'environ ${floorTenth(restartRunKm)} km (un peu moins que ce que tu cours d'une traite), puis monte de 10 % à la fois.`, { km: startKm, sortie: floorTenth(restartRunKm) }));
+  }
   let targetPeak = Math.round(profile.peakKm[exp] * DIFFICULTY_FACTOR[difficulty]);
   const cap = timeCapKm(req.availability, req.vdot, trail);
   if (cap < targetPeak) {
@@ -280,7 +299,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   else phases = [...Array<Phase>(dem).fill('demarrage'), ...Array<Phase>(baseAfter).fill('base'), ...allocatePhases(buildWeeks - dem - baseAfter)];
 
   // ── Parcours de démarrage : paliers projetés, séance par séance ───────────
-  const projected = journeyState ? projectStages(journeyState, dem * spw, slow, maxStage) : [];
+  const projected = journeyState ? projectStages(journeyState, sessionsIn(dem), slow, maxStage) : [];
   // « Courir de zéro » plus court que le parcours : on n'accélère JAMAIS l'échelle, on dit où le plan finira (F5).
   const journeyDone = dem >= journeyWeeksNeeded;
   const endStage = projected.at(-1)?.stage ?? JOURNEY_DONE;
@@ -295,7 +314,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   let level = startKm;
   let buildCount = 0;
   // Plus longue sortie récente : déclarée, sinon estimée depuis le volume (jamais « inconnue » : c'est le garde-fou).
-  let longest = req.longestRecentRunKm ?? (req.currentWeeklyKm > 0 ? req.currentWeeklyKm / ASSUMED_RUNS_PER_WEEK : 0);
+  let longest = req.longestRecentRunKm ?? (req.currentWeeklyKm > 0 ? req.currentWeeklyKm / ASSUMED_RUNS_PER_WEEK : restart ? restartRunKm : 0);
   const gainPerKm = trail ? (req.race ? req.race.elevationGainM / Math.max(1, req.race.distanceKm) : profile.defaultElevationM / profile.defaultDistanceKm) : 0;
 
   for (let i = 0; i < buildWeeks; i++) {
@@ -303,7 +322,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     const notes: Explanation[] = [];
     if (phase === 'demarrage' && journeyState) {
       // Semaine de démarrage : pilotée en minutes et en séances validées, pas en km ni en décharges.
-      const chunk = projected.slice(i * spw, (i + 1) * spw);
+      const chunk = projected.slice(sessionsIn(i), sessionsIn(i + 1));
       const built = chunk.map((p, k) => runWalkSession(p.stage, buildCtx, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: k === chunk.length - 1 ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0 }));
       const km = Math.round(built.reduce((a, x) => a + x.distanceKm, 0) * 10) / 10;
       weeks.push({
@@ -323,7 +342,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
       history.push(km);
       level = km;
       // Plus longue sortie de COURSE atteinte (pour faire grandir la longue après le démarrage).
-      longest = Math.max(longest, stageRunMinutes(Math.min(chunk.at(-1)!.stage, JOURNEY_DONE)) / easyMinutes(1, req.vdot));
+      longest = Math.max(longest, stageRunMinutes(Math.min(chunk.at(-1)!.stage, JOURNEY_DONE)) / easyMinutes(1, req.vdot, { trail }));
       continue;
     }
     const isLastBeforeTaper = req.race !== undefined && i === buildWeeks - 1;
@@ -352,6 +371,8 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     }
 
     const longRunKm = longRunFor(km, phase, longest, profile.longRunMaxMin, req, trail, gainPerKm);
+    // La plus longue sortie se compte en km-effort (le D+ allonge la sortie) : c'est le temps passé qui grandit de 10 %.
+    const effort = effortFactor(gainPerKm, phase);
     // Aucune sortie ne dépasse la sortie longue de la semaine : le volume est plafonné par ce que les sorties
     // PEUVENT contenir (la longue + les autres sorties, chacune ≤ la longue et ≤ le temps dispo en semaine).
     // La longue, elle, continue de croître de 10 % même quand le volume est plafonné.
@@ -364,7 +385,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     }
     history.push(km);
     const before = floorTenth(longest);
-    if (kind !== 'decharge') longest = Math.max(longest, longRunKm);
+    if (kind !== 'decharge') longest = Math.max(longest, longRunKm * effort);
     // 2 sorties par semaine : aucune séance clé tant que la course continue (la longue) fait moins de 30 min.
     const longMin = longRunKm * easyMinutes(1, req.vdot, { trail });
     const twoDaysHold = days === 2 && longMin < TWO_DAYS_KEY_MIN_CONTINUOUS;
@@ -387,6 +408,24 @@ export function generatePlan(input: PlanRequest): PlanDraft {
 
   const peakKm = Math.max(0, ...weeks.map((w) => w.targetKm));
 
+  // ── Prêt pour la course ? ─────────────────────────────────────────────────
+  // La plus longue sortie atteinte d'ici l'affûtage doit couvrir une part de l'épreuve. Sinon on le dit (pas de
+  // « pas grave » qui rassure à tort) et on propose un objectif plus court ou une date plus lointaine.
+  const readyShare = (g: GoalKind) => RACE_READY_LONG_RUN_SHARE[g as keyof typeof RACE_READY_LONG_RUN_SHARE] ?? 0;
+  const raceEffort = (g: GoalKind, km: number, gain: number) => readyShare(g) * (km + (gain / 100) * KM_EFFORT_PER_100M_GAIN);
+  const needKm = req.race ? raceEffort(req.goal, req.race.distanceKm, req.race.elevationGainM) : 0;
+  const notReady = Boolean(req.race && !options && !start.evaluation && (family === 'route' || family === 'trail') && longest < needKm);
+  if (notReady) {
+    const shorter = (Object.keys(GOALS) as GoalKind[])
+      .filter((g) => (GOALS[g].family === 'route' || GOALS[g].family === 'trail') && GOALS[g].defaultDistanceKm < req.race!.distanceKm)
+      .sort((a, b) => GOALS[a].defaultDistanceKm - GOALS[b].defaultDistanceKm);
+    alternative = shorter.filter((g) => raceEffort(g, GOALS[g].defaultDistanceKm, GOALS[g].defaultElevationM) <= longest).at(-1) ?? shorter[0];
+    options = alternative ? ['objectif_intermediaire', 'decaler'] : ['decaler'];
+    const reached = Math.round(longest * 10) / 10;
+    const need = Math.ceil(needKm);
+    warnings.push(explain('plan.longrun.short', 'attention', 'Ta sortie longue sera trop courte pour cette course', `En allongeant ta plus longue sortie de 10 % à la fois, elle atteindra environ ${reached} km d'ici la course. Pour finir un ${profile.label} en santé, on vise au moins ${need} km${trail ? ' (D+ compris)' : ''}. ${alternative ? `Deux propositions : un objectif plus court à cette date (${GOALS[alternative].label}), ou une course plus tard.` : 'Choisis une course plus tard.'}`, { atteint: reached, vise: need, ...(alternative ? { alternative } : {}) }));
+  }
+
   // ── Taper ─────────────────────────────────────────────────────────────────
   if (req.race && taperWeeks > 0) {
     const profileRatios = TAPER_PROFILES[taperWeeks as 1 | 2 | 3];
@@ -394,7 +433,10 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     profileRatios.forEach((ratio, t) => {
       const i = buildWeeks + t;
       const isRaceWeek = t === profileRatios.length - 1;
-      const km = roundKm(ref * ratio);
+      const longRunKm = isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, ref * ratio * LONG_RUN_SHARE_BY_PHASE.taper * 1.6));
+      // Comme en préparation : le volume tient dans les sorties (aucune plus longue que la longue de l'affûtage).
+      const room = isRaceWeek || longRunKm <= 0 ? Infinity : floorTenth(longRunKm + (days - 1) * Math.min(longRunKm, req.availability.maxWeekdayMinutes / easyMinutes(1, req.vdot, { trail })));
+      const km = Math.min(roundKm(ref * ratio), room);
       weeks.push({
         index: i,
         startDate: addDays(startMonday, i * 7),
@@ -404,8 +446,9 @@ export function generatePlan(input: PlanRequest): PlanDraft {
         targetElevationM: round10(km * gainPerKm * ELEVATION_PHASE_FACTOR.taper),
         keySessions: easyWeek(i) ? 0 : capKeys(keySessionsFor('taper', isRaceWeek ? 'course' : 'taper', i, experience, difficulty)),
         ...(easyWeek(i) ? { easyOnly: true } : {}),
-        longRunKm: isRaceWeek ? 0 : roundKm(Math.min(longest * 0.6, km * LONG_RUN_SHARE_BY_PHASE.taper * 1.6)),
-        ...(longest > 0 ? { longestRunKm: floorTenth(longest) } : {}),
+        longRunKm,
+        // Toujours connue ici : la préparation (ou le démarrage) a fixé une plus longue sortie.
+        longestRunKm: floorTenth(longest),
         notes: [explain('week.taper', 'info', isRaceWeek ? 'Semaine de course' : 'Affûtage', `Volume à ${Math.round(ratio * 100)} % du pic, intensité maintenue (strides, efforts courts). La fatigue s'en va, la forme reste.`, { ratio })],
         ...(isRaceWeek ? { raceDate: req.race!.date } : {}),
       });
@@ -414,7 +457,15 @@ export function generatePlan(input: PlanRequest): PlanDraft {
   if (req.race && taperWeeks === 0) {
     const last = weeks[weeks.length - 1]!;
     last.raceDate = req.race.date;
-    if (last.runWalk) last.kind = 'course';
+    last.kind = 'course';
+    if (!last.runWalk) {
+      // Démarrage fini juste avant la course : pas de bloc d'affûtage, mais la semaine de course reste allégée.
+      const ratio = TAPER_PROFILES[1][0]!;
+      last.targetKm = roundKm(last.targetKm * ratio);
+      last.longRunKm = 0;
+      last.keySessions = family === 'debuter' || easyWeek(last.index) ? 0 : capKeys(keySessionsFor('taper', 'course', last.index, experience, difficulty));
+      last.notes.push(explain('week.taper', 'info', 'Semaine de course', `Volume à ${Math.round(ratio * 100)} % : la fatigue s'en va, la forme reste.`, { ratio }));
+    }
   }
 
   // ── Courses B : mini-taper et reprise ─────────────────────────────────────
@@ -441,7 +492,7 @@ export function generatePlan(input: PlanRequest): PlanDraft {
     warnings.push(end);
     weeks.at(-1)!.notes.push(end);
   }
-  if (family !== 'forme' && peakKm < targetPeak * 0.95) {
+  if (family !== 'forme' && !notReady && peakKm < targetPeak * 0.95) {
     warnings.push(explain('peak.unreachable', 'conseil', 'Pic plafonné', `Pic visé ${targetPeak} km/sem, atteignable ${peakKm} km d'ici la course en respectant +10 %/sem et les décharges. Pas grave : on arrive en santé, c'est ce qui compte.`, { target: targetPeak, reached: peakKm }));
   }
   return { goal: req.goal, family, weeks, targetPeakKm: targetPeak, peakKm, warnings, ok: true, start, ...(options ? { options } : {}), ...(alternative ? { alternative } : {}), ...(journeyState ? { runWalkStart: journeyState } : {}) };
@@ -465,9 +516,14 @@ function longRunFor(km: number, phase: Phase, longest: number, maxMin: number, r
   const minutesPerKm = easyMinutes(1, req.vdot, { trail, gainM: gainPerKm * 100 * ELEVATION_PHASE_FACTOR[phase] / 100 });
   // Arrondi au 0,1 km SUPÉRIEUR de la cible : sinon jours × longue resterait sous le volume voulu, et il se figerait.
   long = Math.min(Math.ceil(long * 10 - 1e-9) / 10, maxMinutes / minutesPerKm);
-  // Croissance graduelle : +10 % de la plus longue sortie récente, sans pas minimum.
-  if (longest > 0) long = Math.min(long, longest * (1 + LONG_RUN_GROWTH));
+  // Croissance graduelle : +10 % de la plus longue sortie récente (en km-effort), sans pas minimum.
+  if (longest > 0) long = Math.min(long, (longest * (1 + LONG_RUN_GROWTH)) / effortFactor(gainPerKm, phase));
   return floorTenth(long);
+}
+
+/** 1 km de sortie en km-effort, selon le D+ de la phase (1 à plat). */
+function effortFactor(gainPerKm: number, phase: Phase): number {
+  return 1 + ((gainPerKm * ELEVATION_PHASE_FACTOR[phase]) / 100) * KM_EFFORT_PER_100M_GAIN;
 }
 
 /** Semaines de récupération après une course A, à partir du lundi suivant la course. */
