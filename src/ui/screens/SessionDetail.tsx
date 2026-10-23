@@ -66,7 +66,7 @@ export function SessionDetail() {
 
       {session.minimal && session.type !== 'repos' && (
         <Card>
-          <Eyebrow>Version minimale viable</Eyebrow>
+          <Eyebrow>Version courte (journée chargée)</Eyebrow>
           <p className="mt-2 font-medium">{session.minimal.title}</p>
           <p className="mt-1 text-sm text-muted">Pour les jours où la vie gagne. Une séance raccourcie vaut toujours mieux qu'une séance sautée.</p>
         </Card>

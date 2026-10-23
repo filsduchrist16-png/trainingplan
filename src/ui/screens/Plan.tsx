@@ -68,6 +68,11 @@ export function Plan() {
             </div>
             <Button variant="ghost" size="sm" onClick={() => setMonday(addDays(monday, 7))} aria-label="Semaine suivante">→</Button>
           </div>
+          {monday !== mondayOf(today) && (
+            <div className="text-center">
+              <Button variant="ghost" size="sm" onClick={() => setMonday(mondayOf(today))}>Revenir à cette semaine</Button>
+            </div>
+          )}
           <WeekView monday={monday} week={data.weeks[weekIdx]} athleteId={athlete.id} today={today} />
         </>
       )}
@@ -108,8 +113,9 @@ function WeekView({ monday, week, athleteId, today }: { monday: string; week?: W
         <Card className="flex items-center justify-between gap-3 py-4">
           <div>
             <Eyebrow>Cible</Eyebrow>
-            <p className="num text-lg font-semibold">{week.targetKm} km{week.targetElevationM ? ` · ${week.targetElevationM} m D+` : ''}</p>
-            <p className="text-xs text-muted">{week.kind === 'decharge' ? 'Décharge' : week.kind === 'taper' ? 'Affûtage' : week.kind === 'course' ? 'Semaine de course' : week.kind === 'recup' ? 'Récupération' : `${week.keySessions} séance(s) clé(s)`}</p>
+            {/* Le démarrage se pilote en minutes, pas en km. */}
+            <p className="num text-lg font-semibold">{week.phase === 'demarrage' && week.targetMinutes ? `≈ ${week.targetMinutes} min` : `${week.targetKm} km`}{week.targetElevationM ? ` · ${week.targetElevationM} m D+` : ''}</p>
+            <p className="text-xs text-muted">{week.phase === 'demarrage' ? 'Démarrage marche-course' : week.kind === 'decharge' ? 'Décharge' : week.kind === 'taper' ? 'Affûtage' : week.kind === 'course' ? 'Semaine de course' : week.kind === 'recup' ? 'Récupération' : week.keySessions ? `${week.keySessions} séance${week.keySessions > 1 ? 's' : ''} clé${week.keySessions > 1 ? 's' : ''}` : 'Tout en facile'}</p>
           </div>
           <p className="num text-sm text-muted">{Math.round(doneKm)} km faits</p>
         </Card>
@@ -212,7 +218,9 @@ function BlockView({ weeks, name, warnings, current, onPick }: { weeks: Week[]; 
         <Eyebrow>{name}</Eyebrow>
         <PlanTimeline weeks={weeks} current={current} className="mt-4" onSelect={onPick} />
       </Card>
-      {warnings.map((w) => <p key={w.ruleId} className="rounded-xl bg-surface-2 p-3 text-sm"><strong>{w.title}.</strong> <span className="text-muted">{w.why}</span></p>)}
+      {[...warnings].sort((a, b) => Number(b.severity === 'attention' || b.severity === 'stop') - Number(a.severity === 'attention' || a.severity === 'stop')).map((w) => (
+        <p key={w.ruleId} className={cn('rounded-xl p-3 text-sm', w.severity === 'attention' || w.severity === 'stop' ? 'bg-warn/12 text-warn' : 'bg-surface-2')}><strong>{w.title}.</strong> <span className="text-muted">{w.why}</span></p>
+      ))}
       <ol className="space-y-1">
         {weeks.map((w, i) => (
           <li key={w.id}>

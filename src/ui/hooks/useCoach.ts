@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
-  acwr, addDays, dailyLoads, evaluateHealth, mondayOf, toIsoDate,
+  SESSION_LIBRARY, acwr, addDays, dailyLoads, evaluateHealth, mondayOf, toIsoDate,
   type AcwrResult, type Athlete, type Block, type HealthStatus, type PlannedSession, type Race, type Week, type Wellness,
 } from '@/engine';
 import { db } from '@/data/db';
@@ -15,6 +15,8 @@ export interface CoachContext {
   nextRace?: Race;
   todaySessions: PlannedSession[];
   weekSessions: PlannedSession[];
+  /** Prochaine sortie prévue après aujourd'hui (pour un jour de repos). */
+  nextRun?: PlannedSession;
   wellnessToday?: Wellness;
   health: HealthStatus;
   acwr: AcwrResult;
@@ -36,6 +38,8 @@ export function useCoach(athlete: Athlete): CoachContext | undefined {
     const nextRace = await db.races.where('date').aboveOrEqual(today).filter((r) => r.athleteId === athlete.id && r.priority === 'A').first();
     const weekSessions = await db.sessions.where('date').between(monday, addDays(monday, 6), true, true).filter((s) => s.athleteId === athlete.id).toArray();
     const todaySessions = weekSessions.filter((s) => s.date === today);
+    const nextRun = (await db.sessions.where('date').between(addDays(today, 1), addDays(today, 14), true, true)
+      .filter((s) => s.athleteId === athlete.id && s.status === 'prevue' && SESSION_LIBRARY[s.type].isRun && s.type !== 'repos').sortBy('date'))[0];
 
     const since = addDays(today, -40);
     const [acts, pain, wellness] = await Promise.all([
@@ -51,7 +55,7 @@ export function useCoach(athlete: Athlete): CoachContext | undefined {
     const doneKeys = weekSessions.filter((s) => s.isKey && s.status === 'faite').length;
     const sorted = wellness.sort((a, b) => a.date.localeCompare(b.date));
     return {
-      today, block, weeks, weekIndex, week, race, nextRace, todaySessions, weekSessions,
+      today, block, weeks, weekIndex, week, race, nextRace, todaySessions, weekSessions, nextRun,
       wellnessToday: sorted.find((w) => w.date === today),
       health,
       acwr: ratio,

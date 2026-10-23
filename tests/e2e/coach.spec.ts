@@ -394,3 +394,11 @@ test('jalons : un cap franchi au log rapide apparaît sur Aujourd’hui et dans 
   await expect(page.getByRole('heading', { name: 'Jalons' })).toBeVisible();
   await expect(page.getByRole('list', { name: 'Jalons atteints' }).getByText('Premier 50 km')).toBeVisible();
 });
+
+test('démo : bandeau visible, « Commencer pour vrai » efface la démo et ramène à l’accueil', async ({ page }) => {
+  await openDemo(page);
+  await expect(page.getByText('Tu explores la démo : données fictives.')).toBeVisible();
+  await page.getByRole('button', { name: 'Commencer pour vrai' }).click();
+  await expect(page.getByRole('heading', { name: 'Sentier' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Explorer avec des données de démo' })).toBeVisible();
+});

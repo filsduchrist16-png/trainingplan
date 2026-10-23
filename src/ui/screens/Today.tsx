@@ -12,6 +12,7 @@ import { db } from '@/data/db';
 import { swapSessions } from '@/data/log';
 import { recentMilestoneRows, syncMilestones } from '@/data/milestones';
 import { createRecoveryPlan } from '@/data/planner';
+import { clearDemo } from '@/data/seed/demo';
 import { saveWellness } from '@/data/wellness';
 import { AcwrGauge } from '@/ui/components/AcwrGauge';
 import { Button } from '@/ui/components/Button';
@@ -21,7 +22,7 @@ import { QuickLogSheet } from '@/ui/components/QuickLogSheet';
 import { PHASE_LABEL } from '@/ui/components/PlanTimeline';
 import { Ring } from '@/ui/components/Ring';
 import { Why } from '@/ui/components/Why';
-import { useActiveAthlete } from '@/ui/hooks/useAthlete';
+import { useActiveAthlete, useIsDemo } from '@/ui/hooks/useAthlete';
 import { useCoach, type CoachContext } from '@/ui/hooks/useCoach';
 import { cn } from '@/ui/lib/cn';
 import { formatMinutes, sessionColor } from '@/ui/lib/sessionStyle';
@@ -52,12 +53,26 @@ function TodayFor({ athlete }: { athlete: Athlete }) {
         </div>
       </header>
 
+      <DemoBanner />
       {ctx.health.level !== 'ok' && <HealthBanner ctx={ctx} />}
       <TodayCore athlete={athlete} ctx={ctx} />
       {athlete.runWalk && <RunWalkCard runWalk={athlete.runWalk} />}
       <MilestoneCard athleteId={athlete.id} today={ctx.today} />
       <RaceCard ctx={ctx} />
       <Glance athlete={athlete} ctx={ctx} />
+    </div>
+  );
+}
+
+/** En démo : le dire, et offrir de commencer pour vrai (la démo s'efface, rien d'autre n'est touché). */
+function DemoBanner() {
+  const isDemo = useIsDemo();
+  const navigate = useNavigate();
+  if (!isDemo) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line p-3 text-sm">
+      <span className="text-muted">Tu explores la démo : données fictives.</span>
+      <Button size="sm" variant="secondary" onClick={async () => { await clearDemo(db); navigate('/', { replace: true }); }}>Commencer pour vrai</Button>
     </div>
   );
 }
@@ -170,6 +185,11 @@ function TodayCore({ athlete, ctx }: { athlete: Athlete; ctx: CoachContext }) {
             </m.div>
           )}
           {strength.map((x) => <p key={x.id} className="mt-3 text-sm text-muted">+ {x.title} ({x.durationMin} min)</p>)}
+          {(!shown || shown.type === 'repos') && ctx.nextRun && (
+            <p className="mt-3 rounded-xl bg-bg/40 p-3 text-sm">
+              Prochaine sortie : <strong>{format(parseISO(ctx.nextRun.date), 'EEEE d', { locale: frCA })}</strong> · {ctx.nextRun.title}
+            </p>
+          )}
 
           {decision && decision.explanations.length > 0 && (
             <Why className="mt-3">
@@ -191,12 +211,15 @@ function TodayCore({ athlete, ctx }: { athlete: Athlete; ctx: CoachContext }) {
               ) : <p>Pas de bon jour cette semaine pour la replacer : on la laisse tomber, et c'est correct.</p>}
             </div>
           )}
-          {planned && planned.status !== 'faite' && (
+          {planned && planned.status !== 'faite' && planned.type !== 'repos' && (
             <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={() => setLogOpen(true)}>C'est fait</Button>
-              <Button variant="outline" onClick={() => setShowMvv(!showMvv)}>{showMvv ? 'Séance complète' : 'Version minimale viable'}</Button>
+              {planned.minimal && <Button variant="outline" onClick={() => setShowMvv(!showMvv)}>{showMvv ? 'Séance complète' : 'Version courte'}</Button>}
               <Button variant="outline" onClick={() => navigate(`/seance/${planned.id}`)}>Détails</Button>
             </div>
+          )}
+          {planned?.type === 'repos' && (
+            <Button className="mt-4" variant="outline" onClick={() => setLogOpen(true)}>J'ai bougé quand même</Button>
           )}
           {planned?.status === 'faite' && planned.activityId && (
             <Button className="mt-4" variant="secondary" onClick={() => navigate(`/activite/${planned.activityId}`)}>Voir le debrief</Button>
