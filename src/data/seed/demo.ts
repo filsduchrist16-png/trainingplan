@@ -3,7 +3,7 @@ import type { Activity, Athlete, Race, Shoe, Wellness } from '@/engine/types';
 import type { SentierDB } from '../db';
 import { stamp } from '../ids';
 import { createPlan } from '../planner';
-import { activityLoad, addDays as addIso, isRunType, mondayOf, toIsoDate } from '@/engine';
+import { activityLoad, addDays as addIso, isRunType, mondayOf, toIsoDate, validateMove } from '@/engine';
 
 /**
  * Données de démo réalistes pour voir l'app vivante dès le premier lancement.
@@ -232,6 +232,27 @@ export async function loadDemo(db: SentierDB, today: Date = new Date()): Promise
       const act = byDate.get(ses.date);
       await db.sessions.update(ses.id, act ? { status: 'faite', activityId: act.id } : { status: ses.date < demo.activities[0]!.date ? 'faite' : 'sautee' });
     }
+  });
+  await showRunToday(db, todayIso);
+}
+
+/**
+ * La démo doit montrer une séance à faire aujourd'hui (ajuster, noter, porter des souliers…). Si le plan met un repos
+ * aujourd'hui, une sortie facile (ou la longue facile) à venir de la même semaine y est déplacée, comme le ferait la personne dans Plan,
+ * seulement si le moteur n'y voit rien à redire (validateMove).
+ */
+async function showRunToday(db: SentierDB, today: string): Promise<void> {
+  const week = await db.sessions.where('date').between(mondayOf(today), addIso(mondayOf(today), 6), true, true).filter((x) => x.athleteId === DEMO_ATHLETE_ID).toArray();
+  const todays = week.filter((x) => x.date === today);
+  if (todays.some((x) => isRunType(x.type) && x.type !== 'repos')) return;
+  // Une sortie facile d'abord ; sinon la longue facile (jamais une séance clé ni la course).
+  const later = week.filter((x) => x.date > today && !x.isKey).sort((a, b) => a.date.localeCompare(b.date));
+  const easy = later.find((x) => x.type === 'z2_endurance' || x.type === 'z1_recup' || x.type === 'strides') ?? later.find((x) => x.type === 'longue_facile');
+  if (!easy || validateMove(week, easy.id, today).some((e) => e.severity === 'attention' || e.severity === 'stop')) return;
+  const rest = todays.find((x) => x.type === 'repos');
+  await db.transaction('rw', db.sessions, async () => {
+    await db.sessions.update(easy.id, { date: today });
+    if (rest) await db.sessions.update(rest.id, { date: easy.date });
   });
 }
 

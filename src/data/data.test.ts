@@ -28,6 +28,19 @@ describe('seed de démo', () => {
     expect(a.wellness).toHaveLength(27);
   });
 
+  it('montre une sortie à faire aujourd’hui, du lundi au samedi (le dimanche, plus rien à déplacer dans la semaine)', async () => {
+    for (let d = 0; d < 6; d++) {
+      const today = new Date(Date.UTC(2026, 9, 19 + d, 12));
+      const local = new SentierDB(`test-${crypto.randomUUID()}`);
+      await local.open();
+      await loadDemo(local, today);
+      const iso = today.toISOString().slice(0, 10);
+      const todays = (await local.sessions.where('date').equals(iso).toArray()).map((x) => x.type);
+      expect(todays.some((t) => t !== 'repos' && !t.startsWith('muscu') && t !== 'plyo'), `${iso} : ${todays.join(', ')}`).toBe(true);
+      await local.delete();
+    }
+  });
+
   it('se charge puis s’efface sans toucher aux vraies données', async () => {
     await loadDemo(db, TODAY);
     const real = stamp({ name: 'Moi', hrMax: 185, hrRest: 50 } as never, 'real');

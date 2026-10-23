@@ -1,6 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { makeFit } from '../../src/data/import/fixtures';
 
+/** Avance dans l'assistant jusqu'à ce que `target` soit visible (les étapes sans objet sont sautées selon le profil). */
+async function continueUntil(page: import('@playwright/test').Page, target: import('@playwright/test').Locator) {
+  for (let i = 0; i < 12 && !(await target.isVisible()); i++) {
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.waitForTimeout(250);
+  }
+  await expect(target).toBeVisible();
+}
+/** La démo vit autour d'aujourd'hui : on fixe un mercredi pour que « la séance du jour » existe toujours. */
+async function openDemo(page: import('@playwright/test').Page) {
+  await page.clock.install({ time: new Date('2026-10-21T08:00:00') });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+}
+const planHeading = (page: import('@playwright/test').Page) => page.getByRole('heading', { name: 'Ton plan' });
+
 test('créer un plan 10 km depuis zéro avec l’assistant', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).click();
@@ -15,8 +31,7 @@ test('créer un plan 10 km depuis zéro avec l’assistant', async ({ page }) =>
   await page.getByRole('radio', { name: 'Un temps' }).click();
   await page.getByRole('textbox', { name: /Ton temps récent/ }).fill('50:00');
   await expect(page.getByText(/Tes allures/)).toBeVisible();
-  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
-  await expect(page.getByRole('heading', { name: 'Ton plan' })).toBeVisible();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText('Ta première semaine')).toBeVisible();
   await page.getByRole('button', { name: 'Créer mon plan' }).click();
 
@@ -27,8 +42,7 @@ test('créer un plan 10 km depuis zéro avec l’assistant', async ({ page }) =>
 });
 
 test('« Nuit courte » en 2 taps allège la séance avec une explication', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('radio', { name: /En forme/ }).click();
   await page.getByRole('button', { name: /Nuit courte/ }).click();
@@ -38,8 +52,7 @@ test('« Nuit courte » en 2 taps allège la séance avec une explication', asyn
 });
 
 test('importer un FIT → debrief avec temps par zone', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: /Importer des activités/ }).click();
@@ -52,8 +65,7 @@ test('importer un FIT → debrief avec temps par zone', async ({ page }) => {
 });
 
 test('déclarer une douleur tibiale change immédiatement le plan', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Corps' }).click();
   await page.getByRole('button', { name: 'tibia droit', exact: true }).click();
@@ -66,8 +78,7 @@ test('déclarer une douleur tibiale change immédiatement le plan', async ({ pag
 });
 
 test('profil : zones manuelles et FC max', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: /^Profil/ }).click();
@@ -91,8 +102,7 @@ test('l’assistant décide de la marche-course selon ce que tu cours d’une tr
   await page.getByRole('radio', { name: /Je n'ai jamais couru/ }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Moins de 5 min' }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText('On commence en marche-course')).toBeVisible();
   await expect(page.getByText(/1 min 30 course/).first()).toBeVisible(); // < 5 min d'affilée → palier 4
 });
@@ -103,14 +113,19 @@ test('courir de zéro : durée calculée par défaut, avertissement si on la rac
   await page.getByRole('radio', { name: /Courir de zéro/ }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page.getByText(/le temps qu'il faut pour courir 30 min/)).toBeVisible();
-  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText('À la fin : tu cours 30 min.')).toBeVisible();
   await expect(page.getByText(/Ton plan finira au palier/)).toHaveCount(0);
+  // « Courir de zéro » : ni l'expérience ni un temps de référence ne sont demandés (6 étapes au lieu de 8).
+  await expect(page.getByText('8 / 8')).toBeVisible();
   // Retour à la durée : on choisit 6 semaines.
-  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: /Retour/ }).click();
+  for (let i = 0; i < 12 && !(await page.getByRole('radio', { name: 'Je choisis' }).isVisible()); i++) {
+    await page.getByRole('button', { name: /Retour/ }).click();
+    await page.waitForTimeout(250);
+  }
   await page.getByRole('radio', { name: 'Je choisis' }).click();
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Durée du plan : moins' }).click();
-  for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText(/Ton plan finira au palier \d+ sur 13\./)).toBeVisible();
 });
 
@@ -118,11 +133,9 @@ async function startFromZero(page: import('@playwright/test').Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Commencer' }).click();
   await page.getByRole('radio', { name: /Courir de zéro/ }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, page.getByRole('button', { name: 'Moins de 5 min' }));
   await page.getByRole('button', { name: 'Moins de 5 min' }).click();
-  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await page.getByRole('button', { name: 'Créer mon plan' }).click();
   await expect(page.getByTestId('runwalk-stage')).toHaveText('Palier 4 sur 13');
 }
@@ -205,7 +218,7 @@ test('« Je sais pas » chez un régulier : séance d’évaluation, puis plan a
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('radio', { name: /Régulier/ }).click();
-  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText('Ta 1re séance : une évaluation.')).toBeVisible();
   await page.getByRole('button', { name: 'Créer mon plan' }).click();
   await expect(page.getByRole('heading', { name: /Évaluation : jusqu'à 10 min/ })).toBeVisible();
@@ -224,7 +237,7 @@ test('jamais couru, marathon : objectif irréaliste, objectif intermédiaire pro
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.getByRole('radio', { name: /Je n'ai jamais couru/ }).click();
-  for (let i = 0; i < 7; i++) await page.getByRole('button', { name: 'Continuer' }).click();
+  await continueUntil(page, planHeading(page));
   await expect(page.getByText('Objectif trop ambitieux pour cette date.')).toBeVisible();
   await page.getByRole('button', { name: /Viser un 5 km à cette date/ }).click();
   await expect(page.getByText('Objectif trop ambitieux pour cette date.')).toBeHidden();
@@ -259,8 +272,7 @@ test('répertoire des courses du Québec : choisir une course pré-remplit nom, 
 });
 
 test('profil : refaire le plan avec de nouvelles dispos', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: /^Profil/ }).click();
@@ -274,8 +286,7 @@ test('profil : refaire le plan avec de nouvelles dispos', async ({ page }) => {
 });
 
 test('muscu : logger une série, le repos démarre, la séance est enregistrée', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: 'Séance de muscu libre' }).click();
@@ -295,8 +306,7 @@ test('muscu : logger une série, le repos démarre, la séance est enregistrée'
 });
 
 test('progrès : tendances calculées par le moteur à partir de l’historique de démo', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Progrès' }).click();
   await expect(page.getByRole('heading', { name: 'Progrès' })).toBeVisible();
@@ -307,8 +317,7 @@ test('progrès : tendances calculées par le moteur à partir de l’historique 
 });
 
 test('équipement : ajouter une paire neuve, la porter au log rapide, ses km montent', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: /Équipement/ }).click();
@@ -331,8 +340,7 @@ test('équipement : ajouter une paire neuve, la porter au log rapide, ses km mon
 });
 
 test('nutrition : noter une sortie longue fait monter la cible de glucides', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Plus' }).click();
   await page.getByRole('link', { name: /Nutrition/ }).click();
@@ -354,8 +362,7 @@ test('nutrition : noter une sortie longue fait monter la cible de glucides', asy
 });
 
 test('corps : la carte montre la douleur, la routine ciblée apparaît, la prévention se coche', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('link', { name: 'Corps' }).click();
   await expect(page.getByRole('heading', { name: 'Corps' })).toBeVisible();
@@ -375,8 +382,7 @@ test('corps : la carte montre la douleur, la routine ciblée apparaît, la prév
 });
 
 test('jalons : un cap franchi au log rapide apparaît sur Aujourd’hui et dans Progrès', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
+  await openDemo(page);
   await expect(page.getByText('Séance du jour')).toBeVisible();
   await page.getByRole('button', { name: "C'est fait" }).click();
   await page.getByRole('textbox', { name: 'Distance' }).fill('50');

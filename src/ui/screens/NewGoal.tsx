@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { m, AnimatePresence } from 'motion/react';
 import {
   GOALS, addDays, buildWeekSessions, deriveProfile, screen, formatPace, generatePlan, pacesFromVdot, predictRaceTime, toIsoDate, vdotFromRace, vdotFromVma,
-  isPlausibleVdot, zonesFromHrMax,
+  estimateHrMax, isPlausibleVdot, zonesFromHrMax,
   type Athlete, type Availability, type BodyZone, type CrossTraining, type Difficulty, type Experience, type GoalKind, type HealthProfile, type PlanRequest, type Weekday,
 } from '@/engine';
 import { db } from '@/data/db';
@@ -24,7 +24,7 @@ import { cn } from '@/ui/lib/cn';
 const DAYS: { d: Weekday; short: string }[] = [
   { d: 1, short: 'Lun' }, { d: 2, short: 'Mar' }, { d: 3, short: 'Mer' }, { d: 4, short: 'Jeu' }, { d: 5, short: 'Ven' }, { d: 6, short: 'Sam' }, { d: 7, short: 'Dim' },
 ];
-const STEPS = ['Objectif', 'Course', 'Expérience', 'Départ', 'Forme', 'Dispos', 'Options', 'Questionnaire', 'Santé', 'Aperçu'] as const;
+const STEPS = ['Objectif', 'Course', 'Expérience', 'Départ', 'Forme', 'Dispos', 'Options', 'Questionnaire', 'Blessures', 'Aperçu'] as const;
 const PAIN_ZONES: { z: BodyZone; label: string }[] = [
   { z: 'tibia_g', label: 'Tibia G' }, { z: 'tibia_d', label: 'Tibia D' }, { z: 'achille_g', label: 'Achille G' }, { z: 'achille_d', label: 'Achille D' },
   { z: 'genou_g', label: 'Genou G' }, { z: 'genou_d', label: 'Genou D' }, { z: 'itb_g', label: 'Bandelette G' }, { z: 'itb_d', label: 'Bandelette D' },
@@ -146,8 +146,9 @@ function Wizard({ athlete }: { athlete: Athlete }) {
         ...(raceGoal && s.hasRace ? { race: { date: s.raceDate, distanceKm: s.raceKm, elevationGainM: profile!.family === 'trail' ? s.raceGain : 0 } } : s.goal === 'debuter' && s.autoDuration ? {} : { durationWeeks: s.durationWeeks }),
         experience: s.experience,
         difficulty: s.difficulty,
-        currentWeeklyKm: s.currentKm,
-        ...(s.longestKm ? { longestRecentRunKm: s.longestKm } : {}),
+        // « Jamais couru » : pas de volume (une valeur saisie avant de changer d'expérience ne compte plus).
+        currentWeeklyKm: s.experience === 'jamais' && !fromHistory ? 0 : s.currentKm,
+        ...(s.longestKm && (s.experience !== 'jamais' || fromHistory) ? { longestRecentRunKm: s.longestKm } : {}),
         ...(s.continuousMin !== undefined ? { continuousMin: s.continuousMin } : {}),
         availability: s.availability,
         ...(validVdot ? { vdot: validVdot } : {}),
@@ -159,6 +160,12 @@ function Wizard({ athlete }: { athlete: Athlete }) {
       }
     : undefined;
   const preview = request && step === STEPS.length - 1 ? generatePlan(request) : undefined;
+
+  // Étapes sans objet selon le profil : « Courir de zéro » fixe l'expérience ; sans course passée, pas de temps de référence.
+  const skipped = (i: number) => (i === 2 && s.goal === 'debuter') || (i === 4 && s.experience === 'jamais');
+  const visible = STEPS.map((_, i) => i).filter((i) => !skipped(i));
+  const position = visible.indexOf(step);
+  const go = (dir: 1 | -1) => setStep(visible[position + dir] ?? step);
 
   const canNext = [
     Boolean(s.goal),
@@ -219,13 +226,13 @@ function Wizard({ athlete }: { athlete: Athlete }) {
     <div className="flex min-h-[85dvh] flex-col gap-5">
       <header className="space-y-3">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => (step === 0 ? navigate(-1) : setStep(step - 1))} className="text-sm text-muted hover:text-text">
+          <button type="button" onClick={() => (step === 0 ? navigate(-1) : go(-1))} className="text-sm text-muted hover:text-text">
             ← {step === 0 ? 'Annuler' : 'Retour'}
           </button>
-          <span className="num text-xs text-muted">{step + 1} / {STEPS.length}</span>
+          <span className="num text-xs text-muted">{position + 1} / {visible.length}</span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1} aria-label="Progression">
-          <m.div className="h-full bg-accent" animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={1} aria-valuemax={visible.length} aria-valuenow={position + 1} aria-label="Progression">
+          <m.div className="h-full bg-accent" animate={{ width: `${((position + 1) / visible.length) * 100}%` }} />
         </div>
       </header>
 
@@ -241,7 +248,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                 ))}
                 <Eyebrow className="mt-3">Trail</Eyebrow>
                 {(['trail_court', 'trail_moyen', 'ultra'] as GoalKind[]).map((g) => (
-                  <ChoiceCard key={g} selected={s.goal === g} onSelect={() => chooseGoal(g)} title={GOALS[g].label} subtitle="D+ pris en compte, côtes et descentes" />
+                  <ChoiceCard key={g} selected={s.goal === g} onSelect={() => chooseGoal(g)} title={GOALS[g].label} subtitle={`${GOALS[g].minWeeks} à ${GOALS[g].idealWeeks}+ semaines · D+, côtes et descentes`} />
                 ))}
                 <Eyebrow className="mt-3">Autre</Eyebrow>
                 <ChoiceCard selected={s.goal === 'debuter'} onSelect={() => chooseGoal('debuter')} title="Courir de zéro" subtitle="Marche-course progressive jusqu'à 30 min continues" />
@@ -294,9 +301,9 @@ function Wizard({ athlete }: { athlete: Athlete }) {
           {step === 3 && (
             <>
               <h1 className="text-3xl font-semibold">D'où tu pars</h1>
-              <p className="text-muted">Ton volume <strong>actuel</strong>, pas celui que tu voudrais. Le plan monte d'au plus 10 % par semaine à partir de là.</p>
+              <p className="text-muted">{s.experience === 'jamais' ? 'Une seule question : elle décide par où on commence.' : <>Ton volume <strong>actuel</strong>, pas celui que tu voudrais. Le plan monte d'au plus 10 % par semaine à partir de là.</>}</p>
               {fromHistory && <p className="rounded-xl bg-ok/10 p-3 text-sm text-ok">Pré-rempli à partir de ton historique importé.</p>}
-              <Stepper label="Volume par semaine" value={s.currentKm} onChange={(v) => set({ currentKm: v })} max={250} unit="km" />
+              {s.experience !== 'jamais' && <Stepper label="Volume par semaine" value={s.currentKm} onChange={(v) => set({ currentKm: v })} max={250} unit="km" />}
               <Field label="Combien de temps peux-tu courir sans t'arrêter ni marcher?" hint="C'est ça qui décide si on commence par de la marche-course. Pas sûr? Choisis le plus bas." group>
                 <div className="flex flex-wrap gap-2">
                   {([[undefined, 'Je sais pas'], [3, 'Moins de 5 min'], [8, '5 à 10 min'], [15, '10 à 20 min'], [25, '20 à 30 min'], [40, '30 min et +']] as [number | undefined, string][]).map(([v, label]) => (
@@ -304,8 +311,12 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                   ))}
                 </div>
               </Field>
-              <Stepper label="Plus longue sortie récente" value={s.longestKm} onChange={(v) => set({ longestKm: v })} step={0.5} max={100} unit="km" />
-              <p className="text-xs text-muted">Ta plus longue course d'une traite, en km. C'est elle qui limite la longueur de <em>chaque</em> sortie du plan : on l'allonge de ~10 % à la fois. Pas sûr? Mets une valeur un peu basse.</p>
+              {s.experience !== 'jamais' && (
+                <>
+                  <Stepper label="Plus longue sortie récente" value={s.longestKm} onChange={(v) => set({ longestKm: v })} step={0.5} max={100} unit="km" />
+                  <p className="text-xs text-muted">Ta plus longue course d'une traite ces dernières semaines, en km. C'est elle qui limite la longueur de <em>chaque</em> sortie du plan : on l'allonge de ~10 % à la fois. Pas sûr? Laisse 0 : on l'estime depuis ton volume.</p>
+                </>
+              )}
               <Why>Partir de ton vrai volume, c'est la base de la prévention : os, tendons et périoste s'adaptent plus lentement que le cardio. Sous 10 km/sem, le plan commence par de la marche-course.</Why>
             </>
           )}
@@ -324,7 +335,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                 </div>
               )}
               {s.fitnessMode === 'vma' && <Stepper label="VMA" value={s.vma} onChange={(v) => set({ vma: v })} step={0.5} min={8} max={25} unit="km/h" />}
-              {s.fitnessMode === 'inconnu' && <p className="rounded-xl bg-surface-2 p-3 text-sm">Pas de souci : allures prudentes au départ, et un test de 3 km en semaine 2 pour calibrer.</p>}
+              {s.fitnessMode === 'inconnu' && <p className="rounded-xl bg-surface-2 p-3 text-sm">{s.experience === 'regulier' || s.experience === 'avance' ? 'Pas de souci : allures prudentes au départ, et un test de 3 km en semaine 2 pour calibrer.' : 'Pas de souci : tu cours au ressenti. Facile = tu peux parler en phrases complètes. Tu pourras ajouter un temps plus tard, depuis ton profil.'}</p>}
               {validVdot && <PacePreview vdot={validVdot} />}
             </>
           )}
@@ -352,6 +363,10 @@ function Wizard({ athlete }: { athlete: Athlete }) {
                   ))}
                 </div>
               </Field>
+              {s.availability.allowedDays.length < s.availability.runDaysPerWeek && (
+                <p className="rounded-xl bg-warn/12 p-3 text-sm text-warn">Tu as coché {s.availability.allowedDays.length} jour(s) pour {s.availability.runDaysPerWeek} sorties : le plan en fera {s.availability.allowedDays.length}. Coche d'autres jours pour en avoir plus.</p>
+              )}
+              <p className="text-sm text-muted">Aucune séance ne dépassera ces temps, échauffement compris.</p>
               <Stepper label="Max en semaine" value={s.availability.maxWeekdayMinutes} onChange={(v) => set({ availability: { ...s.availability, maxWeekdayMinutes: v } })} step={15} min={20} max={180} unit="min" />
               <Stepper label="Max la fin de semaine" value={s.availability.maxWeekendMinutes} onChange={(v) => set({ availability: { ...s.availability, maxWeekendMinutes: v } })} step={15} min={30} max={480} unit="min" />
             </>
@@ -394,7 +409,7 @@ function Wizard({ athlete }: { athlete: Athlete }) {
 
           {step === 8 && (
             <>
-              <h1 className="text-3xl font-semibold">Santé</h1>
+              <h1 className="text-3xl font-semibold">Blessures et cœur</h1>
               <Field label="Blessures passées (ça rend le plan plus prudent)" group>
                 <div className="flex flex-wrap gap-2">
                   {PAIN_ZONES.map(({ z, label }) => (
@@ -412,18 +427,24 @@ function Wizard({ athlete }: { athlete: Athlete }) {
               </Field>
               {s.currentPain && <Stepper label="Intensité" value={s.currentPain.intensity} onChange={(v) => set({ currentPain: { ...s.currentPain!, intensity: v } })} max={10} unit="/ 10" />}
               <Stepper label="FC max" value={s.hrMax} onChange={(v) => set({ hrMax: v })} min={140} max={220} unit="bpm" />
-              <Chip selected={s.hrMaxTested} onToggle={() => set({ hrMaxTested: !s.hrMaxTested })}>Mesurée lors d'un test</Chip>
+              <div className="flex flex-wrap gap-2">
+                <Chip selected={s.hrMaxTested} onToggle={() => set({ hrMaxTested: !s.hrMaxTested })}>Mesurée lors d'un test</Chip>
+                {s.body.birthYear && !s.hrMaxTested && (
+                  <Chip selected={s.hrMax === estimateHrMax(Number(today.slice(0, 4)) - s.body.birthYear)} onToggle={() => set({ hrMax: estimateHrMax(Number(today.slice(0, 4)) - s.body.birthYear!) })}>Estimer selon mon âge</Chip>
+                )}
+              </div>
+              <p className="text-xs text-muted">Pas de montre cardio ou pas sûr? Garde la valeur proposée : le plan se pilote aussi au ressenti.</p>
               <Stepper label="FC repos" value={s.hrRest} onChange={(v) => set({ hrRest: v })} min={30} max={100} unit="bpm" />
             </>
           )}
 
-          {step === 9 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onPostpone={() => setStep(1)} onAlternative={(g) => { set({ goal: g, raceKm: GOALS[g].defaultDistanceKm, raceGain: GOALS[g].defaultElevationM }); }} />}
+          {step === 9 && request && preview && <Preview request={request} preview={preview} athlete={athlete} onChangeGoal={() => setStep(0)} onPostpone={() => setStep(1)} onAlternative={(g) => { set({ goal: g, raceKm: GOALS[g].defaultDistanceKm, raceGain: GOALS[g].defaultElevationM }); }} />}
         </m.section>
       </AnimatePresence>
 
       <footer className="sticky bottom-24 pt-2">
         {step < STEPS.length - 1 ? (
-          <Button size="lg" className="w-full" disabled={!canNext} onClick={() => setStep(step + 1)}>Continuer</Button>
+          <Button size="lg" className="w-full" disabled={!canNext} onClick={() => go(1)}>Continuer</Button>
         ) : (
           <Button size="lg" className="w-full" disabled={!canNext || busy} onClick={create}>{busy ? 'Création…' : 'Créer mon plan'}</Button>
         )}
@@ -458,7 +479,9 @@ function formatTime(min: number): string {
   return h ? `${h}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${mm}:${String(ss).padStart(2, '0')}`;
 }
 
-function Preview({ request, preview, athlete, onPostpone, onAlternative }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete; onPostpone: () => void; onAlternative: (goal: GoalKind) => void }) {
+const SEVERITY_ORDER = { stop: 0, attention: 1, conseil: 2, info: 3 } as const;
+
+function Preview({ request, preview, athlete, onChangeGoal, onPostpone, onAlternative }: { request: PlanRequest; preview: ReturnType<typeof generatePlan>; athlete: Athlete; onChangeGoal: () => void; onPostpone: () => void; onAlternative: (goal: GoalKind) => void }) {
   const first = preview.weeks[0];
   const firstWeek = first
     ? buildWeekSessions(first, {
@@ -470,9 +493,10 @@ function Preview({ request, preview, athlete, onPostpone, onAlternative }: { req
     : [];
   if (!preview.ok) {
     return (
-      <Card>
+      <Card className="space-y-3">
         <h1 className="text-2xl">{preview.warnings[0]?.title}</h1>
-        <p className="mt-2 text-muted">{preview.warnings[0]?.why}</p>
+        <p className="text-muted">{preview.warnings[0]?.why}</p>
+        <Button variant="outline" size="sm" onClick={onChangeGoal}>Changer d'objectif</Button>
       </Card>
     );
   }
@@ -487,7 +511,7 @@ function Preview({ request, preview, athlete, onPostpone, onAlternative }: { req
       <Card>
         <PlanTimeline weeks={preview.weeks} />
       </Card>
-      {preview.warnings.map((w) => (
+      {[...preview.warnings].sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]).map((w) => (
         <div key={w.ruleId} className={cn('rounded-xl p-3 text-sm', w.severity === 'attention' ? 'bg-warn/12 text-warn' : 'bg-surface-2')}>
           <strong>{w.title}.</strong> <span className="text-muted">{w.why}</span>
         </div>

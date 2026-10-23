@@ -16,6 +16,7 @@ for (const theme of ['dark', 'light'] as const) {
   test(`accessibilité (axe) — thème ${theme}`, async ({ page }) => {
     // Le thème est une préférence locale : on la fixe avant le chargement.
     await page.addInitScript((t) => localStorage.setItem('sentier.theme', t), theme);
+    await page.clock.install({ time: new Date('2026-10-21T08:00:00') }); // un mercredi : la séance du jour existe
     await page.goto('/');
     await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
     await expect(page.getByText('Séance du jour')).toBeVisible();
@@ -35,6 +36,7 @@ for (const theme of ['dark', 'light'] as const) {
 }
 
 test('accessibilité (axe) — feuille de log rapide, assistant (santé) et détail de séance', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-21T08:00:00') });
   await page.goto('/');
   await page.getByRole('button', { name: 'Explorer avec des données de démo' }).click();
   await expect(page.getByText('Séance du jour')).toBeVisible();
