@@ -2,6 +2,23 @@
 
 > Statut : **validé (révision 2, 21 oct. 2026).** La section « Révision 2 » ci-dessous a priorité sur le reste du document.
 
+## MVP livré (Phases 0 à 3)
+
+Décision du 21 oct. 2026 : on fige un **MVP**, les autres fonctionnalités viendront plus tard.
+
+**Livré :** moteur complet et testé à 100 % (zones, allures VDOT, charge/ACWR, progression, périodisation route/trail/débuter/forme, planification hebdo, garde-fous santé, état du jour, debrief), assistant « Nouvel objectif », Aujourd'hui, Plan (glisser-déposer), fiche de séance, import Garmin + debrief, Corps minimal (douleurs + état santé), Progrès minimal (volume/D+), démo, backup, PWA.
+
+**Reporté (backlog, par ordre de valeur) :**
+1. ~~Progrès complet~~ : fait (efficacité aérobie à FC égale et découvertes, distribution par zones vs 80/10/10, cadence, VO2max lissée, FC repos, VFC).
+2. ~~Profil / zones~~ : fait (zones auto ou manuelles, FC max par test, niveau de forme, dispos). Le plan en cours se refait avec les nouvelles dispos (bouton dans Profil, `replanActive`).
+3. ~~Muscu~~ : fait (programmes par phase, logger séries × reps × charge × RPE, minuteur de repos, tempo guidé, double progression). Reste : bibliothèque d'exercices éditable, historique de charges en graphique.
+4. ~~Nutrition~~ : fait (gut training progressif, journal de tolérance, plan de course, carbo-loading).
+5. ~~Équipement~~ : fait (km par paire, rodage, usure, rotation, paire conseillée ; écran Équipement).
+6. ~~Corps complet~~ : fait (carte du corps cliquable, routines de prévention à cocher, routines ciblées par les douleurs).
+7. ~~Jalons~~ : fait (premiers, cumuls, séries de semaines, plus longue sortie ; carte « Bravo » sobre, sans confettis).
+8. Polish (Phase 5) : ~~audit a11y~~ (axe WCAG 2 AA, 14 écrans × 2 thèmes, zéro violation), ~~Lighthouse > 90~~ (mobile : perf 97, a11y 100, bonnes pratiques 100, SEO 100). Reste : anglais.
+9. ~~Comptes et synchro Supabase (opt-in)~~ : intégré (compte optionnel, synchro, coach, communauté), voir `docs/SUPABASE.md`.
+
 ## Révision 2 — décisions après les réponses
 
 ### Ce qui change

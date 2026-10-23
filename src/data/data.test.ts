@@ -25,7 +25,20 @@ describe('seed de démo', () => {
     const weeklyKm = a.activities.reduce((s, x) => s + x.distanceKm, 0) / 8.5;
     expect(weeklyKm).toBeGreaterThan(30);
     expect(weeklyKm).toBeLessThan(60);
-    expect(a.wellness).toHaveLength(28);
+    expect(a.wellness).toHaveLength(27);
+  });
+
+  it('montre une sortie à faire aujourd’hui, du lundi au samedi (le dimanche, plus rien à déplacer dans la semaine)', async () => {
+    for (let d = 0; d < 6; d++) {
+      const today = new Date(Date.UTC(2026, 9, 19 + d, 12));
+      const local = new SentierDB(`test-${crypto.randomUUID()}`);
+      await local.open();
+      await loadDemo(local, today);
+      const iso = today.toISOString().slice(0, 10);
+      const todays = (await local.sessions.where('date').equals(iso).toArray()).map((x) => x.type);
+      expect(todays.some((t) => t !== 'repos' && !t.startsWith('muscu') && t !== 'plyo'), `${iso} : ${todays.join(', ')}`).toBe(true);
+      await local.delete();
+    }
   });
 
   it('se charge puis s’efface sans toucher aux vraies données', async () => {
@@ -71,6 +84,12 @@ describe('backup JSON', () => {
     const bad = await importBackup(db, { app: 'sentier', schemaVersion: 1, exportedAt: 'x', tables: { activities: [{ id: 'a' }] } });
     expect(bad.ok).toBe(false);
     expect(await db.activities.count()).toBe(before);
+  });
+
+  it('garde le questionnaire santé, et refuse une version mal formée', () => {
+    const athlete = { id: 'a', createdAt: 'x', updatedAt: 'x', name: 'A', hrMax: 190, hrRest: 60, heightCm: 170, health: { answers: { q1: false, q9: true }, answeredAt: '2026-10-01', conditions: [] } };
+    expect(parseBackup({ app: 'sentier', schemaVersion: 1, exportedAt: 'x', tables: { athletes: [athlete] } }).ok).toBe(true);
+    expect(parseBackup({ app: 'sentier', schemaVersion: 1, exportedAt: 'x', tables: { athletes: [{ ...athlete, health: { answers: { q1: 'oui' }, answeredAt: '2026-10-01', conditions: [] } }] } }).ok).toBe(false);
   });
 
   it('refuse un backup d’une version plus récente', () => {

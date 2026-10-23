@@ -36,3 +36,7 @@ export async function createBlankAthlete(db: SentierDB, name = 'Moi'): Promise<A
   });
   return athlete;
 }
+
+export async function updateAthlete(db: SentierDB, id: string, patch: Partial<Athlete>): Promise<void> {
+  await db.athletes.update(id, { ...patch, updatedAt: new Date().toISOString() });
+}

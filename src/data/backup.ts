@@ -15,7 +15,10 @@ const owned = entity.extend({ athleteId: z.string().min(1) });
 const dated = owned.extend({ date: isoDate });
 
 const rowSchemas: Record<TableName, z.ZodType> = {
-  athletes: entity.extend({ name: z.string(), hrMax: z.number(), hrRest: z.number() }),
+  athletes: entity.extend({
+    name: z.string(), hrMax: z.number(), hrRest: z.number(), heightCm: z.number().positive().optional(),
+    health: z.looseObject({ answers: z.record(z.string(), z.boolean()), answeredAt: isoDate, clearance: isoDate.optional(), conditions: z.array(z.string()) }).optional(),
+  }),
   races: dated.extend({ name: z.string(), distanceKm: z.number().nonnegative(), priority: z.enum(['A', 'B', 'C']) }),
   blocks: owned.extend({ startDate: isoDate, endDate: isoDate, status: z.string() }),
   weeks: owned.extend({ blockId: z.string(), index: z.number().int().nonnegative(), startDate: isoDate }),

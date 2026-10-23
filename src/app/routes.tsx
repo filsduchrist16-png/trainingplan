@@ -1,19 +1,26 @@
 import { createBrowserRouter } from 'react-router';
 import { AppShell } from './AppShell';
-import { Today } from '@/ui/screens/Today';
-import { Settings } from '@/ui/screens/Settings';
 import { Placeholder } from '@/ui/screens/Placeholder';
-import { t } from '@/ui/lib/strings';
 
 export const router = createBrowserRouter([
   {
     element: <AppShell />,
     children: [
-      { index: true, element: <Today /> },
-      { path: 'plan', element: <Placeholder title="Plan" text={t.empty.plan} /> },
-      { path: 'progres', element: <Placeholder title="Progrès" text={t.empty.progress} /> },
-      { path: 'corps', element: <Placeholder title="Corps" text="Journal de douleur, red flags et routine de prévention." /> },
-      { path: 'plus', element: <Settings /> },
+      { index: true, lazy: async () => ({ Component: (await import('@/ui/screens/Home')).Home }) },
+      { path: 'plan', lazy: async () => ({ Component: (await import('@/ui/screens/Plan')).Plan }) },
+      { path: 'seance/:id', lazy: async () => ({ Component: (await import('@/ui/screens/SessionDetail')).SessionDetail }) },
+      { path: 'importer', lazy: async () => ({ Component: (await import('@/ui/screens/Import')).Import }) },
+      { path: 'activite/:id', lazy: async () => ({ Component: (await import('@/ui/screens/ActivityDebrief')).ActivityDebrief }) },
+      { path: 'progres', lazy: async () => ({ Component: (await import('@/ui/screens/Progress')).Progress }) },
+      { path: 'corps', lazy: async () => ({ Component: (await import('@/ui/screens/Body')).Body }) },
+      { path: 'plus', lazy: async () => ({ Component: (await import('@/ui/screens/Settings')).Settings }) },
+      { path: 'nutrition', lazy: async () => ({ Component: (await import('@/ui/screens/Nutrition')).Nutrition }) },
+      { path: 'equipement', lazy: async () => ({ Component: (await import('@/ui/screens/Equipement')).Equipement }) },
+      { path: 'muscu', lazy: async () => ({ Component: (await import('@/ui/screens/Muscu')).Muscu }) },
+      { path: 'sante', lazy: async () => ({ Component: (await import('@/ui/screens/Health')).Health }) },
+      { path: 'profil', lazy: async () => ({ Component: (await import('@/ui/screens/Profile')).Profile }) },
+      { path: 'connexion', lazy: async () => ({ Component: (await import('@/ui/screens/Login')).Login }) },
+      { path: 'objectif', lazy: async () => ({ Component: (await import('@/ui/screens/NewGoal')).NewGoal }) },
       { path: 'communaute', lazy: async () => ({ Component: (await import('@/ui/screens/Community')).Community }) },
       { path: 'coach', lazy: async () => ({ Component: (await import('@/ui/screens/Coach')).Coach }) },
       { path: 'coach/:athleteId', lazy: async () => ({ Component: (await import('@/ui/screens/Coach')).CoachAthlete }) },

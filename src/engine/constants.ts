@@ -175,10 +175,70 @@ export const FITNESS_UPDATE_STEP = 1;
 /** Répartition des semaines hors taper : base / spécifique 1 / spécifique 2 (pic) / pré-compétition (bloc de 27 sem. → 9/7/6/3 + 2 taper). */
 export const PHASE_RATIOS = { spec1: 0.28, spec2: 0.24, precomp: 0.12 } as const;
 
-/** Sous ce volume hebdo (km), on commence par une phase « démarrage » en marche-course. */
-export const DEMARRAGE_THRESHOLD_KM = 10;
+/**
+ * Marche-course : on démarre ainsi quand la capacité de course CONTINUE est sous ce seuil (minutes), selon l'expérience.
+ * Ce n'est pas le volume hebdo qui compte (3 × 4 km est continu, 10 × 1 km ne l'est pas) mais ce qu'on peut courir d'une traite.
+ * Jamais couru : 30 min (os, tendons et périoste ne sont pas adaptés, même si le souffle suit).
+ * Débutant : 20 min. Régulier : 10 min (reprise après une longue pause). Avancé : jamais. À VALIDER.
+ */
+export const RUN_WALK_BELOW_CONTINUOUS_MIN = { jamais: 30, debutant: 20, regulier: 10, avance: 0 } as const;
+/**
+ * Échelle de marche/course, paliers 1 à 13 (esprit Couch to 5K). Chaque séance = 5 min de marche rapide
+ * + le bloc + 5 min de marche lente, soit 30 à 45 min. Le temps de course total ne monte jamais de plus
+ * de 25 % d'un palier au suivant. Le palier 13 = 20 min continues. À VALIDER par un professionnel.
+ */
+export const RUN_WALK_LADDER = [
+  { runSec: 30, walkSec: 60, reps: 14 },
+  { runSec: 60, walkSec: 90, reps: 8 },
+  { runSec: 60, walkSec: 60, reps: 10 },
+  { runSec: 90, walkSec: 60, reps: 8 },
+  { runSec: 120, walkSec: 60, reps: 7 },
+  { runSec: 180, walkSec: 60, reps: 5 },
+  { runSec: 240, walkSec: 60, reps: 4 },
+  { runSec: 300, walkSec: 60, reps: 4 },
+  { runSec: 420, walkSec: 60, reps: 3 },
+  { runSec: 600, walkSec: 60, reps: 2 },
+  { runSec: 720, walkSec: 60, reps: 2 },
+  { runSec: 900, walkSec: 60, reps: 2 },
+  { runSec: 1200, walkSec: 0, reps: 1 },
+] as const;
+export const RUN_WALK_WARMUP_MIN = 5;
+export const RUN_WALK_COOLDOWN_MIN = 5;
+/** Transition continue : 20 → 30 min de course facile (20 = palier 13), un palier par 2 séances validées. */
+export const CONTINUOUS_TRANSITION_MIN = [20, 22, 24, 26, 28, 30] as const;
+/** Allure de marche pour estimer les km affichés (min/km). À VALIDER. */
+export const WALK_PACE_MIN_PER_KM = 11;
+/** Marche d'abord (niveau 0) : de 20 à 30 min, +5 min par séance validée ; sortie : 30 min validées 2 fois de suite. */
+export const WALK_FIRST_START_MIN = 20;
+export const WALK_FIRST_STEP_MIN = 5;
+export const WALK_FIRST_TARGET_MIN = 30;
+/** Après le démarrage : au moins 4 semaines de base, sans séance clé, avant les phases de l'objectif. */
+export const BASE_WEEKS_AFTER_RUNWALK = 4;
+/** Z2 minimum avant des strides : en dessous, la séance devient une sortie facile. À VALIDER (pratique courante). */
+export const STRIDES_MIN_BASE_MIN = 10;
+/**
+ * Séance de qualité trop longue pour le temps du jour : échauffement et retour au calme raccourcis à ces durées (min),
+ * puis une répétition de moins à la fois, jamais sous QUALITY_MIN_REPS ni sous la moitié des répétitions prévues
+ * (sinon la séance perd son sens et devient facile). À VALIDER.
+ */
+export const QUALITY_SHORT_WARMUP_MIN = 10;
+export const QUALITY_SHORT_COOLDOWN_MIN = 5;
+export const QUALITY_MIN_REPS = 2;
+/** Strides et sprints en côte seulement quand on court au moins 30 min d'affilée (sortie longue ≥ 30 min). */
+export const STRIDES_MIN_CONTINUOUS_MIN = 30;
+/** Démarrage : au plus 3 séances par semaine, jamais deux jours de suite. */
+export const RUN_WALK_MAX_SESSIONS_PER_WEEK = 3;
+/** Le jour de la longue, pendant le démarrage : même palier, plus 10 min de marche. */
+export const RUN_WALK_LONG_DAY_EXTRA_WALK_MIN = 10;
+/** Le 1er intervalle vaut au plus la moitié de ce qu'on court d'une traite : on garde de la marge. */
+export const RUN_WALK_FIRST_INTERVAL_SHARE = 0.5;
 /** Volume de départ minimal d'un plan démarrage (≈ 3 × 20 min de marche-course). */
 export const DEMARRAGE_START_KM = 6;
+/**
+ * Reprise sans volume actuel (0 km/sem) mais en course continue : chaque sortie de départ vaut cette part de ce qu'on
+ * court d'une traite (on garde de la marge après une pause). À VALIDER.
+ */
+export const RESTART_RUN_SHARE = 0.75;
 
 /** Longueur maximale d'un plan. Au-delà, le plan démarre plus tard et on garde la forme d'ici là. */
 export const MAX_PLAN_WEEKS = 52;
@@ -198,10 +258,22 @@ export const LONG_RUN_SHARE_BY_PHASE = {
 export const LONG_RUN_SHARE_LONG_GOALS = { spec1: 0.35, spec2: 0.4, precomp: 0.4 } as const;
 /** Seuil (minutes de longue max de l'objectif) au-delà duquel un objectif est « long ». */
 export const LONG_GOAL_MIN_LONG_RUN_MIN = 180;
+/**
+ * Prêt pour la course : la plus longue sortie atteinte avant l'affûtage vaut au moins cette part de l'épreuve
+ * (en km-effort, D+ compris). En dessous, le plan le dit et propose un objectif plus court ou une date plus lointaine.
+ * Ordres de grandeur des plans « finir en santé ». À VALIDER.
+ */
+export const RACE_READY_LONG_RUN_SHARE = {
+  route_5k: 0.8, route_10k: 0.7, route_semi: 0.6, route_marathon: 0.5, trail_court: 0.5, trail_moyen: 0.4, ultra: 0.3,
+} as const;
 
-/** Croissance max de la sortie longue d'une semaine à l'autre : +10 % ou +1,5 km (le plus grand). */
+/**
+ * Croissance de la sortie longue : +10 % de la plus longue sortie récente, sans pas minimum
+ * (décision validée : « +10 % max » pour tout le monde, la longue arrondie au 0,1 km inférieur et à la minute).
+ */
 export const LONG_RUN_GROWTH = 0.1;
-export const LONG_RUN_GROWTH_MIN_KM = 1.5;
+/** Sans plus longue sortie déclarée, on suppose que le volume hebdo se répartit sur ce nombre de sorties. */
+export const ASSUMED_RUNS_PER_WEEK = 3;
 
 /** D+ hebdo cible (trail) = km × (D+/km de la course) × facteur de phase. Descentes et D+ montent progressivement. */
 export const ELEVATION_PHASE_FACTOR = {
@@ -212,9 +284,160 @@ export const ELEVATION_PHASE_FACTOR = {
 
 /** Sortie facile minimale : en dessous, mieux vaut un jour de repos. */
 export const MIN_EASY_RUN_KM = 3;
-/** Idem en marche-course (≈ 15-20 min). */
-export const MIN_RUN_WALK_KM = 1.5;
+/** Une sortie facile un peu sous le minimum (arrondis) est gardée plutôt que retirée : jusqu'à 10 % sous. À VALIDER. */
+export const EASY_RUN_MIN_TOLERANCE = 0.1;
 /** Durée d'une séance de muscu (min). */
 export const STRENGTH_SESSION_MIN = 45;
 /** Au-delà de cette durée, la sortie inclut du gut training (glucides pendant l'effort). */
 export const GUT_TRAINING_MIN_MINUTES = 75;
+
+
+// ─── Progression du parcours marche/course (validation par séance) ────────────
+
+/** Séances validées DE SUITE pour passer au palier suivant (3 en profil « lent »). À VALIDER. */
+export const RUN_WALK_VALIDATIONS = 2;
+export const RUN_WALK_VALIDATIONS_SLOW = 3;
+/** RPE maximal d'une séance validée (« je pouvais parler ») ; au-delà de ce seuil, c'est un échec. */
+export const RUN_WALK_MAX_RPE_OK = 5;
+export const RUN_WALK_RPE_FAIL = 8;
+/** Échecs de suite au même palier avant de reculer d'un palier. */
+export const RUN_WALK_FAILS_TO_STEP_BACK = 2;
+/** Douleur (0-10) qui bloque l'avancement (≥ 1) ou fait reculer (≥ 3), déclarée le jour même ou le lendemain. */
+export const RUN_WALK_PAIN_HOLD = 1;
+export const RUN_WALK_PAIN_BACK = 3;
+/** Trous sans séance (jours) : répéter le palier, reculer de 2 paliers, ou repartir du point d'entrée. */
+export const RUN_WALK_GAP_REPEAT_DAYS = 7;
+export const RUN_WALK_GAP_BACK_DAYS = 14;
+export const RUN_WALK_GAP_RESTART_DAYS = 28;
+export const RUN_WALK_GAP_BACK_STAGES = 2;
+
+// ─── Questionnaire santé (dépistage) ──────────────────────────────────────────
+/** Le questionnaire santé est à refaire tous les 12 mois (et dès qu'une réponse change). */
+export const HEALTH_RENEW_DAYS = 365;
+/** Plan prudent (dépistage) : semaines du début sans intensité au-dessus de Z2 (ni séance clé, ni strides, ni test). À VALIDER. */
+export const HEALTH_PRUDENT_EASY_WEEKS = 4;
+
+// ─── Profils (âge, IMC, santé, blessure) ── seuils À VALIDER par un professionnel ──
+/** Âge à partir duquel le profil est « lent » (3 validations par palier, décharge 2:1). À VALIDER. */
+export const PROFILE_SLOW_AGE = 60;
+/** 50 ans et plus : cycle 2:1 par défaut, au plus 1 séance clé pour qui débute, muscu 2×/sem conseillée. À VALIDER. */
+export const PROFILE_MASTERS_AGE = 50;
+/** 65 ans et plus : marche/course si capacité < 20 min, équilibre en muscu, pas de VO2max sans base. À VALIDER. */
+export const PROFILE_SENIOR_AGE = 65;
+/** Mineur : pas de marathon, trail moyen ni ultra ; difficulté au plus « équilibré ». */
+export const PROFILE_MINOR_AGE = 18;
+/** IMC à partir duquel le profil est « lent », sans jours de course consécutifs. À VALIDER. */
+export const PROFILE_BMI_SLOW = 30;
+/** Blessure « récente » (semaines × 7) : expérience rétrogradée d'un niveau. À VALIDER. */
+export const PROFILE_RECENT_INJURY_DAYS = 84;
+/** Capacité continue minimale (min) sous laquelle 65+ et retour de blessure récente commencent en marche/course. À VALIDER. */
+export const PROFILE_RUNWALK_MIN_CAPACITY = 20;
+/** Cycle de décharge des profils lents et des 50+ : 2 semaines de charge, 1 de décharge. À VALIDER. */
+export const PROFILE_BUILD_WEEKS_BEFORE_DELOAD = 2;
+/** 50+ qui débute : au plus 1 séance clé par semaine. À VALIDER. */
+export const PROFILE_MASTERS_MAX_KEY_NOVICE = 1;
+/** Diabète : note « sucre rapide, glycémie » sur les séances de plus de 45 min. À VALIDER. */
+export const PROFILE_DIABETES_NOTE_MIN = 45;
+/** Effort perçu (RPE) par zone, pour les zones sans cardio (FC non fiable). */
+export const ZONE_RPE: Record<'z1' | 'z2' | 'z3' | 'z4' | 'z5', [number, number]> = { z1: [1, 2], z2: [3, 4], z3: [5, 6], z4: [7, 8], z5: [9, 10] };
+/**
+ * Post-partum : pas de course avant 3 mois (≈ 13 semaines), puis test de reprise.
+ * Source : Goom, Donnelly et Brockwell (2019), « Returning to running postnatal ». À VALIDER (physio périnéale).
+ */
+export const POSTPARTUM_NO_RUN_DAYS = 91;
+
+// ─── Disponibilité réduite ────────────────────────────────────────────────────
+/** 2 sorties par semaine : aucune séance clé tant que la sortie longue (course continue) fait moins de 30 min. */
+export const TWO_DAYS_KEY_MIN_CONTINUOUS = 30;
+/** Séance d'évaluation (« Je sais pas ») : 5 min de marche, puis course facile jusqu'à 10 min au plus. À VALIDER. */
+export const EVALUATION_WALK_MIN = 5;
+export const EVALUATION_MAX_RUN_MIN = 10;
+/** Au-delà de cette distance (km), courir l'épreuve en marche/course n'est plus une option raisonnable : objectif irréaliste. À VALIDER. */
+export const RUNWALK_RACE_MAX_KM = 10;
+
+// ─── Muscu (programmes et double progression) ── schémas À VALIDER (pratique courante) ──
+/** Incrément de charge quand toutes les séries atteignent le haut de la fourchette (kg). */
+export const STRENGTH_LOAD_STEP_KG = 2.5;
+/** RPE au-delà duquel on ne monte pas la charge, même si les reps sont atteintes. */
+export const STRENGTH_PROGRESS_MAX_RPE = 8;
+/** Séances de force : débutants plafonnés à 3 séries, fourchettes de reps plus hautes (technique d'abord). */
+export const STRENGTH_NOVICE_MAX_SETS = 3;
+/** Repos par défaut entre deux séries (s), selon l'objectif de la phase. */
+export const STRENGTH_REST_SEC = { fondation: 60, force: 120, maintien: 90 } as const;
+
+// ─── Progrès (tendances et découvertes) ── seuils À VALIDER (pratique courante) ──
+/** Sortie « facile » pour l'efficacité aérobie : au moins cette part du temps en Z1-Z2, sur terrain plutôt roulant. */
+export const PROGRESS_EASY_MIN_SHARE = 0.7;
+/** Terrain roulant : au plus ce D+ par km (m/km). */
+export const PROGRESS_EASY_MAX_GAIN_PER_KM = 25;
+/** Sorties minimum de chaque côté de la comparaison (récent vs précédent) pour parler de tendance. */
+export const PROGRESS_MIN_ACTIVITIES = 3;
+/** Fenêtre de comparaison (semaines) : les N dernières semaines contre les N d'avant. */
+export const PROGRESS_COMPARE_WEEKS = 4;
+/** Écart d'efficacité (s/km à FC égale) en dessous duquel on ne parle pas de progrès : c'est du bruit. */
+export const PROGRESS_MIN_PACE_GAIN_SEC = 5;
+/** Répartition visée de l'intensité (80/10/10), tolérance (points de pourcentage) avant de la signaler. */
+export const PROGRESS_TARGET_LOW_SHARE = 0.8;
+export const PROGRESS_DISTRIBUTION_TOLERANCE = 0.1;
+/** Fenêtre de la distribution par zones (semaines). */
+export const PROGRESS_DISTRIBUTION_WEEKS = 4;
+/** FC repos : moyenne des 7 derniers jours contre la base des 28 jours d'avant ; écart (bpm) qui mérite d'être signalé. */
+export const PROGRESS_RESTING_HR_ALERT = 5;
+/** Lissage de la VO2max estimée (points de la moyenne glissante). */
+export const PROGRESS_VO2_SMOOTHING = 3;
+
+// ─── Équipement (chaussures) ── seuils À VALIDER (pratique courante) ──
+/** Rodage par défaut d'une paire neuve de trail / de route (km). Le rodage est surtout une règle de prudence pour les chaussures neuves. */
+export const SHOE_BREAK_IN_KM = 50;
+/** Durée de vie par défaut d'une paire (km) : fourchette courante 600-800 km. */
+export const SHOE_RETIRE_KM = 700;
+/** On prévient quand il reste moins de cette part de la durée de vie. */
+export const SHOE_WARN_REMAINING_SHARE = 0.15;
+/** Rotation : au-delà de ce nombre de km sur une même paire sans autre paire active, on conseille d'en alterner deux. */
+export const SHOE_ROTATION_MIN_KM = 100;
+
+// ─── Nutrition (gut training, plan de course, carbo-loading) ── À VALIDER par un nutritionniste du sport ──
+/** Glucides par heure visés selon la durée de l'effort (g/h) : [durée max min, g/h]. Au-delà de la dernière ligne : 90 g/h. */
+export const CARB_TARGET_BY_DURATION: [number, number][] = [[60, 0], [150, 60], [Infinity, 90]];
+/** Point de départ du gut training (g/h), puis pas de progression et plafond d'une semaine à l'autre. */
+export const GUT_START_CARBS_PER_H = 30;
+export const GUT_STEP_CARBS_PER_H = 10;
+/** Tolérance digestive (0 = aucun inconfort … 5 = très mal) : ≤ 1 on monte, 2 on garde, ≥ 3 on redescend. */
+export const GUT_TOLERANCE_UP_MAX = 1;
+export const GUT_TOLERANCE_HOLD_MAX = 2;
+/** Au-delà de ce niveau (g/h), un mélange glucose:fructose (≈ 2:1) est nécessaire pour l'absorption. */
+export const GUT_DUAL_TRANSPORT_FROM = 60;
+/** Liquides (mL/h) par température de course : [température max °C, mL/h]. */
+export const FLUID_ML_PER_H: [number, number][] = [[12, 400], [22, 550], [Infinity, 750]];
+/** Sodium (mg/h) : de base, et par temps chaud (> 22 °C). */
+export const SODIUM_MG_PER_H = 400;
+export const SODIUM_MG_PER_H_HOT = 700;
+export const HOT_TEMP_C = 22;
+/** Caféine : mg/kg, à prendre dans les derniers tiers d'une course de plus de 3 h seulement. */
+export const CAFFEINE_MG_PER_KG = 3;
+/** Carbo-loading : g/kg/jour pour les efforts de plus de 90 min (36-48 h avant) ; la veille d'un effort plus court. */
+export const CARB_LOADING_G_PER_KG = 8;
+export const CARB_LOADING_SHORT_G_PER_KG = 6;
+export const CARB_LOADING_MIN_RACE_MIN = 90;
+
+// ─── Prévention (routines de renforcement) ── À VALIDER par un physio ──
+/** Une douleur ou une blessure de moins de N jours déclenche la routine ciblée de sa zone. */
+export const PREVENTION_PAIN_LOOKBACK_DAYS = 28;
+/** Carte corporelle : niveau 1 = gêne (< 3/10), niveau 2 = douleur (3-5), niveau 3 = forte (≥ 6). */
+export const BODY_MAP_LEVELS: [number, 1 | 2 | 3][] = [[6, 3], [3, 2], [1, 1]];
+
+// ─── Jalons ──
+/** Course à pied d'affilée : durée (min) qui compte comme « 30 min sans s'arrêter ». */
+export const MILESTONE_CONTINUOUS_MIN = 30;
+/** D+ (m) d'une sortie qui compte comme « 1000 m de D+ ». */
+export const MILESTONE_BIG_CLIMB_M = 1000;
+/** Distance cumulée (km) qui donne un jalon. */
+export const MILESTONE_TOTAL_KM = [100, 250, 500, 1000, 2000, 5000];
+/** Régularité : semaines de suite avec au moins N sorties de course, et séries qui donnent un jalon. */
+export const MILESTONE_STREAK_MIN_RUNS = 2;
+export const MILESTONE_STREAK_WEEKS = [4, 8, 12, 26, 52];
+/** Distances (km) d'un premier : 5 km, 10 km, semi, marathon, 50 km. Tolérance : on compte à 98 % de la distance. */
+export const MILESTONE_DISTANCES_KM = [5, 10, 21.0975, 42.195, 50];
+export const MILESTONE_DISTANCE_TOLERANCE = 0.98;
+/** Records de sortie la plus longue : seulement au-delà de ce seuil (km). */
+export const MILESTONE_LONGEST_MIN_KM = 5;

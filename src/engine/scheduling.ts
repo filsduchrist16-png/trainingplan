@@ -1,13 +1,18 @@
-import { MIN_EASY_RUN_KM, MIN_RUN_WALK_KM, STRENGTH_SESSION_MIN, VO2_MIN_BASE_WEEKS } from './constants';
+import {
+  MIN_EASY_RUN_KM, EASY_RUN_MIN_TOLERANCE, RUN_WALK_LADDER, RUN_WALK_LONG_DAY_EXTRA_WALK_MIN, RUN_WALK_MAX_SESSIONS_PER_WEEK,
+  STRENGTH_SESSION_MIN, STRIDES_MIN_CONTINUOUS_MIN, VO2_MIN_BASE_WEEKS, WALK_PACE_MIN_PER_KM,
+} from './constants';
+import { projectStages, stageKind, stageLabel, stageRunMinutes, walkFirstMinutes, type RunWalkState } from './runwalk';
 import { dayOfWeek, diffDays, weekday } from './dates';
 import { explain } from './explain';
 import type { GoalFamily } from './goals';
 import {
   backToBackSecond, calibrationTest, descents, easyRun, hillSprints, longHills, longRun, raceDay, racePace,
-  paceForTarget, rest, runWalk, strength, strides, threshold, vo2, type BuildContext, type BuiltSession,
+  evaluationRun, paceForTarget, rest, runWalk, strength, strides, threshold, vo2, type BuildContext, type BuiltSession,
 } from './builders';
 import { SESSION_LIBRARY, isKeyType, isRunType } from './library';
 import type { WeekPlan } from './periodization';
+import { notesFor, type ProfileAdjustments } from './profiles';
 import type { Availability, Experience, Explanation, GoalKind, ISODate, SessionType, Step, Weekday } from './types';
 
 /**
@@ -26,12 +31,16 @@ export interface WeekContext {
   hasPoles: boolean;
   /** Index de la semaine dans le plan. */
   planWeek: number;
+  /** Niveau de départ en marche-course (résultat de startMode). */
+  runWalkStage?: number;
   /** Index de la semaine dans sa phase. */
   phaseWeek: number;
   race?: { date: ISODate; distanceKm: number };
   bRace?: { date: ISODate; distanceKm: number };
   /** Date à partir de laquelle planifier (les jours passés d'une semaine entamée sont laissés vides). */
   fromDate?: ISODate;
+  /** Ajustements de profil (deriveProfile) : pas de VO2max, pas de jours consécutifs, FC non fiable, notes. */
+  profile?: Pick<ProfileAdjustments, 'noVo2' | 'noConsecutiveDays' | 'hrUnreliable' | 'sessionNotes'>;
 }
 
 export interface SessionDraft {
@@ -46,6 +55,8 @@ export interface SessionDraft {
   isKey: boolean;
   minimal: { title: string; durationMin: number; steps: Step[] };
   why: string;
+  /** Notes de profil (diabète, asthme, surfaces souples, équilibre…). */
+  notes?: string[];
 }
 
 const circ = (a: number, b: number) => Math.min(Math.abs(a - b), 7 - Math.abs(a - b));
@@ -97,7 +108,7 @@ type Quality = 'seuil' | 'vo2max' | 'cotes_longues' | 'tempo';
 
 /** Types de qualité par famille et phase (au plus un VO2max par semaine, jamais avant la base). */
 export function qualityTypes(ctx: WeekContext, week: WeekPlan, count: number): Quality[] {
-  const vo2ok = ctx.planWeek >= VO2_MIN_BASE_WEEKS || ctx.experience === 'avance';
+  const vo2ok = (ctx.planWeek >= VO2_MIN_BASE_WEEKS || ctx.experience === 'avance') && !ctx.profile?.noVo2;
   const longRoad = ctx.goal === 'route_semi' || ctx.goal === 'route_marathon';
   const alt = ctx.phaseWeek % 2 === 0;
   let pool: Quality[];
@@ -119,22 +130,118 @@ export function qualityTypes(ctx: WeekContext, week: WeekPlan, count: number): Q
   return pool.map((q) => (q === 'vo2max' && !vo2ok ? 'seuil' : q)).slice(0, count);
 }
 
-function buildQuality(q: Quality, b: BuildContext): BuiltSession {
-  return q === 'seuil' ? threshold(b) : q === 'vo2max' ? vo2(b) : q === 'cotes_longues' ? longHills(b) : racePace(b);
+function buildQuality(q: Quality, b: BuildContext, maxMin: number): BuiltSession {
+  return q === 'seuil' ? threshold(b, maxMin) : q === 'vo2max' ? vo2(b, maxMin) : q === 'cotes_longues' ? longHills(b, maxMin) : racePace(b, maxMin);
+}
+
+/**
+ * Jours de séance pendant le démarrage : au plus 3, JAMAIS deux jours de suite (les tissus récupèrent en 48 h).
+ * On maximise d'abord le nombre de séances, puis on garde le jour de la longue, puis on étale.
+ */
+export function journeyDays(av: Availability, max = RUN_WALK_MAX_SESSIONS_PER_WEEK): Weekday[] {
+  const allowed = [...new Set([...av.allowedDays, av.longRunDay])].sort((a, b) => a - b);
+  const want = Math.min(max, av.runDaysPerWeek);
+  let best: Weekday[] = [];
+  let bestScore = -1;
+  for (let mask = 1; mask < 1 << allowed.length; mask++) {
+    const set = allowed.filter((_, i) => mask & (1 << i));
+    if (set.length > want) continue;
+    if (set.some((d, i) => set.some((e, j) => i < j && circ(d, e) < 2))) continue;
+    const spread = set.length > 1 ? Math.min(...set.flatMap((d, i) => set.slice(i + 1).map((e) => circ(d, e)))) : 0;
+    const score = set.length * 100 + (set.includes(av.longRunDay) ? 10 : 0) + spread;
+    if (score > bestScore) {
+      best = set;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function describeStage(stage: number): string {
+  const kind = stageKind(stage);
+  if (kind === 'marche') return 'en marchant d’un bon pas';
+  if (kind === 'continu') return 'en course continue facile';
+  const r = RUN_WALK_LADDER[stage - 1]!;
+  return `en alternant ${r.runSec < 60 ? `${r.runSec} s` : `${r.runSec / 60} min`} de course et ${r.walkSec / 60} min de marche`;
+}
+
+/**
+ * Semaine du parcours de démarrage : toutes les séances sont au palier prévu (marche d'abord, marche/course ou
+ * continu 20 → 30 min), Y COMPRIS le jour de la longue (+10 min de marche). Ni séance clé, ni strides, ni sprints,
+ * ni test, ni plyo. Les jours disponibles en plus deviennent de la marche ou du vélo, facultatifs.
+ */
+function buildJourneyWeek(week: WeekPlan, ctx: WeekContext): { sessions: SessionDraft[]; notes: Explanation[] } {
+  const notes: Explanation[] = [];
+  const av = ctx.availability;
+  const b: BuildContext = { goal: ctx.goal, trail: ctx.family === 'trail', vdot: ctx.vdot, phaseWeek: ctx.phaseWeek };
+  const plan = week.runWalk!.sessions;
+  // Les jours déjà passés d'une semaine entamée ne comptent pas : la 1re séance à venir porte le 1er palier prévu.
+  let days = journeyDays(av).filter((d) => !ctx.fromDate || dayOfWeek(week.startDate, d) >= ctx.fromDate).slice(0, plan.length);
+  const raceInWeek = [ctx.race, ctx.bRace].find((r) => r && diffDays(week.startDate, r.date) >= 0 && diffDays(week.startDate, r.date) < 7);
+  const raceWd = raceInWeek ? weekday(raceInWeek.date) : undefined;
+  if (raceWd) days = days.filter((d) => d < raceWd - 1).slice(0, 2);
+  const longDay = days.includes(av.longRunDay) ? av.longRunDay : days.at(-1);
+  const byDay = new Map<Weekday, SessionDraft>();
+  days.forEach((d, i) => {
+    const p = plan[Math.min(i, plan.length - 1)]!;
+    if (i === 0 && week.evaluation) {
+      byDay.set(d, toDraft(dayOfWeek(week.startDate, d), evaluationRun(b), false));
+      return;
+    }
+    const built = runWalk(p.stage, b, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: d === longDay && !raceWd ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0 });
+    byDay.set(d, toDraft(dayOfWeek(week.startDate, d), built, false));
+  });
+  if (raceInWeek && raceWd) {
+    // Course pendant le démarrage : en marche/course au palier courant. Marcher fait partie de la stratégie.
+    const stage = plan.at(-1)!.stage;
+    const runShare = stageKind(stage) === 'marche' ? 0 : stageKind(stage) === 'continu' ? 1 : stageRunMinutes(stage) / (stageRunMinutes(stage) + (RUN_WALK_LADDER[stage - 1]!.walkSec * RUN_WALK_LADDER[stage - 1]!.reps) / 60);
+    const pace = runShare * paceForTarget({ zone: 'z2' }, b) + (1 - runShare) * WALK_PACE_MIN_PER_KM;
+    const minutes = Math.round(raceInWeek.distanceKm * pace);
+    byDay.set(raceWd, toDraft(raceInWeek.date, {
+      type: 'course', title: `Course : ${raceInWeek.distanceKm} km en marche/course`, durationMin: minutes, distanceKm: raceInWeek.distanceKm,
+      steps: [{ kind: 'continu', distanceKm: raceInWeek.distanceKm, target: { rpe: 6 }, note: `Comme à l'entraînement (${stageLabel(stage).toLowerCase()}) : ${describeStage(stage)}. Marcher fait partie de la stratégie, pas un échec.` }],
+      why: 'Jour de course, à ton rythme : tu la finis en marche/course, en santé.',
+    }, true));
+    notes.push(explain('week.runwalk.race', 'info', 'Course en marche/course', `La course tombe pendant ton démarrage : tu la fais ${describeStage(stage)}. Pas de séance « allure course » cette semaine.`));
+  }
+  // Jours disponibles en plus : marche ou vélo facile, facultatif (jamais de course en plus).
+  const used = new Set<number>([...byDay.keys()]);
+  const extra = [...new Set(av.allowedDays)].filter((d) => !used.has(d) && (!raceWd || d < raceWd - 1)).slice(0, Math.max(0, av.runDaysPerWeek - days.length));
+  for (const d of extra) {
+    byDay.set(d as Weekday, toDraft(dayOfWeek(week.startDate, d as Weekday), { type: 'croise', title: 'Marche active ou vélo facile 30 min (facultatif)', durationMin: 30, distanceKm: 0, steps: [{ kind: 'continu', minutes: 30, target: { rpe: 3 } }], why: 'Bouger sans ajouter d’impact : la course reste à 3 séances, jamais deux jours de suite.' }, false));
+  }
+  // Muscu générale permise (poids du corps), jamais de plyo : sur un jour de séance, pas la veille de la course.
+  const strengthDays = days.filter((d) => d !== longDay && (!raceWd || (d !== raceWd - 1 && d !== raceWd - 2))).slice(0, av.strengthPerWeek);
+  const sessions: SessionDraft[] = [];
+  for (let d = 1 as Weekday; d <= 7; d = (d + 1) as Weekday) {
+    const date = dayOfWeek(week.startDate, d);
+    if (ctx.fromDate && date < ctx.fromDate) continue;
+    sessions.push(byDay.get(d) ?? toDraft(date, rest(), false));
+    if (strengthDays.includes(d)) sessions.push(toDraft(date, strength('muscu_generale', STRENGTH_SESSION_MIN), false));
+  }
+  notes.push(explain('week.runwalk', 'info', 'Semaine de démarrage', `${days.length} séance(s) au ${stageLabel(plan[0]!.stage).toLowerCase()}, jamais deux jours de suite. Tu avances d'un palier quand tes séances sont faciles : c'est ton corps qui donne le rythme, pas le calendrier.`));
+  return { sessions: withProfileNotes(sessions, ctx), notes };
 }
 
 export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions: SessionDraft[]; notes: Explanation[] } {
+  if (week.runWalk) return buildJourneyWeek(week, ctx);
   const notes: Explanation[] = [];
   const av = ctx.availability;
   const trail = ctx.family === 'trail';
   const b: BuildContext = {
-    goal: ctx.goal, trail, vdot: ctx.vdot, phaseWeek: ctx.phaseWeek, planWeek: ctx.planWeek, hasPoles: ctx.hasPoles,
+    goal: ctx.goal, trail, vdot: ctx.vdot, phaseWeek: ctx.phaseWeek, planWeek: ctx.planWeek, hasPoles: ctx.hasPoles, runWalkStage: ctx.runWalkStage,
     light: week.phase === 'base' || week.kind === 'decharge' || week.kind === 'maintien',
     taper: week.kind === 'taper' || week.kind === 'course',
   };
-  const runDays = pickRunDays(av);
+  // Profil « jamais deux jours de suite » (IMC élevé) : jours non consécutifs.
+  const runDays = ctx.profile?.noConsecutiveDays ? journeyDays(av, av.runDaysPerWeek) : pickRunDays(av);
   const longDay = av.longRunDay;
+  // Temps disponible du jour : la fin de semaine (et le jour de la longue) ou la semaine. Aucune séance ne le dépasse.
+  const dayMax = (d: Weekday) => (d === longDay || d >= 6 ? av.maxWeekendMinutes : av.maxWeekdayMinutes);
   const byDay = new Map<Weekday, BuiltSession & { isKey: boolean }>();
+  // Strides et sprints : seulement si on court au moins 30 min d'affilée (la sortie longue en donne la mesure).
+  // Plan prudent (dépistage santé) : rien au-dessus de Z2 les premières semaines.
+  const neuroOk = !week.easyOnly && week.longRunKm * paceForTarget({ zone: 'z2' }, b) >= STRIDES_MIN_CONTINUOUS_MIN;
   const setDay = (d: Weekday, s: BuiltSession, isKey = SESSION_LIBRARY[s.type].isKey) => byDay.set(d, { ...s, isKey });
 
   // ── Course de la semaine (A ou B) ──────────────────────────────────────────
@@ -142,8 +249,10 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   const raceWd = raceInWeek ? weekday(raceInWeek.date) : undefined;
 
   // ── Séances clés ──────────────────────────────────────────────────────────
-  const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek;
-  const needsTest = ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.kind !== 'course';
+  const longIsKey = longIsKeyFor(ctx, week) && !raceInWeek && !week.easyOnly;
+  // Test à fond (3 km chrono) : réservé aux coureurs expérimentés. Un débutant garde ses zones estimées,
+  // et peut calibrer plus tard depuis le Profil quand il a la base.
+  const needsTest = !week.easyOnly && !ctx.profile?.hrUnreliable && ctx.hrMaxEstimated && ctx.planWeek === 1 && ctx.family !== 'debuter' && week.phase !== 'demarrage' && week.kind !== 'course' && (ctx.experience === 'regulier' || ctx.experience === 'avance');
   let qualityCount = Math.max(0, week.keySessions - (longIsKey ? 1 : 0) - (raceInWeek ? 1 : 0));
   if (needsTest) qualityCount = Math.max(qualityCount, 1);
   const maxByDays = Math.floor((runDays.length - 1) / 2);
@@ -157,46 +266,88 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   }
   const qualities = needsTest ? (['test'] as const) : qualityTypes(ctx, week, keyDays.length);
   keyDays = keyDays.slice(0, qualities.length);
-  keyDays.forEach((d, i) => {
-    const q = qualities[i]!;
-    setDay(d, q === 'test' ? calibrationTest(b) : buildQuality(q, b));
+  // La sortie longue est construite d'abord : c'est la plus longue sortie de la semaine, aucune autre ne la dépasse.
+  // D+ de la longue au prorata de ses km (comme le calcul de sa durée dans la périodisation).
+  const gain = trail && week.targetKm > 0 ? Math.round((week.targetElevationM * week.longRunKm) / week.targetKm) : 0;
+  let long = !raceInWeek && week.longRunKm > 0 ? longRun(week.longRunKm, b, longIsKey, gain) : undefined;
+  // Une séance dure plus longue que la longue (échauffement et retour au calme compris) dépasserait ce que le corps
+  // a déjà fait : du facile avec strides à la place, et on le dit. En décharge et à l'affûtage, l'intensité est
+  // gardée : la longue a déjà été plus longue les semaines d'avant, c'est elle qui s'allonge jusqu'à la séance dure.
+  const lowerWeek = week.kind === 'taper' || week.kind === 'decharge';
+  // La plus longue sortie déjà faite est en km-effort (D+ compris) : pas de D+ à rajouter.
+  const done = lowerWeek && week.longestRunKm ? longRun(week.longestRunKm, b, false).durationMin : 0;
+  const qualityCap = long ? Math.max(long.durationMin, done) : Infinity;
+  // Chaque séance clé est construite pour tenir dans le temps du jour ET sous la longue (échauffement raccourci, une
+  // répétition de moins…). En décharge et à l'affûtage, si elle ne tient pas sous la longue, on la garde jusqu'à la
+  // plus longue sortie déjà faite.
+  const longMin = long?.durationMin ?? Infinity;
+  const buildKey = (q: (typeof qualities)[number], max: number) => (q === 'test' ? calibrationTest(b, max) : buildQuality(q, b, max));
+  const built = qualities.map((q, i) => {
+    const d = keyDays[i]!;
+    const s = buildKey(q, Math.min(dayMax(d), longMin));
+    return s.durationMin <= longMin || !lowerWeek ? s : buildKey(q, Math.min(dayMax(d), qualityCap));
   });
-  if (needsTest) notes.push(explain('week.test', 'conseil', 'Test de calibration', 'Ta FC max est estimée. Un test de 3 km cette semaine, et tes zones et allures deviennent justes.'));
+  const fits = (q: BuiltSession, d: Weekday) => q.durationMin <= Math.min(qualityCap, dayMax(d));
+  keyDays.forEach((d, i) => {
+    const q = built[i]!;
+    if (q.durationMin > qualityCap || q.durationMin > dayMax(d)) {
+      // Même raccourcie, la séance ne tient pas : du facile à la place, et on dit pourquoi.
+      const limit = Math.min(long?.durationMin ?? Infinity, dayMax(d));
+      setDay(d, neuroOk ? strides(week.longRunKm, b, limit) : easyRun(week.longRunKm, b, 'z2', limit), false);
+      notes.push(q.durationMin > qualityCap
+        ? explain('week.quality.light', 'info', 'Qualité reportée', `Cette séance dure ferait ${q.durationMin} min au total, plus que ta sortie longue (${qualityCap} min). On garde du facile${neuroOk ? ' avec strides' : ''} et on bâtit d'abord la base : la qualité reviendra quand tes sorties seront plus longues.`, { seance: q.durationMin, longue: qualityCap })
+        : explain('week.quality.daycap', 'info', 'Séance clé remplacée', `Même raccourcie, cette séance dure ferait ${q.durationMin} min, plus que tes ${dayMax(d)} min ce jour-là. On garde une sortie facile${neuroOk ? ' avec strides' : ''} : mieux vaut une séance qui tient dans ta journée.`, { seance: q.durationMin, dispo: dayMax(d) }));
+      return;
+    }
+    setDay(d, q);
+  });
+  const hardest = Math.max(0, ...built.slice(0, keyDays.length).filter((q, i) => fits(q, keyDays[i]!)).map((q) => q.durationMin));
+  if (long && hardest > long.durationMin) {
+    const pace = paceForTarget({ zone: 'z2' }, b);
+    long = longRun(Math.ceil((hardest / pace - gain / 100) * 10) / 10, b, longIsKey, gain);
+  }
+  // Plafond de durée de toutes les autres sorties de la semaine.
+  // Semaine de course (pas de longue) : rien de plus long que la plus longue sortie déjà faite.
+  let capMin = long ? long.durationMin : week.longestRunKm ? longRun(week.longestRunKm, b, false).durationMin : Infinity;
+  if (needsTest && [...byDay.values()].some((x) => x.type === 'test')) notes.push(explain('week.test', 'conseil', 'Test de calibration', 'Ta FC max est estimée. Un test de 3 km cette semaine, et tes zones et allures deviennent justes.'));
 
   // ── Course et sortie longue ───────────────────────────────────────────────
   if (raceInWeek && raceWd) {
     setDay(raceWd, raceDay(raceInWeek.distanceKm, b), true);
     // Pas d'effort la veille, Z1 court l'avant-veille.
     for (const d of [raceWd - 1, raceWd + 1]) if (d >= 1 && d <= 7 && runDays.includes(d as Weekday) && !byDay.has(d as Weekday)) setDay(d as Weekday, rest(), false);
-  } else if (week.longRunKm > 0 && ctx.family !== 'debuter') {
-    const gain = trail ? Math.round(week.targetElevationM * 0.4) : 0;
-    setDay(longDay, longRun(week.longRunKm, b, longIsKey, gain), longIsKey);
+  } else if (long) {
+    setDay(longDay, long, longIsKey);
   }
 
   // Back-to-back : trail long, pic, une semaine sur deux, lendemain disponible.
   const nextDay = (longDay === 7 ? 1 : longDay + 1) as Weekday;
-  const b2b = trail && (ctx.goal === 'trail_moyen' || ctx.goal === 'ultra') && week.phase === 'spec2' && week.kind === 'build' && ctx.phaseWeek % 2 === 1
+  // On répartit la longue sur deux jours (~75 % + ~50 %) plutôt que d'ajouter une 2e longue complète. Le jour 1 reste
+  // la plus longue sortie de la semaine : sinon, pas de back-to-back.
+  const first = long ? longRun(week.longRunKm * 0.75, b, true, gain * 0.75) : undefined;
+  const b2b = first && first.durationMin >= Math.max(0, ...[...byDay.entries()].filter(([d]) => d !== longDay).map(([, x]) => x.durationMin)) && !ctx.profile?.noConsecutiveDays && trail && (ctx.goal === 'trail_moyen' || ctx.goal === 'ultra') && week.phase === 'spec2' && week.kind === 'build' && ctx.phaseWeek % 2 === 1
     && longDay !== 7 && av.allowedDays.includes(nextDay) && !raceInWeek;
   if (b2b) {
-    // On répartit la longue sur deux jours (~75 % + ~50 %) plutôt que d'ajouter une 2e longue complète.
-    const gain = Math.round(week.targetElevationM * 0.4);
-    const first = longRun(week.longRunKm * 0.75, b, true, gain * 0.75);
     setDay(longDay, { ...first, type: 'back_to_back', title: first.title.replace(/^Longue spécifique/, 'Back-to-back, jour 1 :'), why: SESSION_LIBRARY.back_to_back.oneLiner }, true);
-    setDay(nextDay, backToBackSecond(first.durationMin * 0.6, b), false);
+    setDay(nextDay, backToBackSecond(Math.min(first.durationMin * 0.6, dayMax(nextDay)), b), false);
+    capMin = Math.min(capMin, first.durationMin);
     if (!runDays.includes(nextDay)) runDays.push(nextDay);
   }
 
   // Semaine de course : un rappel d'allure à J-3 (intensité maintenue, volume réduit).
   if (raceWd && raceWd - 3 >= 1 && runDays.includes((raceWd - 3) as Weekday) && !byDay.has((raceWd - 3) as Weekday)) {
-    setDay((raceWd - 3) as Weekday, racePace({ ...b, taper: true }), false);
+    const reminder = racePace({ ...b, taper: true }, dayMax((raceWd - 3) as Weekday));
+    // Le rappel ne tient pas dans le temps du jour : une sortie facile prendra la place.
+    if (reminder.durationMin <= dayMax((raceWd - 3) as Weekday)) setDay((raceWd - 3) as Weekday, reminder, false);
   }
 
   // ── Sorties faciles ───────────────────────────────────────────────────────
   const plannedKm = [...byDay.values()].filter((s) => s.type !== 'course').reduce((s, x) => s + x.distanceKm, 0);
   let easyDays = runDays.filter((d) => !byDay.has(d));
   let remaining = week.targetKm - plannedKm;
-  // En marche-course, une sortie courte reste utile (c'est la régularité qui adapte les tissus).
-  const minEasy = week.phase === 'demarrage' || ctx.family === 'debuter' ? MIN_RUN_WALK_KM : MIN_EASY_RUN_KM;
+  // Sortie facile minimale, sauf si la longue elle-même est plus courte (petits volumes de reprise).
+  // Tolérance d'arrondi : 2,7 km restants pour une sortie minimale de 2,9 km font quand même une sortie.
+  const minEasy = Math.min(MIN_EASY_RUN_KM, week.longRunKm || MIN_EASY_RUN_KM) * (1 - EASY_RUN_MIN_TOLERANCE);
   while (easyDays.length > 0 && remaining / easyDays.length < minEasy) {
     // Trop peu de volume pour toutes les sorties : on retire le jour le plus proche d'une séance clé.
     const drop = [...easyDays].sort((a, c) => Math.min(...[...byDay.keys()].map((k) => circ(k, a)), 7) - Math.min(...[...byDay.keys()].map((k) => circ(k, c)), 7))[0]!;
@@ -211,27 +362,30 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
   let descentsPlaced = false;
   for (const d of easyDays) {
     // Plafond horaire du jour : on ne transforme pas une sortie facile en longue cachée.
-    const maxMin = d >= 6 ? av.maxWeekendMinutes : av.maxWeekdayMinutes;
+    const maxMin = dayMax(d);
     const capKm = maxMin / paceForTarget({ zone: 'z2' }, b);
+    // Jamais plus long que la sortie longue de la semaine (sinon la « longue » n'en est plus une), ni que le temps du jour.
+    const cap = Math.min(capMin, maxMin);
     const km = Math.round(Math.min(perEasy, capKm) * 2) / 2;
     unplaced += Math.max(0, perEasy - capKm);
     const dayAfterLong = d === nextDay && byDay.has(longDay);
     // Les séances neuromusculaires (sprints, descentes) ne vont ni la veille ni le lendemain d'une séance dure.
     const dayBeforeKey = keyDaySet.has(((d % 7) + 1) as Weekday) || d === longDay - 1 || keyDaySet.has((((d + 5) % 7) + 1) as Weekday);
     let s: BuiltSession;
-    if (week.phase === 'demarrage' || ctx.family === 'debuter') s = runWalk(km, b);
-    else if (week.kind === 'recup') s = easyRun(km, b, ctx.phaseWeek === 0 ? 'z1' : 'z2');
-    else if (dayAfterLong) s = easyRun(km, b, 'z1');
+    const fit = (x: BuiltSession) => (x.durationMin <= cap ? x : strides(km, b, cap));
+    if (week.kind === 'recup') s = easyRun(km, b, ctx.phaseWeek === 0 ? 'z1' : 'z2', cap);
+    else if (dayAfterLong) s = easyRun(km, b, 'z1', cap);
+    else if (!neuroOk) s = easyRun(km, b, 'z2', cap);
     else if (!sprintsPlaced && week.phase === 'base' && week.kind === 'build' && ctx.planWeek >= 1 && !dayBeforeKey) {
-      s = hillSprints(km, b);
+      s = fit(hillSprints(km, b, cap));
       sprintsPlaced = true;
     } else if (!descentsPlaced && trail && ['spec1', 'spec2', 'precomp'].includes(week.phase) && week.kind === 'build' && !dayBeforeKey) {
-      s = descents(km, b);
+      s = fit(descents(km, b, cap));
       descentsPlaced = true;
     } else if (!stridesPlaced) {
-      s = strides(km, b);
+      s = strides(km, b, cap);
       stridesPlaced = true;
-    } else s = easyRun(km, b);
+    } else s = easyRun(km, b, 'z2', cap);
     setDay(d, s, false);
   }
 
@@ -273,7 +427,17 @@ export function buildWeekSessions(week: WeekPlan, ctx: WeekContext): { sessions:
       sessions.push(toDraft(date, st, false));
     }
   }
-  return { sessions, notes };
+  return { sessions: withProfileNotes(sessions, ctx), notes };
+}
+
+/** Ajoute les notes de profil aux séances concernées. */
+function withProfileNotes(sessions: SessionDraft[], ctx: WeekContext): SessionDraft[] {
+  const all = ctx.profile?.sessionNotes;
+  if (!all?.length) return sessions;
+  return sessions.map((s) => {
+    const n = notesFor(all, s, isRunType(s.type) && s.type !== 'repos');
+    return n.length ? { ...s, notes: n } : s;
+  });
 }
 
 function toDraft(date: ISODate, s: BuiltSession & { elevationGainM?: number }, isKey: boolean): SessionDraft {
@@ -291,6 +455,41 @@ function toDraft(date: ISODate, s: BuiltSession & { elevationGainM?: number }, i
     minimal: { title: info.mvv.title, durationMin: info.mvv.minutes, steps: info.mvv.steps },
     why: s.why,
   };
+}
+
+// ─── Parcours de démarrage : re-projection depuis le réalisé ─────────────────
+
+export interface JourneySlot {
+  id: string;
+  date: ISODate;
+  /** Lundi de la semaine de la séance. */
+  weekStart: ISODate;
+  /** Semaine avec une course : pas de marche en plus le jour de la longue. */
+  raceWeek?: boolean;
+}
+
+/**
+ * Re-projette les séances marche/course À VENIR depuis l'état réel de l'échelle (après chaque séance notée).
+ * Même règle que la génération : chaque séance au palier projeté si toutes sont validées, +10 min de marche
+ * le jour de la longue (le jour prévu s'il a une séance, sinon la dernière de la semaine).
+ */
+export function rescheduleJourney(
+  state: RunWalkState,
+  slots: JourneySlot[],
+  ctx: Pick<WeekContext, 'goal' | 'family' | 'vdot' | 'availability'>,
+  slow = false,
+  maxStage?: number,
+): { id: string; stage: number; session: SessionDraft }[] {
+  const sorted = [...slots].sort((a, b) => a.date.localeCompare(b.date));
+  const stages = projectStages(state, sorted.length, slow, maxStage);
+  const b: BuildContext = { goal: ctx.goal, trail: ctx.family === 'trail', vdot: ctx.vdot, phaseWeek: 0 };
+  return sorted.map((slot, i) => {
+    const p = stages[i]!;
+    const week = sorted.filter((x) => x.weekStart === slot.weekStart);
+    const longSlot = week.find((x) => weekday(x.date) === ctx.availability.longRunDay) ?? week.at(-1)!;
+    const extra = slot === longSlot && !slot.raceWeek ? RUN_WALK_LONG_DAY_EXTRA_WALK_MIN : 0;
+    return { id: slot.id, stage: p.stage, session: toDraft(slot.date, runWalk(p.stage, b, { walkMin: walkFirstMinutes(p.validatedAtStage), extraWalkMin: extra }), false) };
+  });
 }
 
 // ─── Validation d'un déplacement (glisser-déposer) ────────────────────────────

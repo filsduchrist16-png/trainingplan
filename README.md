@@ -7,7 +7,17 @@ Générateur de plans d'entraînement **route et trail** (5 km → ultra, ou « 
 - **PWA** installable sur téléphone, fonctionne hors-ligne.
 - **Backup** JSON complet (export/import) dans Réglages.
 
-> Statut : Phase 1 (fondations) terminée. Voir [`docs/PLAN.md`](docs/PLAN.md) pour la feuille de route.
+> Statut : **MVP**. Ce qui est livré et ce qui est reporté : section « MVP » de [`docs/PLAN.md`](docs/PLAN.md). Comment le moteur décide : [`docs/ENGINE.md`](docs/ENGINE.md).
+
+## Ce que fait le MVP
+
+- **Nouvel objectif** à tout moment (5 km → ultra, courir de zéro, garder la forme) : assistant en 9 étapes, aperçu du plan, puis génération par le moteur (phases, décharges, taper, règle des 10 %).
+- **Aujourd'hui** : séance du jour ajustée en direct selon la santé et ton état (🟢🟡🔴, nuit courte), version minimale viable, log en moins de 30 s, jauge de charge (ACWR), compte à rebours de course, récup puis nouveau cycle après une course A.
+- **Plan** : semaine (glisser-déposer validé par le moteur), mois, bloc ; fiche complète de chaque séance avec son « Pourquoi? ».
+- **Import Garmin** FIT/GPX/TCX/CSV, 100 % dans le navigateur, avec debrief par règles (zones, zone grise, dérive cardiaque, cadence).
+- **Corps** : déclaration de douleur, garde-fous (STOP course sur douleur tibiale persistante, croisé à la place).
+- **Progrès** : volume et D+ des 12 dernières semaines.
+- Données de démo réalistes, export/import JSON, PWA hors-ligne, thèmes sombre et clair.
 
 ## Démarrer
 
@@ -42,3 +52,9 @@ Règle d'or : **aucune règle de coaching dans l'UI**. L'UI affiche ce que le mo
 ## Avertissement
 
 Sentier n'est pas un avis médical. Une douleur qui persiste, ça se fait voir par un pro.
+
+## Répertoire des courses du Québec
+
+L'assistant « Nouvel objectif » propose de chercher une course dans `src/data/races/quebec.json` (hors ligne, chargé à la demande). Le fichier est généré par `pnpm races` (`scripts/import-races.mjs`) à partir des calendriers publics Running.life, GoTrail (données structurées schema.org) Iskio (l'appel AJAX de son propre calendrier, courses et trails du Québec ; les dates non confirmées par l'organisateur sont marquées « date à confirmer ») et Pas sorti du bois (calendrier de trail avec distances et D+ par distance, via l'API REST publique de WordPress puis la page de chaque événement), avec 1,5 s entre deux requêtes et `robots.txt` respecté. On ne garde que des faits (nom, date, lieu, distances citées) et le lien vers la page source ; l'app invite à vérifier sur le site de l'organisateur. À relancer régulièrement (les courses passées sont ignorées à l'affichage). Avant une publication large, vérifier les conditions d'utilisation de ces sites ou obtenir leur accord.
+
+Si un site met un captcha anti-robot (c'est arrivé avec Pas sorti du bois après quelques requêtes), l'import ignore cette source : on ne contourne pas la protection. Pour l'avoir, demander l'accord ou un export à l'auteur du site.

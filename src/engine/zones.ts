@@ -1,4 +1,4 @@
-import { GREY_ZONE_FRACTIONS, HR_ZONE_FRACTIONS, TANAKA_INTERCEPT, TANAKA_SLOPE } from './constants';
+import { GREY_ZONE_FRACTIONS, HR_ZONE_FRACTIONS, TANAKA_INTERCEPT, TANAKA_SLOPE, ZONE_RPE } from './constants';
 import type { ActivitySamples, ZoneBounds, ZoneKey } from './types';
 
 /** Zones FC à partir de la FCmax (% FCmax). */
@@ -41,6 +41,19 @@ export function zoneOf(hr: number, bounds: ZoneBounds): ZoneKey {
 export function zoneRange(zone: ZoneKey, bounds: ZoneBounds, hrMax: number): [number, number] {
   const i = KEYS.indexOf(zone);
   return [i === 0 ? 0 : bounds[i - 1]!, i === 4 ? hrMax : bounds[i]!];
+}
+
+/**
+ * Cible d'une zone à afficher : en bpm, ou à l'effort perçu (RPE) quand la FC n'est pas fiable
+ * (bêtabloquant ou médicament qui modifie la FC). Le ressenti (test de la parole) accompagne toujours.
+ */
+export function zoneTarget(zone: ZoneKey, opts: { bounds: ZoneBounds; hrMax: number; hrUnreliable?: boolean }): { value: string; unit: string; feel: string } {
+  if (opts.hrUnreliable) {
+    const [lo, hi] = ZONE_RPE[zone];
+    return { value: `${lo}-${hi}`, unit: 'RPE', feel: ZONE_FEEL[zone] };
+  }
+  const [lo, hi] = zoneRange(zone, opts.bounds, opts.hrMax);
+  return { value: `${lo}-${hi}`, unit: 'bpm', feel: ZONE_FEEL[zone] };
 }
 
 /** Temps (s) par zone, recalculé avec LES zones de l'athlète (pas celles de la montre). */

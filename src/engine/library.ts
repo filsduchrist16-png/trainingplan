@@ -170,6 +170,16 @@ export const SESSION_LIBRARY: Record<SessionType, SessionInfo> = {
     mvv: { title: '15 min marche-course', minutes: 15, steps: [{ kind: 'effort', minutes: 1, repeat: 7, target: z2, note: '1 min course / 1 min marche' }] },
     oneLiner: 'Marche-course : on bâtit les fondations, une minute à la fois.',
   },
+  evaluation: {
+    label: 'Séance d’évaluation', category: 'test', isKey: false, isRun: true,
+    prescription: '5 min de marche, puis course facile jusqu’à 10 min au plus : arrête dès que parler devient difficile. Note combien de minutes tu as couru.',
+    adaptations: 'Mesure : combien de minutes tu cours d’affilée, en aisance. C’est ce qui fixe ton point de départ.',
+    why: 'Plutôt que de deviner, on mesure : un départ trop prudent démotive, un départ trop dur blesse.',
+    signWorks: 'Ton plan démarre au bon palier, ni trop facile ni trop dur.',
+    classicMistake: 'Forcer pour « réussir » le test : ce n’est pas une performance, arrête dès que tu ne peux plus parler.',
+    mvv: { title: 'Reporter l’évaluation', minutes: 0, steps: [] },
+    oneLiner: 'Évaluation : on mesure ton point de départ au lieu de le deviner.',
+  },
   test: {
     label: 'Test de calibration', category: 'test', isKey: true, isRun: true,
     prescription: 'Échauffement 15 min, puis 3 km le plus vite possible sur terrain plat (ou paliers croissants), retour au calme.',

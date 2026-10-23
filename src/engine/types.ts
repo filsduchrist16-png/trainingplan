@@ -51,7 +51,7 @@ export interface InjuryRecord {
 }
 
 export interface Availability {
-  runDaysPerWeek: number; // 2-7
+  runDaysPerWeek: number; // 1-7 (1 : pas de plan de course)
   allowedDays: Weekday[];
   longRunDay: Weekday;
   maxWeekdayMinutes: number;
@@ -59,11 +59,48 @@ export interface Availability {
   strengthPerWeek: 0 | 1 | 2;
 }
 
+/** État de l'échelle marche/course (parcours de démarrage). */
+export interface RunWalkState {
+  /** 0 = marche d'abord, 1-13 = paliers, 14-18 = transition 22 → 30 min, 19 = parcours terminé. */
+  stage: number;
+  /** Séances validées DE SUITE au palier courant. */
+  validatedAtStage: number;
+  /** Échecs de suite au palier courant. */
+  failsAtStage: number;
+  lastSessionDate?: ISODate;
+}
+
+/** Questions du questionnaire santé (inspiré du PAR-Q+ et du dépistage ACSM, reformulé). */
+export type HealthQuestion = 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6' | 'q7' | 'q8' | 'q9';
+export type ChronicCondition = 'diabete' | 'asthme' | 'cardio' | 'renal' | 'autre';
+
+export interface HealthProfile {
+  /** Réponses oui/non. Q9 (« peux-tu marcher 30 min ? ») : `true` = oui, c'est la bonne réponse. */
+  answers: Record<HealthQuestion, boolean>;
+  answeredAt: ISODate;
+  /** « Un médecin m'autorise » : date de l'autorisation (débloque Q2, Q3, Q7). */
+  clearance?: ISODate;
+  /** Q5 : médicament qui modifie la FC (bêtabloquant…) → zones au RPE. */
+  hrUnreliable?: boolean;
+  /** Q4 : maladies chroniques déclarées. */
+  conditions: ChronicCondition[];
+  /** Q8 : grossesse en cours (date prévue) ou post-partum (date d'accouchement). */
+  pregnancy?: {
+    status: 'enceinte' | 'post_partum';
+    dueOrBirthDate: ISODate;
+    /** Post-partum : test de reprise (liste à cocher). `allDone` = tous les exercices faits ; `symptoms` = fuites, lourdeur, douleur. */
+    returnTest?: { date: ISODate; allDone: boolean; symptoms: boolean };
+  };
+}
+
 export interface Athlete extends Entity {
   name: string;
   sex?: Sex;
   birthYear?: number;
   weightKg?: number;
+  heightCm?: number;
+  /** Questionnaire santé ; absent = jamais rempli. */
+  health?: HealthProfile;
   experience: Experience;
   hrMax: number;
   hrMaxSource: 'estimee' | 'test';
@@ -79,6 +116,8 @@ export interface Athlete extends Entity {
   crossTraining: CrossTraining[];
   hasPoles: boolean;
   localVertical: 'plat' | 'vallonne' | 'montagneux';
+  /** Où en est l'échelle marche/course, recalculé du journal après chaque séance notée. */
+  runWalk?: { state: RunWalkState; last?: Explanation; updatedOn: ISODate };
   settings: {
     loadMethod: LoadMethod;
     theme: 'dark' | 'light' | 'system';
@@ -127,6 +166,12 @@ export interface Block extends Owned {
   difficulty: Difficulty;
   startVolumeKm: number;
   peakVolumeKm: number;
+  /** Avertissements du moteur à la génération (pic plafonné, délai court…). */
+  warnings?: Explanation[];
+  /** Paramètres de génération, pour régénérer les semaines futures (changement de date, de dispo…). */
+  request?: unknown;
+  /** État d'entrée du parcours de démarrage (point de départ du journal). */
+  runWalkStart?: RunWalkState;
 }
 
 export interface Week extends Owned {
@@ -138,6 +183,20 @@ export interface Week extends Owned {
   targetKm: number;
   targetElevationM: number;
   keySessions: number;
+  longRunKm?: number;
+  notes?: Explanation[];
+  raceDate?: ISODate;
+  bRaceDate?: ISODate;
+  /** Semaine du parcours de démarrage : palier prévu de chaque séance. */
+  runWalk?: { sessions: { stage: number; validatedAtStage: number }[] };
+  /** Volume du démarrage en minutes. */
+  targetMinutes?: number;
+  /** Plan prudent (dépistage santé) : rien au-dessus de Z2 cette semaine. */
+  easyOnly?: boolean;
+  /** 1re séance de la semaine = séance d'évaluation. */
+  evaluation?: boolean;
+  /** Plus longue sortie déjà faite avant cette semaine (km) : en décharge et à l'affûtage, la longue peut remonter jusque-là. */
+  longestRunKm?: number;
   manualOverride?: boolean;
 }
 
@@ -158,6 +217,7 @@ export type SessionType =
   | 'longue_specifique'
   | 'back_to_back'
   | 'marche_course' // départ de zéro
+  | 'evaluation' // « Je sais pas » : combien de minutes tu cours d'affilée
   | 'test'
   | 'course' // jour de course
   | 'croise' // vélo, natation…
@@ -206,6 +266,8 @@ export interface PlannedSession extends Owned {
   status: SessionStatus;
   activityId?: Id;
   adjustments: Explanation[];
+  /** Notes de profil (diabète, asthme, surfaces souples, équilibre…). */
+  notes?: string[];
 }
 
 // ─── Réalisé ──────────────────────────────────────────────────────────────────
@@ -257,6 +319,8 @@ export interface Subjective extends Owned {
   date: ISODate;
   activityId?: Id;
   rpe?: number;
+  /** Marche/course : « J'ai fait tous les intervalles ». */
+  completed?: boolean;
   feeling?: 1 | 2 | 3 | 4 | 5;
   sleepHours?: number;
   sleepQuality?: 1 | 2 | 3 | 4 | 5;
@@ -353,4 +417,7 @@ export interface Milestone extends Owned {
   key: string;
   date: ISODate;
   value?: number;
+  /** Texte du jalon au moment où il a été atteint (écrit par le moteur). */
+  title?: string;
+  why?: string;
 }

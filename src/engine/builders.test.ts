@@ -34,6 +34,19 @@ describe('séances', () => {
     expect(easyRun(1, road).durationMin).toBe(20);
     expect(easyRun(8, road, 'z1').type).toBe('z1_recup');
   });
+  it('jamais plus longues que la longue (F7) : Z2 raccourcie, strides gardées si possible, sinon facile', () => {
+    expect(easyRun(8, road, 'z2', 17).durationMin).toBe(17);
+    const s = strides(6, road, 25);
+    expect(s.type).toBe('strides');
+    expect(s.durationMin).toBeLessThanOrEqual(25);
+    const tooShort = strides(6, road, 15);
+    expect(tooShort.type).toBe('z2_endurance');
+    expect(tooShort.durationMin).toBe(15);
+  });
+  it('longue arrondie à la minute', () => {
+    const l = longRun(4.4, road, false);
+    expect(l.durationMin).toBe(Math.floor(4.4 * paceForTarget({ zone: 'z2' }, road)));
+  });
   it('strides, sprints, descentes progressent avec les semaines', () => {
     expect(strides(6, { ...road, phaseWeek: 5 }).title).toMatch(/8 strides/);
     expect(hillSprints(6, { ...road, phaseWeek: 5 }).title).toMatch(/^10 sprints/);
@@ -78,9 +91,8 @@ describe('séances', () => {
   });
   it('back-to-back, marche-course, test, course, muscu, repos', () => {
     expect(backToBackSecond(103, trail).durationMin).toBe(105);
-    expect(runWalk(3, { ...road, vdot: undefined }).title).toMatch(/1 min course \/ 1 min marche/);
-    expect(runWalk(3, { ...road, vdot: undefined, planWeek: 4 }).title).toMatch(/5 min course \/ 2 min marche/);
-    expect(runWalk(4, { ...road, vdot: undefined, planWeek: 9 }).title).toMatch(/continue/);
+    expect(runWalk(1, { ...road, vdot: undefined }).title).toBe('Marche-course 14 × (30 s course / 1 min marche)');
+    expect(runWalk(4, road).title).toBe('Marche-course 8 × (1 min 30 course / 1 min marche)');
     expect(calibrationTest(road).type).toBe('test');
     expect(raceDay(43, trail).distanceKm).toBe(43);
     expect(strength('plyo', 45).durationMin).toBe(20);

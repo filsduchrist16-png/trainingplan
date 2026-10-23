@@ -1,7 +1,9 @@
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
+import { useActiveAthlete } from '@/ui/hooks/useAthlete';
 import { cn } from '@/ui/lib/cn';
 import { t } from '@/ui/lib/strings';
 import { UpdatePrompt } from './UpdatePrompt';
+import { versionLabel } from './buildInfo';
 
 const tabs = [
   { to: '/', label: t.nav.today, icon: SunIcon, end: true },
@@ -12,14 +14,20 @@ const tabs = [
 ];
 
 export function AppShell() {
+  const athlete = useActiveAthlete();
+  const { pathname } = useLocation();
+  // Accueil et connexion : plein écran, sans onglets (rien à naviguer tant qu'il n'y a pas de profil).
+  const bare = (athlete === null && pathname === '/') || pathname === '/connexion';
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
       <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-accent-ink">
         Aller au contenu
       </a>
-      <main id="contenu" className="flex-1 px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <main id="contenu" className={cn('flex-1 px-4 pt-[max(1.25rem,env(safe-area-inset-top))]', bare ? 'pb-8' : 'pb-28')}>
         <Outlet />
+        <footer className="num mt-10 text-center text-[11px] text-muted" aria-label="Version de l'app">{versionLabel()}</footer>
       </main>
+      {!bare && (
       <nav
         aria-label="Navigation principale"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-bg/90 backdrop-blur pb-[env(safe-area-inset-bottom)]"
@@ -41,6 +49,7 @@ export function AppShell() {
           ))}
         </ul>
       </nav>
+      )}
       <UpdatePrompt />
     </div>
   );

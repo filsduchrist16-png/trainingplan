@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { addDays } from './dates';
+import { GOALS } from './goals';
 import { allocatePhases, generatePlan, generateRecovery, keySessionsFor, timeCapKm, toMaintenanceWeek, type PlanRequest } from './periodization';
 import type { Availability } from './types';
 
@@ -113,25 +114,44 @@ describe('cas limites', () => {
     const p = generatePlan(req({ race: { date: addDays(START, 4 * 7 + 5), distanceKm: 43, elevationGainM: 1500 } }));
     expect(p.weeks).toHaveLength(5);
     assertTenPercentRule(p.weeks.map((w) => w.targetKm), [25]);
-    expect(p.warnings.map((w) => w.ruleId)).toEqual(expect.arrayContaining(['plan.short', 'peak.unreachable']));
+    // 5 semaines pour 43 km : la sortie longue n'y arrivera pas, et le plan le dit (au lieu de « pas grave »).
+    expect(p.warnings.map((w) => w.ruleId)).toEqual(expect.arrayContaining(['plan.short', 'plan.longrun.short']));
+    expect(p.warnings.map((w) => w.ruleId)).not.toContain('peak.unreachable');
+    expect(p.options).toEqual(['objectif_intermediaire', 'decaler']);
+    expect(p.alternative).toBeDefined();
   });
   it('course dans plus d’un an : le plan démarre plus tard', () => {
     const p = generatePlan(req({ race: { date: addDays(START, 70 * 7), distanceKm: 43, elevationGainM: 1500 } }));
     expect(p.weeks).toHaveLength(52);
     expect(p.weeks[0]!.startDate > START).toBe(true);
-    expect(p.warnings[0]!.ruleId).toBe('plan.long');
+    expect(p.warnings.map((w) => w.ruleId)).toContain('plan.long');
   });
   it('démarrage en cours de semaine : le plan commence au lundi', () => {
     expect(generatePlan(req({ startDate: '2026-04-23' })).weeks[0]!.startDate).toBe(START);
   });
   it('utilise l’historique récent comme référence', () => {
-    const p = generatePlan(req({ currentWeeklyKm: 30, recentWeeksKm: [50, 45, 40] }));
+    const p = generatePlan(req({ currentWeeklyKm: 30, recentWeeksKm: [50, 45, 40], longestRecentRunKm: 25 }));
     expect(p.weeks[0]!.targetKm).toBe(55); // max(50,45,40,30) × 1,1
     assertTenPercentRule(p.weeks.map((w) => w.targetKm), [50, 45, 40, 30]);
   });
+  it('reprise sans volume (0 km/sem) : on repart d’une sortie de référence, jamais d’un plan à 0 km', () => {
+    const p = generatePlan(req({ experience: 'avance', currentWeeklyKm: 0 }));
+    expect(p.weeks.every((w) => w.targetKm > 0)).toBe(true);
+    expect(p.weeks[0]!.targetKm).toBeGreaterThanOrEqual(6);
+    expect(p.warnings.map((w) => w.ruleId)).toContain('start.restart');
+    // Capacité déclarée : la sortie de départ vaut 75 % de ce qu'on court d'une traite.
+    const known = generatePlan(req({ experience: 'avance', currentWeeklyKm: 0, continuousMin: 60 }));
+    expect(known.weeks[0]!.targetKm).toBeGreaterThan(p.weeks[0]!.targetKm);
+  });
+  it('plan sans volume ni sortie connue : pas de plus longue sortie de référence à l’affûtage', () => {
+    const p = generatePlan(req({ goal: 'route_5k', experience: 'jamais', currentWeeklyKm: 0, race: { date: addDays(START, 3 * 7 + 5), distanceKm: 5, elevationGainM: 0 } }));
+    expect(p.weeks.every((w) => w.longestRunKm === undefined)).toBe(true);
+  });
   it('ne force pas de baisse chez quelqu’un déjà au-dessus du pic', () => {
     const p = generatePlan(req({ currentWeeklyKm: 90 }));
-    expect(p.weeks[0]!.targetKm).toBe(90);
+    // Pas de baisse vers le pic : seule la contenance des sorties (temps dispo en semaine) plafonne, et c'est dit.
+    expect(p.weeks[0]!.targetKm).toBeGreaterThan(p.targetPeakKm);
+    expect(p.weeks[0]!.targetKm).toBeGreaterThan(80);
   });
   it('plafonne au temps disponible et le dit', () => {
     const tight = { ...avail, runDaysPerWeek: 3, maxWeekdayMinutes: 45, maxWeekendMinutes: 90 };
@@ -170,12 +190,60 @@ describe('cas limites', () => {
 describe('autres objectifs', () => {
   it('courir de zéro : démarrage en marche-course, sans taper', () => {
     const p = generatePlan({ goal: 'debuter', startDate: START, experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, availability: { ...avail, runDaysPerWeek: 3 } });
-    expect(p.weeks).toHaveLength(10);
+    // Durée calculée : 12 semaines depuis le palier 1 à 3 séances/sem.
+    expect(p.weeks).toHaveLength(12);
     expect(p.weeks[0]!.phase).toBe('demarrage');
     expect(p.weeks[0]!.keySessions).toBe(0);
-    expect(p.weeks[0]!.targetKm).toBe(6);
-    expect(p.weeks.at(-1)!.phase).toBe('base');
-    assertTenPercentRule(p.weeks.map((w) => w.targetKm), [6]);
+    // Volume du démarrage en minutes : paliers 1, 1, 2 (31 + 31 + 30 min), +10 min de marche le jour de la longue.
+    expect(p.weeks[0]!.targetMinutes).toBe(31 + 31 + 30 + 10);
+    expect(p.weeks[0]!.runWalk!.sessions.map((x) => x.stage)).toEqual([1, 1, 2]);
+    expect(p.weeks.every((w) => w.phase === 'demarrage')).toBe(true);
+  });
+
+  describe('T6 — « Courir de zéro » à durée calculée', () => {
+    const zero = (over: Partial<PlanRequest> = {}) => generatePlan({ goal: 'debuter', startDate: START, experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, availability: { ...avail, runDaysPerWeek: 3 }, ...over });
+    it('durée par défaut = estimation depuis le palier d’entrée', () => {
+      expect(zero().weeks).toHaveLength(12);
+      // Court déjà 5 à 10 min : palier d'entrée plus haut, plan plus court.
+      const p = zero({ continuousMin: 8 });
+      expect(p.weeks.length).toBeLessThan(12);
+      expect(p.weeks.length).toBeGreaterThan(0);
+      // 2 séances par semaine : plus long.
+      expect(zero({ availability: { ...avail, runDaysPerWeek: 2, allowedDays: [2, 6] } }).weeks).toHaveLength(18);
+      expect(zero().warnings.map((w) => w.ruleId)).not.toContain('plan.debuter.short');
+    });
+    it('durée plus courte choisie : avertissement avec le palier de fin, échelle pas accélérée (F5)', () => {
+      const short = zero({ durationWeeks: 6 });
+      const auto = zero();
+      expect(short.weeks).toHaveLength(6);
+      const w = short.warnings.find((x) => x.ruleId === 'plan.debuter.short')!;
+      expect(w.severity).toBe('attention');
+      const end = short.weeks.at(-1)!.runWalk!.sessions.at(-1)!.stage;
+      expect(end).toBeLessThan(13);
+      expect(w.values).toMatchObject({ palier: end, semaines: 6, estimation: 12 });
+      expect(w.title).toBe(`Ton plan finira au palier ${end} sur 13`);
+      // Mêmes paliers que le plan complet sur les 6 premières semaines : rien n'est compressé.
+      expect(short.weeks.map((x) => x.runWalk!.sessions)).toEqual(auto.weeks.slice(0, 6).map((x) => x.runWalk!.sessions));
+      expect(short.weeks.at(-1)!.notes.find((n) => n.ruleId === 'plan.debuter.end')!.why).toContain('nouveau plan');
+    });
+    it('fin de plan : bilan « tu cours 30 min » et proposition de la suite', () => {
+      const p = zero();
+      const end = p.weeks.at(-1)!.notes.find((n) => n.ruleId === 'plan.debuter.end')!;
+      expect(end.title).toBe('À la fin : tu cours 30 min');
+      expect(end.why).toMatch(/5 km/);
+      expect(end.why).toMatch(/Garder la forme/);
+      expect(p.warnings.map((x) => x.ruleId)).toContain('plan.debuter.end');
+    });
+    it('durée plus longue choisie : de la base après le parcours', () => {
+      const p = zero({ durationWeeks: 16 });
+      expect(p.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(12);
+      expect(p.weeks.filter((w) => w.phase === 'base')).toHaveLength(4);
+    });
+    it('court déjà 30 min : durée par défaut de l’objectif', () => {
+      const p = zero({ continuousMin: 40 });
+      expect(p.weeks).toHaveLength(GOALS.debuter.idealWeeks);
+      expect(p.weeks.at(-1)!.notes.map((n) => n.ruleId)).toContain('plan.debuter.end');
+    });
   });
   it('objectif course pour un débutant à faible volume : phase démarrage d’abord', () => {
     const p = generatePlan(req({ goal: 'route_10k', experience: 'jamais', currentWeeklyKm: 4, race: { date: addDays(START, 15 * 7 + 6), distanceKm: 10, elevationGainM: 0 } }));
@@ -189,10 +257,17 @@ describe('autres objectifs', () => {
     expect(p.weeks.some((w) => w.kind === 'decharge')).toBe(true);
     expect(p.warnings).toEqual([]);
   });
-  it('garder la forme depuis zéro : volume minimal, durée par défaut', () => {
+  it('garder la forme depuis zéro : même règle d’entrée, marche/course d’abord (décision 4)', () => {
     const p = generatePlan({ goal: 'forme', startDate: START, experience: 'debutant', difficulty: 'equilibre', currentWeeklyKm: 0, availability: avail });
     expect(p.weeks).toHaveLength(8);
-    expect(p.weeks[0]!.targetKm).toBe(6);
+    expect(p.weeks[0]!.phase).toBe('demarrage');
+    expect(p.weeks[0]!.runWalk!.sessions[0]!.stage).toBe(1);
+    expect(p.warnings[0]!.ruleId).toBe(p.start!.explanation.ruleId);
+  });
+  it('garder la forme quand on court déjà 30 min : maintien, sans démarrage', () => {
+    const p = generatePlan({ goal: 'forme', startDate: START, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 20, availability: avail });
+    expect(p.weeks.every((w) => w.phase === 'maintien')).toBe(true);
+    expect(p.weeks[0]!.targetKm).toBe(20);
   });
   it('5 km route sans taper long, course marquée', () => {
     const p = generatePlan(req({ goal: 'route_5k', race: { date: addDays(START, 9 * 7 + 5), distanceKm: 5, elevationGainM: 0 } }));
@@ -244,5 +319,103 @@ describe('récupération et maintien', () => {
     expect(m.keySessions).toBe(0);
     expect(m.targetKm).toBeLessThan(w.targetKm);
     expect(m.notes.at(-1)!.ruleId).toBe('week.maintenance');
+  });
+});
+
+describe('débutant dont la plus longue sortie est courte (garde-fou de séance)', () => {
+  const beginner = (over: Partial<PlanRequest> = {}) => generatePlan({
+    goal: 'route_5k', startDate: '2026-10-19', race: { date: '2027-01-23', distanceKm: 5, elevationGainM: 0 },
+    experience: 'debutant', difficulty: 'equilibre', currentWeeklyKm: 15, longestRecentRunKm: 3.2,
+    availability: { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6] }, ...over,
+  });
+
+  it('la sortie longue ne grimpe que de ~10 % par rapport à la plus longue sortie', () => {
+    const p = beginner();
+    expect(p.weeks[0]!.longRunKm).toBeLessThanOrEqual(3.5);
+  });
+  it('le volume est plafonné par ce que 3 sorties peuvent contenir, et le plan l’explique', () => {
+    const w = beginner().weeks[0]!;
+    expect(w.targetKm).toBeLessThanOrEqual(10.5);
+    expect(w.notes.map((n) => n.ruleId)).toContain('week.sessioncap');
+  });
+  it('plus de sorties = plus de volume permis (c’est la façon sûre de monter)', () => {
+    const three = beginner().weeks[0]!.targetKm;
+    const five = beginner({ availability: { ...avail, runDaysPerWeek: 5, allowedDays: [1, 2, 4, 5, 6] } }).weeks[0]!.targetKm;
+    expect(five).toBeGreaterThan(three);
+  });
+  it('sans plus longue sortie déclarée, on l’estime depuis le volume (jamais « illimitée »)', () => {
+    const w = beginner({ longestRecentRunKm: undefined, currentWeeklyKm: 12 }).weeks[0]!;
+    expect(w.longRunKm).toBeLessThanOrEqual(4.5); // 12 / 3 sorties = 4 km → ≤ ~4,5
+  });
+  it('un coureur confirmé n’est pas bridé', () => {
+    const w = generatePlan({ ...beginnerBase(), currentWeeklyKm: 40, longestRecentRunKm: 16, experience: 'regulier' }).weeks[0]!;
+    expect(w.notes.map((n) => n.ruleId)).not.toContain('week.sessioncap');
+  });
+});
+
+function beginnerBase(): PlanRequest {
+  return { goal: 'route_10k', startDate: '2026-10-19', race: { date: '2027-03-20', distanceKm: 10, elevationGainM: 0 }, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 40, availability: avail };
+}
+
+describe('T12 — disponibilité de 1 ou 2 jours', () => {
+  const one = { ...avail, runDaysPerWeek: 1, allowedDays: [6] as Availability['allowedDays'] };
+  const two = { ...avail, runDaysPerWeek: 2, allowedDays: [3, 6] as Availability['allowedDays'] };
+  it('1 jour : objectif course refusé, avec explication', () => {
+    const p = generatePlan(req({ goal: 'route_10k', availability: one }));
+    expect(p.ok).toBe(false);
+    expect(p.warnings[0]!.ruleId).toBe('plan.oneday');
+    expect(p.warnings[0]!.why).toMatch(/Garder la forme/);
+    expect(generatePlan(req({ goal: 'trail_court', availability: one })).ok).toBe(false);
+  });
+  it('1 jour : « Courir de zéro » et « Garder la forme » permis, message honnête sur la lenteur', () => {
+    const p = generatePlan({ goal: 'debuter', startDate: START, experience: 'jamais', difficulty: 'prudent', currentWeeklyKm: 0, availability: one });
+    expect(p.ok).toBe(true);
+    const w = p.warnings.find((x) => x.ruleId === 'plan.oneday.slow')!;
+    expect(w.why).toContain(`${p.weeks.length} semaines`);
+    expect(p.weeks[0]!.runWalk!.sessions).toHaveLength(1);
+    const f = generatePlan({ goal: 'forme', startDate: START, experience: 'regulier', difficulty: 'equilibre', currentWeeklyKm: 15, availability: one });
+    expect(f.ok).toBe(true);
+    expect(f.warnings.find((x) => x.ruleId === 'plan.oneday.slow')!.why).not.toMatch(/30 min d'affilée/);
+  });
+  it('2 jours : aucune séance clé tant que la longue fait moins de 30 min', () => {
+    const p = generatePlan(req({ goal: 'route_10k', availability: two, experience: 'regulier', currentWeeklyKm: 6, longestRecentRunKm: 3.2, vdot: 40, race: { date: addDays(START, 30 * 7 + 5), distanceKm: 10, elevationGainM: 0 } }));
+    const held = p.weeks.filter((w) => w.notes.some((n) => n.ruleId === 'week.twodays'));
+    expect(held.length).toBeGreaterThan(0);
+    expect(held.every((w) => w.keySessions === 0)).toBe(true);
+    expect(p.weeks.some((w) => w.keySessions > 0)).toBe(true);
+    const fit = generatePlan(req({ goal: 'route_10k', availability: two, currentWeeklyKm: 20, longestRecentRunKm: 10 }));
+    expect(fit.weeks.flatMap((w) => w.notes).some((n) => n.ruleId === 'week.twodays')).toBe(false);
+  });
+});
+
+describe('départ en cours de semaine (marche-course)', () => {
+  const three: Availability = { ...avail, runDaysPerWeek: 3, allowedDays: [2, 4, 6], longRunDay: 6 };
+  const zero = (startDate: string, over: Partial<PlanRequest> = {}) => generatePlan(req({ goal: 'debuter', race: undefined, experience: 'jamais', currentWeeklyKm: 0, continuousMin: 3, availability: three, startDate, ...over }));
+
+  it('vendredi : une seule séance cette semaine, au palier d’entrée (l’échelle ne saute pas les jours passés)', () => {
+    const monday = zero(START);
+    const friday = zero(addDays(START, 4));
+    expect(friday.weeks[0]!.startDate).toBe(START);
+    expect(friday.weeks[0]!.runWalk!.sessions).toHaveLength(1);
+    expect(friday.weeks[0]!.runWalk!.sessions[0]!.stage).toBe(monday.weeks[0]!.runWalk!.sessions[0]!.stage);
+    // La séance perdue rallonge le parcours au besoin, sans jamais l'accélérer.
+    expect(friday.weeks.length).toBeGreaterThanOrEqual(monday.weeks.length);
+  });
+  it('dimanche, plus aucune séance cette semaine : le plan commence lundi prochain', () => {
+    const p = zero(addDays(START, 6));
+    expect(p.weeks[0]!.startDate).toBe(addDays(START, 7));
+    expect(p.weeks[0]!.runWalk!.sessions).toHaveLength(3);
+  });
+  it('dimanche avec la course cette semaine : la semaine reste celle de la course', () => {
+    const p = zero(addDays(START, 6), { goal: 'route_5k', race: { date: addDays(START, 6), distanceKm: 5, elevationGainM: 0 } });
+    expect(p.weeks[0]!.startDate).toBe(START);
+    expect(p.weeks[0]!.raceDate).toBe(addDays(START, 6));
+  });
+  it('re-planification avec un parcours déjà terminé : pas de semaine de démarrage', () => {
+    const p = zero(START, { runWalk: { stage: 19, validatedAtStage: 0, failsAtStage: 0 }, durationWeeks: 6 });
+    expect(p.weeks.some((w) => w.phase === 'demarrage')).toBe(false);
+    // Une seule séance à valider : le démarrage tient dans la 1re semaine.
+    const almost = zero(START, { runWalk: { stage: 18, validatedAtStage: 1, failsAtStage: 0 }, durationWeeks: 6 });
+    expect(almost.weeks.filter((w) => w.phase === 'demarrage')).toHaveLength(1);
   });
 });

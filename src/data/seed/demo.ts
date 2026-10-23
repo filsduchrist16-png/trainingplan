@@ -2,6 +2,8 @@ import { addDays, format, startOfDay, startOfWeek, subWeeks } from 'date-fns';
 import type { Activity, Athlete, Race, Shoe, Wellness } from '@/engine/types';
 import type { SentierDB } from '../db';
 import { stamp } from '../ids';
+import { createPlan } from '../planner';
+import { activityLoad, addDays as addIso, isRunType, mondayOf, toIsoDate, validateMove } from '@/engine';
 
 /**
  * Données de démo réalistes pour voir l'app vivante dès le premier lancement.
@@ -141,8 +143,11 @@ export function buildDemo(today: Date = new Date()) {
           hrAvg,
           hrMax: hrAvg + Math.round(15 + rand() * 12),
           cadenceAvg: Math.round(jitter(169 + (DEMO_WEEKS - w) * 0.3, 0.01)),
+          // Répartition des zones plausible : facile quand la FC moyenne reste en Z2, plus de soutenu sinon.
+          timeInZonesSec: ((easy) => (easy ? [0.1, 0.78, 0.09, 0.03, 0] : [0.05, 0.4, 0.25, 0.25, 0.05]).map((x) => Math.round(x * durationSec * 0.97)) as [number, number, number, number, number])(hrAvg <= athlete.zones.bounds[1]),
           terrain: t.sport === 'trail' ? ('sentier' as const) : ('route' as const),
           shoeId: t.sport === 'trail' ? shoes[0]!.id : shoes[1]!.id,
+          load: activityLoad({ durationSec, elevationGainM: dplus, hrAvg }, athlete.zones.bounds).load,
         }),
       );
     }
@@ -151,6 +156,8 @@ export function buildDemo(today: Date = new Date()) {
   const wellness: Wellness[] = [];
   for (let d = 27; d >= 0; d--) {
     const day = addDays(today, -d);
+    // Le matin même reste vierge : c'est à toi de dire comment tu te sens.
+    if (d === 0) continue;
     const shortNight = rand() < 0.2;
     wellness.push(
       stamp({
@@ -188,6 +195,64 @@ export async function loadDemo(db: SentierDB, today: Date = new Date()): Promise
     await db.wellness.bulkPut(demo.wellness);
     await db.meta.put({ key: 'activeAthleteId', value: DEMO_ATHLETE_ID });
     await db.meta.put({ key: 'demo', value: true });
+  });
+
+  // Un vrai plan généré par le moteur : le bloc de 27 semaines vers le Grand-Duc, passé compris.
+  const race = demo.races[0]!;
+  const lac = demo.races[1]!;
+  const todayIso = toIsoDate(today);
+  const start = addIso(mondayOf(race.date), -26 * 7);
+  await createPlan(
+    db,
+    demo.athlete,
+    {
+      request: {
+        goal: 'trail_moyen',
+        startDate: start,
+        race: { date: race.date, distanceKm: race.distanceKm, elevationGainM: race.elevationGainM },
+        experience: 'regulier',
+        difficulty: 'equilibre',
+        currentWeeklyKm: 25,
+        availability: demo.athlete.availability,
+        vdot: demo.athlete.vdot,
+        bRaces: [{ date: lac.date, distanceKm: lac.distanceKm, name: lac.name }],
+      },
+      raceId: race.id,
+      raceName: race.name,
+    },
+    todayIso,
+    start,
+  );
+  // Associe l'historique de démo aux séances passées du même jour.
+  const past = await db.sessions.where('date').below(todayIso).filter((x) => x.athleteId === DEMO_ATHLETE_ID).toArray();
+  const byDate = new Map(demo.activities.map((a) => [a.date, a]));
+  await db.transaction('rw', db.sessions, async () => {
+    for (const ses of past) {
+      if (ses.type === 'repos' || !isRunType(ses.type)) continue;
+      const act = byDate.get(ses.date);
+      await db.sessions.update(ses.id, act ? { status: 'faite', activityId: act.id } : { status: ses.date < demo.activities[0]!.date ? 'faite' : 'sautee' });
+    }
+  });
+  await showRunToday(db, todayIso);
+}
+
+/**
+ * La démo doit montrer une séance à faire aujourd'hui (ajuster, noter, porter des souliers…). Si le plan met un repos
+ * aujourd'hui, une sortie facile (ou la longue facile) à venir de la même semaine y est déplacée, comme le ferait la personne dans Plan,
+ * seulement si le moteur n'y voit rien à redire (validateMove).
+ */
+async function showRunToday(db: SentierDB, today: string): Promise<void> {
+  const week = await db.sessions.where('date').between(mondayOf(today), addIso(mondayOf(today), 6), true, true).filter((x) => x.athleteId === DEMO_ATHLETE_ID).toArray();
+  const todays = week.filter((x) => x.date === today);
+  if (todays.some((x) => isRunType(x.type) && x.type !== 'repos')) return;
+  // Une sortie facile d'abord ; sinon la longue facile (jamais une séance clé ni la course).
+  const later = week.filter((x) => x.date > today && !x.isKey).sort((a, b) => a.date.localeCompare(b.date));
+  const easy = later.find((x) => x.type === 'z2_endurance' || x.type === 'z1_recup' || x.type === 'strides') ?? later.find((x) => x.type === 'longue_facile');
+  if (!easy || validateMove(week, easy.id, today).some((e) => e.severity === 'attention' || e.severity === 'stop')) return;
+  const rest = todays.find((x) => x.type === 'repos');
+  await db.transaction('rw', db.sessions, async () => {
+    await db.sessions.update(easy.id, { date: today });
+    if (rest) await db.sessions.update(rest.id, { date: easy.date });
   });
 }
 

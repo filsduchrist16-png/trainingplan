@@ -66,7 +66,8 @@ export function scaleSession(s: TodaySession, factor: number): TodaySession {
   });
   return {
     ...s,
-    title: `${s.title} (allégée)`,
+    // « Z2 45 min » → « Z2 30 min (allégée) » : le titre suit la durée réelle.
+    title: `${s.title.replace(/(\d+) min/, (_, n: string) => `${round5(Number(n) * factor)} min`)} (allégée)`,
     durationMin: Math.round(s.durationMin * factor),
     ...(s.distanceKm ? { distanceKm: Math.round(s.distanceKm * factor * 10) / 10 } : {}),
     steps,
